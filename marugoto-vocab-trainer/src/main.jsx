@@ -18,6 +18,7 @@ import {
   filterAndSortDictionary,
   canonicalKanaKey,
   findDuplicates,
+  isCardLeech,
 } from './dictionary.js';
 import {
   hasKanji,
@@ -29,7 +30,7 @@ import {
   resolveCardKanjiDetails,
 } from './kanji.js';
 import { extractPdfPages, parseVocabulary, normalizeText as normalize } from './utils/pdfParser.js';
-import { api } from './api/client.js';
+import { api, getBackupExportUrl, importBackupFile } from './api/client.js';
 import { RatingToolbar } from './components/RatingToolbar.jsx';
 import { romajiToHiragana, checkTypedAnswer } from './utils/japaneseInput.js';
 import './styles.css';
@@ -197,14 +198,46 @@ function renderFlashcardJp(cardOrText, kanjiMode = 'ruby', customFontSize = null
   );
 }
 
+let cachedJaVoice = null;
+function getJapaneseVoice() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  if (!voices.length) return null;
+  // 1. Exact ja-JP or ja_JP
+  const jaVoices = voices.filter((v) => v.lang === 'ja-JP' || v.lang === 'ja_JP' || v.lang?.toLowerCase() === 'ja');
+  if (jaVoices.length > 0) {
+    // Prefer natural/local voice if available (e.g. Microsoft Haruka, Ichiro, Sayaka, Google 日本語)
+    const preferred = jaVoices.find((v) => /haruka|ichiro|ayumi|sayaka|keiko|google/i.test(v.name)) || jaVoices[0];
+    return preferred;
+  }
+  // 2. Name contains Japanese or 日本語
+  const byName = voices.find((v) => /japanese|日本語/i.test(v.name));
+  return byName || null;
+}
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedJaVoice = getJapaneseVoice();
+  };
+}
+
 function speakJapanese(text) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try {
     window.speechSynthesis.cancel();
-    const cleanText = (text || '').replace(/[\(（].*?[\)）]/g, '').trim() || text;
+    const cleanText = (text || '')
+      .replace(/[\(（].*?[\)）]/g, '')
+      .replace(/[～~・\s]+/g, ' ')
+      .trim() || text;
+    if (!cleanText) return;
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'ja-JP';
     utterance.rate = 0.9;
+    const voice = cachedJaVoice || getJapaneseVoice();
+    if (voice) {
+      utterance.voice = voice;
+    }
     window.speechSynthesis.speak(utterance);
   } catch (err) {
     console.warn('Speech synthesis error:', err);
@@ -240,6 +273,15 @@ function App() {
   const [showCustomList, setShowCustomList] = useState(false);
   const [customCards, setCustomCards] = useState([]);
   const [importValidation, setImportValidation] = useState(null);
+
+  // Backup & Restore state
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  // Leech / Difficult cards state
+  const [quizLeechOnly, setQuizLeechOnly] = useState(false);
+  const [flashcardLeechOnly, setFlashcardLeechOnly] = useState(false);
 
   // Dictionary state
   const [dictionaryCards, setDictionaryCards] = useState([]);
@@ -489,13 +531,14 @@ function App() {
     return { pdfDecks, custom };
   }
 
-  async function loadCards(deckId = selectedDeckId, studyDirection = mode) {
+  async function loadCards(deckId = selectedDeckId, studyDirection = mode, leechOnly = flashcardLeechOnly) {
     const cardType = studyDirection === 'jp-vi' ? 'JP_TO_VI' : 'VI_TO_JP';
     const query = new URLSearchParams({
       deckId,
       mode: 'all',
       includeCustom: deckId === 'all' || deckId === 'custom',
       cardType,
+      leechOnly: String(leechOnly),
     });
     const result = await api(`/api/study/cards?${query}`);
     setEntries(result.cards);
@@ -1131,11 +1174,11 @@ function App() {
   }
 
 
-  async function updateQuizSetupPool(scope = selectedDeckId, incCustom = includeCustom, studyDirection = mode) {
+  async function updateQuizSetupPool(scope = selectedDeckId, incCustom = includeCustom, studyDirection = mode, leech = quizLeechOnly) {
     try {
       const inc = scope === 'custom' ? true : incCustom;
       const cardType = studyDirection === 'jp-vi' ? 'JP_TO_VI' : 'VI_TO_JP';
-      const query = new URLSearchParams({ deckId: scope, mode: 'all', includeCustom: inc, cardType });
+      const query = new URLSearchParams({ deckId: scope, mode: 'all', includeCustom: inc, cardType, leechOnly: String(leech) });
       const result = await api(`/api/study/cards?${query}`);
       setQuizAvailablePool(result.cards);
       setQuizAvailableDue(result.dueCount);
@@ -1147,9 +1190,9 @@ function App() {
 
   useEffect(() => {
     if (tab === 'quiz' || tab === 'review') {
-      updateQuizSetupPool(selectedDeckId, includeCustom, mode);
+      updateQuizSetupPool(selectedDeckId, includeCustom, mode, quizLeechOnly);
     }
-  }, [tab, selectedDeckId, includeCustom, mode]);
+  }, [tab, selectedDeckId, includeCustom, mode, quizLeechOnly]);
 
   // Question timer effect
   useEffect(() => {
@@ -1319,7 +1362,7 @@ function App() {
       setTab(quizMode === 'DUE' ? 'review' : 'quiz');
       return;
     }
-    updateQuizSetupPool(selectedDeckId, includeCustom);
+    updateQuizSetupPool(selectedDeckId, includeCustom, mode, quizLeechOnly);
     const available = kind === 'DUE' ? quizAvailableDue : quizAvailablePool.length;
     const requested = Math.floor(Number(quizCount)) || 10;
     setQuizCount(String(Math.max(1, Math.min(requested, Math.max(available, 1)))));
@@ -1337,16 +1380,20 @@ function App() {
     try {
       const cardType = mode === 'jp-vi' ? 'JP_TO_VI' : 'VI_TO_JP';
       const incCustom = selectedDeckId === 'custom' ? true : includeCustom;
-      const query = new URLSearchParams({ deckId: selectedDeckId, mode: 'due', includeCustom: incCustom, cardType });
+      const query = new URLSearchParams({ deckId: selectedDeckId, mode: 'due', includeCustom: incCustom, cardType, leechOnly: String(quizLeechOnly) });
       const dueCards = (await api(`/api/study/cards?${query}`)).cards;
       if (kind === 'DUE' && !dueCards.length) {
-        setError('Hiện không có thẻ nào đến hạn ôn.');
+        setError(quizLeechOnly ? 'Hiện không có từ khó nào đến hạn ôn.' : 'Hiện không có thẻ nào đến hạn ôn.');
         return;
       }
-      const allQuery = new URLSearchParams({ deckId: selectedDeckId, mode: 'all', includeCustom: incCustom, cardType });
+      const allQuery = new URLSearchParams({ deckId: selectedDeckId, mode: 'all', includeCustom: incCustom, cardType, leechOnly: String(quizLeechOnly) });
       const allCards = (await api(`/api/study/cards?${allQuery}`)).cards;
+      if (!allCards.length) {
+        setError('Không có từ khó nào trong phạm vi đã chọn để làm bài kiểm tra.');
+        return;
+      }
       if (quizQuestionType === 'multiple_choice' && new Set(allCards.map((card) => optionKey(card, mode))).size < 5) {
-        setError('Cần ít nhất 5 đáp án khác nhau để tạo đủ lựa chọn trắc nghiệm.');
+        setError('Cần ít nhất 5 đáp án khác nhau để tạo đủ lựa chọn trắc nghiệm. Hãy tắt lọc từ khó hoặc chuyển sang hình thức Tự gõ từ (Typed Recall).');
         return;
       }
       const maxCount = kind === 'DUE' ? dueCards.length : allCards.length;
@@ -1610,6 +1657,9 @@ function App() {
             {hasKanji(card.jp) && (
               <span className="kanji-tag-badge" title="Từ vựng có Chữ Hán">🈸 Hán tự</span>
             )}
+            {isCardLeech(card) && (
+              <span className="dict-badge leech" title="Từ khó: đã trả lời sai ≥3 lần hoặc tỷ lệ quên cao">🔥 Từ khó</span>
+            )}
             {isDue ? (
               <span className="dict-badge due">⌛ Đến hạn</span>
             ) : card.reviewCount > 0 ? (
@@ -1690,7 +1740,20 @@ function App() {
           <h1>Marugoto Vocab Trainer</h1>
           <p>Import PDF → flashcard → recall → test. PDF và tiến độ được lưu trên máy này.</p>
         </div>
-        {entries.length > 0 && <div className="stats"><b>{entries.length}</b> thẻ · <b>{dueCount}</b> đến hạn</div>}
+        <div className="header-right-actions">
+          {entries.length > 0 && <div className="stats"><b>{entries.length}</b> thẻ · <b>{dueCount}</b> đến hạn</div>}
+          <button
+            type="button"
+            className="backup-btn"
+            onClick={() => {
+              setBackupStatus(null);
+              setIsBackupModalOpen(true);
+            }}
+            title="Sao lưu và khôi phục dữ liệu học tập"
+          >
+            💾 Sao lưu & Khôi phục
+          </button>
+        </div>
       </header>
 
       <div className="deck-toolbar">
@@ -1849,6 +1912,7 @@ function App() {
                 <option value="due">⌛ Cần ôn gấp (Đến hạn)</option>
                 <option value="reviewed">✅ Đã học / Đang nhớ</option>
                 <option value="new">🌱 Từ mới (Chưa học)</option>
+                <option value="leech">🔥 Từ khó / Hay quên ({dictionaryCards.filter(isCardLeech).length})</option>
               </select>
             </div>
 
@@ -2003,6 +2067,9 @@ function App() {
                             ) : (
                               <span className="dict-badge new">🌱 Mới</span>
                             )}
+                            {isCardLeech(card) && (
+                              <span className="dict-badge leech" title="Từ khó: đã sai ≥3 lần hoặc tỷ lệ quên cao">🔥 Khó</span>
+                            )}
                             {card.wrongCount > 0 && (
                               <span className="dict-badge wrong" title={`${card.wrongCount} lần sai`}>
                                 {card.wrongCount} sai
@@ -2145,6 +2212,29 @@ function App() {
             <div className="flashcard-toolbar-left">
               <span className="card-counter-badge">{index + 1} / {entries.length}</span>
               <span className="deck-tag-label" title={current.deckTitle}>{current.deckTitle}</span>
+              {isCardLeech(current) && (
+                <span className="leech-indicator-badge" title="Từ khó: đã trả lời sai ≥3 lần hoặc tỷ lệ quên cao">🔥 Từ khó</span>
+              )}
+              <button
+                type="button"
+                className="backup-btn"
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '12.5px',
+                  background: flashcardLeechOnly ? '#fee2e2' : undefined,
+                  borderColor: flashcardLeechOnly ? '#ef4444' : undefined,
+                  color: flashcardLeechOnly ? '#b91c1c' : undefined,
+                  fontWeight: flashcardLeechOnly ? '700' : '500',
+                }}
+                onClick={async () => {
+                  const next = !flashcardLeechOnly;
+                  setFlashcardLeechOnly(next);
+                  await loadCards(selectedDeckId, mode, next);
+                }}
+                title={flashcardLeechOnly ? 'Đang lọc từ khó. Bấm để hiển thị tất cả thẻ.' : 'Bấm để chỉ luyện các từ khó / hay sai.'}
+              >
+                🔥 {flashcardLeechOnly ? 'Từ khó (Bật)' : 'Lọc từ khó'}
+              </button>
             </div>
 
             <div className="flashcard-toolbar-center">
@@ -2490,6 +2580,26 @@ function App() {
                     </label>
                   </div>
                 )}
+
+                <div className="setup-option-card">
+                  <label className="setup-option-label" htmlFor="quiz-leech-only-toggle">
+                    <div className="option-text-group">
+                      <span className="option-title">🔥 Chỉ luyện các từ khó / hay sai (Leech cards)</span>
+                      <span className="option-desc">Lọc riêng các từ bạn đã trả lời sai ≥ 3 lần hoặc có tỷ lệ quên cao để luyện tập chuyên sâu</span>
+                    </div>
+                    <input
+                      id="quiz-leech-only-toggle"
+                      type="checkbox"
+                      className="toggle-switch"
+                      checked={quizLeechOnly}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setQuizLeechOnly(val);
+                        updateQuizSetupPool(selectedDeckId, includeCustom, mode, val);
+                      }}
+                    />
+                  </label>
+                </div>
 
                 <div className="setup-option-card">
                   <div className="option-text-group" style={{ marginBottom: '10px' }}>
@@ -3654,6 +3764,108 @@ function App() {
                 onClick={handleApplyBatchKanji}
               >
                 {batchKanjiSaving ? 'Đang cập nhật…' : `Áp dụng Chữ Hán (${batchKanjiSelected.size} từ)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💾 Backup & Restore Modal */}
+      {isBackupModalOpen && (
+        <div className="modal-backdrop" onClick={() => !backupLoading && setIsBackupModalOpen(false)}>
+          <div className="modal-card backup-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💾 Sao lưu & Khôi phục dữ liệu (Backup & Restore)</h3>
+              <button
+                type="button"
+                className="close-btn"
+                disabled={backupLoading}
+                onClick={() => setIsBackupModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="backup-modal-desc">
+              Toàn bộ các bộ từ, từ vựng tự tạo, thẻ học FSRS và nhật ký ôn tập được lưu trữ cục bộ trên máy tính. Bạn có thể xuất file sao lưu JSON để lưu trữ hoặc chuyển sang máy khác.
+            </p>
+
+            <div className="backup-grid">
+              <div className="backup-box">
+                <h4>📥 Xuất bản sao lưu (Export)</h4>
+                <p>Tải toàn bộ cơ sở dữ liệu hiện tại về máy tính dưới định dạng file JSON.</p>
+                <a
+                  href={getBackupExportUrl()}
+                  className="download-btn"
+                  download
+                  onClick={() => {
+                    setBackupStatus({ type: 'success', message: 'Đang tải file sao lưu JSON về máy...' });
+                  }}
+                >
+                  📥 Tải xuống bản sao lưu (.json)
+                </a>
+              </div>
+
+              <div className="backup-box">
+                <h4>📤 Khôi phục dữ liệu (Restore)</h4>
+                <p>Chọn file sao lưu JSON đã tải trước đó để khôi phục lại toàn bộ dữ liệu học tập.</p>
+                <div className="backup-restore-zone">
+                  <label className="backup-file-picker-label">
+                    <span>📁 {backupLoading ? 'Đang khôi phục dữ liệu...' : 'Chọn file sao lưu (.json)'}</span>
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      disabled={backupLoading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!window.confirm(`Bạn có chắc chắn muốn khôi phục dữ liệu từ file “${file.name}”?\\n\\nHệ thống sẽ tự động tạo một bản sao lưu dự phòng CSDL trước khi khôi phục để bảo vệ dữ liệu.`)) {
+                          e.target.value = '';
+                          return;
+                        }
+                        setBackupLoading(true);
+                        setBackupStatus(null);
+                        try {
+                          const result = await importBackupFile(file);
+                          setBackupStatus({ type: 'success', message: result.message || 'Khôi phục thành công!' });
+                          await refreshDecks();
+                          await loadCards();
+                          await refreshDictionary();
+                        } catch (err) {
+                          setBackupStatus({ type: 'error', message: `Lỗi khôi phục: ${err.message}` });
+                        } finally {
+                          setBackupLoading(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <div className="backup-safety-notice">
+                    <span>🛡️</span>
+                    <div>
+                      <b>Bảo vệ dữ liệu:</b> Hệ thống luôn tự động tạo một file CSDL dự phòng (<code>.bak</code>) trước mỗi lần khôi phục.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {backupStatus && (
+              <div className={`backup-result-box ${backupStatus.type}`}>
+                {backupStatus.type === 'success' ? '✓ ' : '⚠️ '}
+                {backupStatus.message}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={backupLoading}
+                onClick={() => setIsBackupModalOpen(false)}
+              >
+                Đóng
               </button>
             </div>
           </div>

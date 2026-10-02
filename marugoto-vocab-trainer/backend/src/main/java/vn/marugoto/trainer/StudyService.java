@@ -22,10 +22,15 @@ class StudyService {
     private final DeckService decks;
     private final FsrsScheduler fsrs;
 
-    private static final RowMapper<StudyCardDto> CARD_MAPPER = (rs, row) -> new StudyCardDto(
-            rs.getString("id"), rs.getString("deck_id"), rs.getString("deck_title"),
-            rs.getString("japanese"), rs.getString("romaji"), rs.getString("vietnamese"),
-            Instant.ofEpochMilli(rs.getLong("due_at")), rs.getInt("review_count"), rs.getInt("wrong_count"));
+    private static final RowMapper<StudyCardDto> CARD_MAPPER = (rs, row) -> {
+        int reviewCount = rs.getInt("review_count");
+        int wrongCount = rs.getInt("wrong_count");
+        boolean isLeech = wrongCount >= 3 || (reviewCount >= 3 && (double) wrongCount / reviewCount >= 0.35);
+        return new StudyCardDto(
+                rs.getString("id"), rs.getString("deck_id"), rs.getString("deck_title"),
+                rs.getString("japanese"), rs.getString("romaji"), rs.getString("vietnamese"),
+                Instant.ofEpochMilli(rs.getLong("due_at")), reviewCount, wrongCount, isLeech);
+    };
 
     StudyService(JdbcTemplate jdbc, DeckService decks, FsrsScheduler fsrs) {
         this.jdbc = jdbc;
@@ -35,16 +40,21 @@ class StudyService {
 
     @Transactional(readOnly = true)
     StudyResponse cards(String deckId, String mode) {
-        return cards(deckId, mode, false, "JP_TO_VI");
+        return cards(deckId, mode, false, "JP_TO_VI", false);
     }
 
     @Transactional(readOnly = true)
     StudyResponse cards(String deckId, String mode, boolean includeCustom) {
-        return cards(deckId, mode, includeCustom, "JP_TO_VI");
+        return cards(deckId, mode, includeCustom, "JP_TO_VI", false);
     }
 
     @Transactional
     StudyResponse cards(String deckId, String mode, boolean includeCustom, String cardType) {
+        return cards(deckId, mode, includeCustom, cardType, false);
+    }
+
+    @Transactional
+    StudyResponse cards(String deckId, String mode, boolean includeCustom, String cardType, boolean leechOnly) {
         String normalizedCardType = normalizeCardType(cardType);
         ensureCardsForDirection(normalizedCardType);
 
@@ -85,6 +95,8 @@ class StudyService {
             args.add(now);
         }
 
+        String leechClause = leechOnly ? " AND (s.wrong_count >= 3 OR (s.review_count >= 3 AND CAST(s.wrong_count AS FLOAT) / s.review_count >= 0.35))" : "";
+
         String sql = """
                 SELECT s.id, vs.deck_id, d.title AS deck_title, v.spelling AS japanese, v.romaji, v.meanings_vi AS vietnamese,
                        s.due_at, s.review_count, s.wrong_count
@@ -93,7 +105,7 @@ class StudyService {
                 JOIN vocabulary_sources vs ON vs.vocabulary_id = v.id
                 JOIN decks d ON d.id = vs.deck_id
                 WHERE 1=1
-                """ + scopeClause + typeClause + dueClause + " ORDER BY s.due_at ASC, s.created_at ASC";
+                """ + scopeClause + typeClause + dueClause + leechClause + " ORDER BY s.due_at ASC, s.created_at ASC";
 
         List<StudyCardDto> cards = jdbc.query(sql, CARD_MAPPER, args.toArray());
 
@@ -102,7 +114,7 @@ class StudyService {
                 FROM study_cards s
                 JOIN vocabulary_sources vs ON vs.vocabulary_id = s.vocabulary_id
                 WHERE s.due_at <= ? AND s.card_type = ?
-                """ + scopeClause;
+                """ + scopeClause + leechClause;
         List<Object> dueArgs = new ArrayList<>();
         dueArgs.add(now);
         dueArgs.add(normalizedCardType);

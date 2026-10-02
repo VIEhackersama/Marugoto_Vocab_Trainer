@@ -33,11 +33,18 @@ backend/target/
 # --- Application Data & SQLite Database ---
 data/
 backend/data/
+**/data/
+**/backend/data/
 pdfs/
 backend/pdfs/
+**/pdfs/
+**/backend/pdfs/
 *.db
+*.db.*
 *.db-shm
 *.db-wal
+*.bak
+trainer.db*
 
 # --- IDEs & Code Editors ---
 .idea/

@@ -1,0 +1,53 @@
+# ==========================================
+# Root Git Ignore Rules
+# ==========================================
+
+# --- SQLite Database & Local Data ---
+*.db
+*.db.*
+*.db-shm
+*.db-wal
+*.bak
+trainer.db*
+data/
+backend/data/
+**/data/
+**/backend/data/
+pdfs/
+backend/pdfs/
+**/pdfs/
+**/backend/pdfs/
+
+# --- Node / Frontend ---
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# --- Java & Maven ---
+target/
+**/target/
+*.class
+*.jar
+!**/maven-wrapper.jar
+*.war
+
+# --- Environment & OS ---
+.env*
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- IDEs ---
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr

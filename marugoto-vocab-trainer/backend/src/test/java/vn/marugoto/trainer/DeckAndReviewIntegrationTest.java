@@ -30,6 +30,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DeckAndReviewIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @org.junit.jupiter.api.BeforeEach
+    void resetDatabase() {
+        jdbc.update("DELETE FROM review_logs");
+        jdbc.update("DELETE FROM study_cards");
+        jdbc.update("DELETE FROM vocabulary_sources");
+        jdbc.update("DELETE FROM vocabularies");
+        jdbc.update("DELETE FROM decks WHERE id != 'custom'");
+    }
 
     @Test
     void uploadReviewDownloadAndDeleteDeck() throws Exception {
@@ -193,4 +203,73 @@ class DeckAndReviewIntegrationTest {
         mvc.perform(delete("/api/decks/{deckId}", deckId1)).andExpect(status().isNoContent());
         mvc.perform(delete("/api/decks/{deckId}", deckId2)).andExpect(status().isNoContent());
     }
+
+    @Test
+    void backupExportImportAndLeechFilter() throws Exception {
+        String deckJson = """
+                [
+                  {"jp":"りんご","romaji":"ringo","vi":"quả táo"},
+                  {"jp":"みかん","romaji":"mikan","vi":"quả quýt"}
+                ]
+                """;
+        MockMultipartFile pdf = new MockMultipartFile("file", "fruit.pdf", "application/pdf",
+                "%PDF-1.7\nfixtureFruit".getBytes(StandardCharsets.US_ASCII));
+        String res = mvc.perform(multipart("/api/decks").file(pdf).param("cards", deckJson))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String deckId = objectMapper.readTree(res).get("id").asString();
+
+        JsonNode cards = objectMapper.readTree(mvc.perform(get("/api/study/cards").param("deckId", deckId).param("mode", "all"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(2, cards.get("cards").size());
+        String ringoCardId = cards.get("cards").get(0).get("id").asString();
+
+        // Initially no leech cards
+        JsonNode leechesInitial = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("leechOnly", "true"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(0, leechesInitial.get("cards").size());
+
+        // Review ringo 3 times with AGAIN -> wrongCount = 3 -> leech!
+        for (int i = 0; i < 3; i++) {
+            mvc.perform(post("/api/reviews")
+                            .contentType("application/json")
+                            .content("{\"cardId\":\"" + ringoCardId + "\",\"rating\":\"AGAIN\",\"source\":\"TEST\"}"))
+                    .andExpect(status().isOk());
+        }
+
+        // Query leechOnly=true -> should return ringo
+        JsonNode leechesAfter = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("leechOnly", "true"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(1, leechesAfter.get("cards").size());
+        assertEquals(ringoCardId, leechesAfter.get("cards").get(0).get("id").asString());
+        assertTrue(leechesAfter.get("cards").get(0).get("isLeech").asBoolean());
+
+        // Test export backup
+        String backupJson = mvc.perform(get("/api/backup/export"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode backupData = objectMapper.readTree(backupJson);
+        assertTrue(backupData.has("version"));
+        assertTrue(backupData.has("exportedAt"));
+        assertTrue(backupData.get("decks").size() >= 1);
+        assertTrue(backupData.get("studyCards").size() >= 2);
+        assertTrue(backupData.get("reviewLogs").size() >= 3);
+
+        // Test import backup
+        String importResultJson = mvc.perform(post("/api/backup/import")
+                        .contentType("application/json")
+                        .content(backupJson))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode importResult = objectMapper.readTree(importResultJson);
+        assertTrue(importResult.get("importedDecks").asInt() >= 1);
+        assertTrue(importResult.get("message").asString().contains("thành công"));
+
+        mvc.perform(delete("/api/decks/{deckId}", deckId)).andExpect(status().isNoContent());
+    }
 }
+

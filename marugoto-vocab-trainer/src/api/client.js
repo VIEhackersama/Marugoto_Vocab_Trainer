@@ -19,12 +19,13 @@ export async function fetchCustomDeck() {
   return api('/api/decks/custom');
 }
 
-export async function fetchStudyCards({ deckId = 'all', mode = 'all', includeCustom = true, cardType = 'JP_TO_VI' } = {}) {
+export async function fetchStudyCards({ deckId = 'all', mode = 'all', includeCustom = true, cardType = 'JP_TO_VI', leechOnly = false } = {}) {
   const params = new URLSearchParams({
     deckId,
     mode,
     includeCustom: String(includeCustom),
-    cardType
+    cardType,
+    leechOnly: String(leechOnly)
   });
   return api(`/api/study/cards?${params}`);
 }
@@ -68,3 +69,25 @@ export async function createCustomCard(data) {
 export async function deleteDeck(deckId) {
   return api(`/api/decks/${deckId}`, { method: 'DELETE' });
 }
+
+export function getBackupExportUrl() {
+  return '/api/backup/export';
+}
+
+export async function importBackup(data) {
+  return api('/api/backup/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+}
+
+export async function importBackupFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api('/api/backup/import-file', {
+    method: 'POST',
+    body: formData
+  });
+}
+

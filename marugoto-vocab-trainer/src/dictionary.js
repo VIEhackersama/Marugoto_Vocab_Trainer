@@ -187,6 +187,14 @@ export function compareJapanese(a, b) {
   return jaCollator.compare(extractReading(a), extractReading(b));
 }
 
+export function isCardLeech(card) {
+  if (!card) return false;
+  if (typeof card.isLeech === 'boolean') return card.isLeech;
+  const review = card.reviewCount || 0;
+  const wrong = card.wrongCount || 0;
+  return wrong >= 3 || (review >= 3 && wrong / review >= 0.35);
+}
+
 export function filterAndSortDictionary(cards, options) {
   const {
     searchQuery = '',
@@ -211,6 +219,7 @@ export function filterAndSortDictionary(cards, options) {
     if (statusFilter === 'due' && !isDue) return false;
     if (statusFilter === 'reviewed' && (card.reviewCount === 0 || isDue)) return false;
     if (statusFilter === 'new' && card.reviewCount > 0) return false;
+    if (statusFilter === 'leech' && !isCardLeech(card)) return false;
 
     // Gojuon Row filter
     if (rowSelect !== 'all') {

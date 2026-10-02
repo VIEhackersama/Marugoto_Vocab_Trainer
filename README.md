@@ -14,7 +14,7 @@
   - [4. Cấu trúc thư mục](#4-cấu-trúc-thư-mục)
   - [5. Hướng dẫn cài đặt & Khởi động](#5-hướng-dẫn-cài-đặt--khởi-động)
   - [6. Kiểm thử tự động (Testing)](#6-kiểm-thử-tự-động-testing)
-  - [7. Giới hạn & Lưu ý hiện tại](#7-giới-hạn--lưu-ý-hiện-tại)
+  - [7. Bảo mật CSDL cá nhân & Lưu ý](#7-bảo-mật-csdl-cá-nhân--lưu-ý)
 - [日本語 (Japanese)](#-日本語-japanese)
   - [1. プロジェクト概要](#1-プロジェクト概要)
   - [2. 実装済み機能の詳細一覧](#2-実装済み機能の詳細一覧)
@@ -22,7 +22,7 @@
   - [4. ディレクトリ構成](#4-ディレクトリ構成)
   - [5. インストールおよび起動方法](#5-インストールおよび起動方法)
   - [6. 自動テストの実行](#6-自動テストの実行)
-  - [7. 現在の制限事項・留意点](#7-現在の制限事項留意点)
+  - [7. 個人DBの保護と留意点](#7-個人dbの保護と留意点)
 
 ---
 
@@ -45,126 +45,95 @@
   - Ghép dòng theo tọa độ `y` (Multi-line row grouping), nhận diện và kết nối các định nghĩa trải dài nhiều dòng.
   - Tự động bỏ qua số trang (ví dụ `1 / 18`) và làm sạch các ký hiệu gạch đầu dòng, dấu chấm tròn (`•`, `–`).
   - Chuẩn hóa Unicode toàn bộ văn bản sang chuẩn `NFKC`.
-- **Kiểm tra và xử lý trùng lặp thông minh (Duplicate Detection & Resolution)**:
-  - Trước khi lưu vào hệ thống, thuật toán tự động đối chiếu các từ chuẩn bị nhập với toàn bộ kho từ vựng hiện có trong CSDL.
+- **Kiểm tra và xử lý trùng lặp thông minh (Homophone-aware Deduplication)**:
+  - Tự động đối chiếu các từ chuẩn bị nhập với toàn bộ kho từ vựng hiện có trong CSDL.
   - Nhận diện trùng khớp chính xác mặt chữ tiếng Nhật hoặc trùng theo cách đọc Kana chuẩn hóa (`canonicalKanaKey`).
-  - Cung cấp hộp thoại (Modal) hiển thị chi tiết các từ bị trùng, lý do trùng và cho phép lựa chọn: **Bỏ qua từ trùng** (chỉ nhập từ mới) hoặc **Nhập tất cả**.
+  - **Phân biệt từ đồng âm khác nghĩa (Homophones)**: Không loại bỏ nhầm các từ có cùng cách đọc kana nhưng khác chữ Hán hoặc khác ngữ nghĩa tiếng Việt (ví dụ: `橋（はし）` - cây cầu vs `箸（はし）` - đôi đũa).
+  - Hộp thoại hiển thị chi tiết các từ bị trùng và cho phép lựa chọn: **Bỏ qua từ trùng** (chỉ nhập từ mới) hoặc **Nhập tất cả**.
 - **Lưu trữ & Tải lại file PDF gốc**: File PDF sau khi import được lưu trữ nguyên bản trong thư mục `data/pdfs/` trên máy chủ; người dùng có thể bấm nút tải lại file PDF gốc bất cứ khi nào.
 - **Quản lý bộ từ vựng (Decks)**: Hiển thị danh sách các bộ từ đã nhập kèm ngày tạo, kích thước file, tổng số từ và số lượng từ đến hạn ôn. Cho phép xóa toàn bộ một bộ thẻ (tự động xóa cascade các thẻ học và file PDF đính kèm).
 
 ---
 
-### 2.2. Từ điển tương tác & Tra cứu toàn diện (Interactive Dictionary)
+### 2.2. Hai chiều học FSRS độc lập (Dual Study Directions)
+- **Hỗ trợ 2 chiều học hoàn chỉnh**:
+  - **Nhật $\to$ Việt (`JP_TO_VI`)**: Rèn luyện khả năng nhận biết mặt chữ, phát âm và hiểu nghĩa.
+  - **Việt $\to$ Nhật (`VI_TO_JP`)**: Rèn luyện khả năng chủ động gợi nhớ và sản sinh từ vựng.
+- **Lưu trữ FSRS riêng biệt cho từng chiều**: Mỗi chiều học có bản ghi thẻ học FSRS độc lập với độ ổn định (`stability`), độ khó (`difficulty`), số lần ôn và ngày đến hạn (`due_at`) riêng. Việc ôn tập tốt ở chiều Nhật $\to$ Việt sẽ không làm thay đổi lịch ôn của chiều Việt $\to$ Nhật, phản ánh chính xác bản chất trí nhớ 2 chiều.
+- **Tự động di trú và khởi tạo (Backfill Migration)**: Khi đổi chiều học, hệ thống tự động khởi tạo các thẻ học của chiều tương ứng nếu chưa có.
+
+---
+
+### 2.3. Tự động đánh giá FSRS theo thời gian phản xạ (Auto Rating by Response Time)
+- **Đo lường thời gian phản xạ (`responseMs`)**: Ghi nhận chính xác số mili-giây từ khi câu hỏi xuất hiện đến khi người học chọn đáp án.
+- **Thanh trượt cấu hình thời gian (Timer Slider)**: Tùy chỉnh linh hoạt giới hạn thời gian từ **3 giây đến 30 giây** (mặc định: 10 giây).
+- **Quy tắc phân loại FSRS tự động**:
+  - ⚡ **Easy**: Phản xạ cực nhanh ($\le 30\%$ thời gian tối đa và $\le 3.5$ giây).
+  - ⏱️ **Good**: Trả lời đúng trong nhịp độ bình thường ($30\% - 75\%$ thời gian).
+  - 🐢 **Hard**: Trả lời đúng nhưng tốn nhiều thời gian suy nghĩ ($> 75\%$ thời gian).
+  - ⌛ **Again**: Hết giờ mà chưa đưa ra câu trả lời đúng.
+- **Cấu hình tiện lợi**: Tính năng tự động lưu điểm phản xạ được **bật mặc định** để người dùng học nhanh không cần bấm phím phụ; người dùng có thể tắt trong cài đặt hoặc bấm phím `1 - 4` để chọn mức đánh giá thủ công theo ý muốn.
+- **Tùy chọn tắt timeout khi gặp từ Try Again**: Không đếm ngược khi làm lại từ vừa sai để người học có thời gian quan sát và ghi nhớ kỹ hơn.
+
+---
+
+### 2.4. Chế độ tự gõ câu trả lời (Typed Recall Mode) & Bộ gõ Hiragana tích hợp
+- **Tự gõ từ vựng (Typed Recall)**: Thay vì chỉ chọn 1 trong 5 đáp án trắc nghiệm, người học có thể chọn hình thức tự gõ câu trả lời ở cả tab Flashcards và tab Test.
+- **Bộ gõ Romaji $\to$ Hiragana tự động**:
+  - Gõ Romaji trực tiếp trong ô nhập liệu (ví dụ: `ka` $\to$ `か`, `tsu` $\to$ `つ`, `kitte` $\to$ `きって`, `sensei` $\to$ `せんせい`).
+  - Hỗ trợ đầy đủ âm đục (dakuten), bán đục (handakuten), âm ghép (youon) và âm ngắt (sokuon).
+- **Thuật toán so khớp câu trả lời thông minh (`checkTypedAnswer`)**:
+  - Chấp nhận câu trả lời đúng bằng cả Hiragana, Katakana, Kanji, Romaji hoặc tiếng Việt không dấu.
+  - Hiển thị so sánh đáp án chi tiết (Diff feedback) khi người dùng gõ sai để học hỏi ngay lập tức.
+
+---
+
+### 2.5. Nhận diện & Luyện tập chuyên sâu từ khó (Leech / Difficult Cards)
+- **Thuật toán nhận diện tự động (`isLeech`)**:
+  - Thẻ được tự động đánh dấu là từ khó khi: `wrongCount >= 3` hoặc `reviewCount >= 3` và tỷ lệ sai $\ge 35\%$.
+- **Huy hiệu trực quan**: Hiển thị nhãn 🔥 **Từ khó** trên thẻ từ điển, bảng chi tiết và thanh điều hướng Flashcard.
+- **Lọc riêng trong Từ điển**: Bộ lọc trạng thái "🔥 Từ khó / Hay quên" cho phép rà soát nhanh tất cả các từ đang gặp khó khăn.
+- **Chế độ luyện tập từ khó**:
+  - Toggle **🔥 Chỉ luyện từ khó** trong Flashcards, Test và Ôn tập đến hạn giúp tập trung củng cố kiến thức trước các bài thi.
+
+---
+
+### 2.6. Sao lưu & Khôi phục dữ liệu toàn diện (Backup & Restore)
+- **Xuất bản sao lưu JSON (Full Export)**: Tải về file `.json` chứa toàn bộ cơ sở dữ liệu: danh sách bộ từ (Decks), từ vựng (Vocabularies), thẻ học FSRS (Study Cards) và toàn bộ lịch sử ôn tập (Review Logs).
+- **Khôi phục dữ liệu an toàn (Safe Restore)**:
+  - Tải file JSON lên để khôi phục lại dữ liệu trên máy tính khác hoặc sau khi cài lại máy.
+  - **Cơ chế bảo vệ dữ liệu dự phòng tự động**: Hệ thống luôn tự động tạo một file CSDL sao lưu `.pre-restore.<timestamp>.bak` trước khi áp dụng khôi phục, đảm bảo không bao giờ bị mất dữ liệu ngoài ý muốn.
+
+---
+
+### 2.7. Tối ưu hóa phát âm tiếng Nhật (Text-to-Speech Optimization)
+- **Tự động chọn giọng đọc chuẩn `ja-JP`**: Ưu tiên tìm kiếm các giọng bản xứ chất lượng cao có sẵn trên hệ điều hành (Microsoft Haruka, Ichiro, Ayumi, Google 日本語,...).
+- **Làm sạch văn bản phát âm**: Tự động loại bỏ các phần chú thích trong ngoặc, dấu ngã `～`, dấu chấm phân cách `・` để giọng đọc phát âm tròn vành, tự nhiên.
+
+---
+
+### 2.8. Từ điển tương tác & Tra cứu toàn diện (Interactive Dictionary)
 - **Hai chế độ hiển thị**: Chuyển đổi linh hoạt giữa dạng **Bảng danh sách (Table/List)** chi tiết và dạng **Lưới thẻ (Grid/Cards)** trực quan.
-- **Tìm kiếm tức thì đa năng (Omni-search)**:
-  - Tra cứu cùng lúc trên: Chữ Hán (Kanji), Kana (Hiragana/Katakana), Romaji và Tiếng Việt.
-  - Hỗ trợ tiếng Việt không dấu lẫn có dấu (`removeDiacritics`).
-  - Tự động **Highlight (làm nổi bật)** từ khóa tìm kiếm trực tiếp trên kết quả.
-- **Lọc theo hàng âm 50 chữ cái Gojuon (Gojuon Kana Row Filter)**:
-  - Lọc nhanh theo 11 nhóm âm: あ行 (A), か行 (Ka), さ行 (Sa), た行 (Ta), な行 (Na), は行 (Ha), ま行 (Ma), や行 (Ya), ら行 (Ra), わ行 (Wa), và Khác (chữ cái Latin, số, ký hiệu).
-- **Lọc theo trạng thái ghi nhớ**:
-  - *Tất cả (All)*: Toàn bộ từ vựng trong phạm vi chọn.
-  - *Đến hạn ôn (Due)*: Các từ đã đến thời điểm cần ôn theo thuật toán FSRS.
-  - *Đang ôn (Reviewed)*: Các từ đã từng học và chưa đến hạn.
-  - *Từ mới (New)*: Các từ chưa từng làm bài ôn tập lần nào.
-- **Lọc theo bộ thẻ**: Toàn bộ từ vựng, từng bộ PDF riêng lẻ, hoặc riêng bộ từ tùy chỉnh ("custom").
-- **Sắp xếp linh hoạt (Sort Orders)**:
-  - Theo thứ tự bảng chữ cái tiếng Nhật chuẩn Gojuon (Tăng dần / Giảm dần).
-  - Số lần trả lời sai nhiều nhất (*Wrong count* - giúp tập trung xử lý các từ hay nhầm).
-  - Số lần ôn tập nhiều nhất (*Review count*).
-  - Thời gian thêm gần nhất (*Recent*).
-- **Thao tác nhanh trên từng từ**:
-  - Bấm nghe phát âm tiếng Nhật chuẩn.
-  - Xem và chỉnh sửa chữ Hán (Kanji).
-  - Sửa nội dung từ vựng (Nhật, Romaji, Việt).
-  - Xóa từ vựng khỏi CSDL.
+- **Tìm kiếm tức thì đa năng (Omni-search)**: Tra cứu cùng lúc trên Chữ Hán, Kana, Romaji và Tiếng Việt (có/không dấu) với highlight từ khóa.
+- **Lọc theo 11 hàng âm Gojuon (あ行, か行, さ行,...)**.
+- **Lọc theo trạng thái**: Tất cả, Đến hạn ôn (Due), Đã ôn (Reviewed), Từ mới (New), và Từ khó (Leech).
+- **Sắp xếp linh hoạt**: Theo bảng chữ cái Gojuon (xuôi/ngược), số lần sai nhiều nhất, số lần ôn nhiều nhất, hoặc mới thêm gần đây.
 
 ---
 
-### 2.3. Quản lý & Ánh xạ Hán tự (Kanji Dictionary & Auto-mapping)
-- **Từ điển Hán tự tích hợp sẵn (`kanji.js`)**: Kho dữ liệu Kanji phong phú được chuẩn hóa theo các bài học của giáo trình Marugoto A1, A2 và các từ đời sống thường gặp.
-- **Tách và phân tích Hán tự + Furigana**: Tự động bóc tách chữ Hán và cách đọc tương ứng trong ngoặc (ví dụ: `魚（さかな）` $\to$ Kanji: `魚`, Reading: `さかな`).
-- **Gợi ý chữ Hán 1-1 thông minh (`findKanjiSuggestions`)**:
-  - Tự động đề xuất Hán tự phù hợp cho các thẻ chỉ có chữ Kana dựa trên cách phát âm và ngữ nghĩa tiếng Việt tương đồng.
-  - Cảnh báo và phân biệt các từ **đồng âm khác nghĩa (Homophones)** nhằm tránh gán nhầm chữ Hán.
-- **Gán / Sửa Kanji theo từng từ**: Modal chỉnh sửa cho phép người dùng chọn nhanh từ danh sách gợi ý hoặc tự nhập chữ Hán và cách đọc tùy ý.
-- **Tự động quét & Gán chữ Hán hàng loạt (Batch Auto-map Kanji)**:
-  - Quét toàn bộ từ điển hoặc các từ đang được lọc.
-  - Phân loại rõ ràng: những từ khớp 1-1 chính xác tuyệt đối, những từ có nhiều chữ Hán đồng âm (yêu cầu người dùng tích chọn thủ công), và những từ không có Hán tự tương ứng.
-  - Xem trước kết quả trước khi áp dụng; lưu đồng loạt vào backend thông qua API `PUT /api/decks/cards/batch`.
-- **Ba chế độ hiển thị Hán tự linh hoạt trong học tập**:
-  1. `Ruby (Mặc định)`: Hiện chữ Hán kèm cách đọc Furigana trong ngoặc (`魚（さかな）`).
-  2. `Kanji-only`: Chỉ hiện chữ Hán, ẩn hoàn toàn cách đọc Kana để thử thách khả năng ghi nhớ.
-  3. `Kana-only`: Chỉ hiện chữ Kana nguyên bản cho người mới bắt đầu.
+### 2.9. Quản lý & Ánh xạ Hán tự (Kanji Dictionary & Auto-mapping)
+- **Từ điển Hán tự tích hợp sẵn (`kanji.js`)**: Kho dữ liệu Kanji chuẩn hóa theo các bài học của giáo trình Marugoto A1, A2.
+- **Tách và phân tích Hán tự + Furigana**: Tự động bóc tách chữ Hán và cách đọc trong ngoặc (ví dụ: `魚（さかな）`).
+- **Gợi ý chữ Hán 1-1 thông minh & Tự động gán hàng loạt (Batch Auto-map Kanji)**: Quét và cập nhật Chữ Hán trực tiếp vào CSDL SQLite nhưng **giữ nguyên 100% tiến độ và lịch sử FSRS** của từng thẻ.
+- **Thao tác Gỡ chữ Hán (Flush to Kana)**: Cho phép chuyển nhanh một từ có chữ Hán về thuần Kana trực tiếp trong CSDL khi cần.
+- **3 chế độ hiển thị Hán tự**: Ruby (Furigana), Chỉ Chữ Hán (Only Kanji), hoặc Chỉ Kana (Kana-only).
 
 ---
 
-### 2.4. Bộ từ vựng tùy chỉnh (Custom Vocabulary Deck)
-- Thêm từ mới thủ công bất kỳ lúc nào với form nhập: Tiếng Nhật, Romaji, Nghĩa tiếng Việt.
-- Tự động khởi tạo thẻ học FSRS tương ứng.
-- Hoạt động độc lập hoặc có thể kết hợp cùng các bộ từ PDF trong các bài kiểm tra và buổi ôn tập.
-
----
-
-### 2.5. Phát âm âm thanh bản xứ (Text-to-Speech / Audio)
-- Tích hợp giọng đọc tiếng Nhật thông qua **Web Speech API (`ja-JP`)** của trình duyệt.
-- Nút phát âm trực quan có mặt ở mọi màn hình: Từ điển, Thẻ Flashcards, Bài thi trắc nghiệm (cả câu hỏi và các đáp án), và Màn hình ôn tập.
-
----
-
-### 2.6. Học thẻ ghi nhớ (Interactive Flashcards)
-- **Hiệu ứng lật thẻ 3D mượt mà**:
-  - Mặt trước: Tiếng Nhật, Romaji, Nút phát âm.
-  - Mặt sau: Nghĩa tiếng Việt, Chữ Hán chi tiết, Thống kê số lần ôn / số lần sai.
-- **Đánh giá ghi nhớ trực tiếp theo 4 mức chuẩn FSRS**:
-  - `Again` (Đánh giá 1): Quên từ vựng, FSRS xếp lịch học lại ngay.
-  - `Hard` (Đánh giá 2): Nhớ nhưng khó khăn.
-  - `Good` (Đánh giá 3): Nhớ tốt, đúng nhịp độ.
-  - `Easy` (Đánh giá 4): Rất dễ, tăng khoảng cách ôn tập dài hơn.
-- **Điều hướng & Phím tắt bàn phím**:
-  - Hỗ trợ nút tiến/lùi, chuyển nhanh đến số thẻ bất kỳ.
-  - Phím tắt tiện dụng: `Space` (lật thẻ), `1 - 4` (chọn mức FSRS Again / Hard / Good / Easy), mũi tên điều hướng.
-
----
-
-### 2.7. Bài kiểm tra trắc nghiệm (Quiz / Test Mode)
-- **Tạo bài kiểm tra 5 phương án lựa chọn (5-Choice Quiz)**: Tự động trích xuất các đáp án gây nhiễu (distractors) ngẫu nhiên từ kho thẻ đã chọn.
-- **Tùy chỉnh linh hoạt chiều câu hỏi**:
-  - Tiếng Nhật $\to$ Tiếng Việt.
-  - Tiếng Việt $\to$ Tiếng Nhật.
-- **Tùy chọn chế độ hiển thị Hán tự**: Cho phép chọn hiển thị dạng Ruby, chỉ hiện Kanji, hoặc chỉ hiện Kana.
-- **Chọn số lượng câu hỏi**: Hỗ trợ các nút chọn nhanh (5, 10, 20 câu, Tất cả) hoặc nhập số lượng câu hỏi tùy ý.
-- **Chiến lược chọn thẻ thông minh (`selectInitialCards`)**: Ưu tiên bốc các thẻ đã đến hạn ôn trước, sau đó mới bổ sung các thẻ chưa đến hạn để đảm bảo đủ số lượng yêu cầu.
-- **Hỗ trợ phím tắt**: Bấm phím số `1 - 5` để chọn đáp án tương ứng, phím `Enter` để xác nhận / chuyển câu tiếp.
-- **Phản hồi tức thì**: Báo màu xanh (đúng) hoặc đỏ (sai), hiển thị đáp án đúng kèm nút phát âm.
-- **Màn hình tổng kết chi tiết**: Thống kê điểm số, tỷ lệ chính xác ngay lần thử đầu tiên (% First-try Accuracy), danh sách chi tiết các từ đã trả lời đúng và các từ bị sai.
-
----
-
-### 2.8. Ôn tập khoa học với thuật toán FSRS (Due Review Mode)
-- **Tích hợp thư viện chuẩn Java FSRS (`io.github.open-spaced-repetition:fsrs v0.6.0`)**:
-  - Tỷ lệ duy trì mục tiêu (*Desired Retention*): **90%**.
-  - Các bước học (*Learning steps*): **1 phút, 10 phút**.
-  - Bước học lại (*Relearning step*): **10 phút**.
-  - Khoảng cách tối đa (*Maximum interval*): **36,500 ngày** (~100 năm).
-  - Kích hoạt tính năng *Fuzzing* để phân bổ ngày ôn tránh dồn lịch quá tải vào một ngày.
-- **Hàng đợi lặp lại trong phiên học (In-Session Repeat Queue - `quizSession.js`)**:
-  - Khi người dùng trả lời sai một từ trong buổi ôn, hệ thống tự động ghi nhận đánh giá `Again` vào CSDL và đưa thẻ vào danh sách chờ (`waiting list`).
-  - Sau thời gian chờ quy định (1 phút / 10 phút), thẻ sẽ tự động được trả lại hàng đợi câu hỏi (`repeat queue`) để người dùng ôn lại cho đến khi trả lời đúng mới hoàn thành buổi học.
-  - Đồng hồ đếm ngược trực quan hiển thị số giây chờ nếu tạm thời hết câu hỏi mới trong hàng đợi.
-
----
-
-### 2.9. Khởi động 1-Click & Tự động quản lý vòng đời tiến trình (Auto Lifecycle & 1-Click Launch)
-- **Khởi động 1-click không cần dòng lệnh**: File `start-app.cmd` và `launch-app.ps1` hỗ trợ nhấp đúp chuột để chạy.
-- **Tự động kiểm tra môi trường**: Kiểm tra sự tồn tại của Java 24 và Node.js; nếu thiếu sẽ hiện hộp thoại thông báo hướng dẫn rõ ràng.
-- **Tự động cài đặt dependencies**: Tự động chạy `npm install` nếu thư mục `node_modules` chưa tồn tại.
-- **Chạy nền hoàn toàn ẩn (Zero Console Windows)**: Cả Spring Boot backend và Vite frontend dev server đều được khởi động ẩn ở chế độ nền, không làm bung cửa sổ đen dòng lệnh.
-- **Tự động mở trình duyệt**: Ngay khi backend và frontend sẵn sàng, trình duyệt mặc định sẽ tự động mở trang `http://localhost:5173`.
-- **Cơ chế Watchdog & Heartbeat tự động dọn dẹp (`LifecycleController.java`)**:
-  - Frontend gửi tín hiệu heartbeat đều đặn về backend.
-  - Khi người dùng đóng tất cả các tab trình duyệt của ứng dụng, backend sẽ tự động phát hiện sau vài giây và tiến hành tắt an toàn (*Graceful Shutdown*).
-  - Tự động đóng tiến trình frontend Vite và giải phóng hoàn toàn các port `8080` và `5173`. Người dùng chỉ cần tắt trình duyệt là toàn bộ ứng dụng tự đóng sạch sẽ, không để lại tiến trình rác chạy ngầm.
+### 2.10. Khởi động 1-Click & Tự động tắt ứng dụng (Auto Lifecycle)
+- **Khởi động 1-click**: File `start-app.cmd` và `launch-app.ps1` hỗ trợ nhấp đúp chuột để chạy ẩn nền hoàn toàn không bung cửa sổ đen.
+- **Tự động mở trình duyệt**: Tự động mở trang `http://localhost:5173`.
+- **Heartbeat & Watchdog tự động dọn dẹp**: Khi người dùng đóng tất cả các tab trình duyệt, backend tự động phát hiện và tắt an toàn, tự đóng tiến trình frontend Vite và giải phóng cổng `8080` & `5173`.
 
 ---
 
@@ -174,23 +143,25 @@
 flowchart LR
     Browser["Trình duyệt (Browser)<br/>React 19 + Vite 7<br/>Port 5173"]
     Backend["Spring Boot 4.1.1 API<br/>Java 24 (Embedded Tomcat)<br/>Port 8080"]
-    DB[("SQLite Database<br/>data/trainer.db")]
-    PDFStore[("Thư mục lưu trữ PDF<br/>data/pdfs/")]
+    DB[("SQLite Database<br/>trainer.db (Local)")]
+    PDFStore[("Thư mục lưu trữ PDF<br/>pdfs/ (Local)")]
+    BackupJSON[("File sao lưu JSON<br/>marugoto_backup_*.json")]
 
     Browser -- "HTTP /api (Proxy Vite)" --> Backend
     Browser -- "Heartbeat ping (/api/lifecycle)" --> Backend
     Backend --> DB
     Backend --> PDFStore
+    Backend -- "Export / Import" --> BackupJSON
 ```
 
 | Tầng (Layer) | Công nghệ / Thư viện | Vai trò |
 | :--- | :--- | :--- |
-| **Frontend** | React 19, Vite 7 | Giao diện người dùng tương tác, SPA, Reactive state |
+| **Frontend** | React 19, Vite 7 | Giao diện tương tác, SPA, Reactive state, Typed input IME |
 | **PDF Engine** | `pdfjs-dist` (v6.3) | Phân tích và trích xuất cấu trúc văn bản PDF phía client |
-| **Speech** | Web Speech API (`SpeechSynthesis`) | Phát âm tiếng Nhật bản xứ trực tiếp trên trình duyệt |
-| **Backend** | Spring Boot 4.1.1, Java 24 | RESTful API, quản lý tệp tin, điều phối tiến trình |
-| **Spaced Repetition** | `io.github.open-spaced-repetition:fsrs` | Lập lịch ôn tập ngắt quãng theo thuật toán FSRS khoa học |
-| **Database** | SQLite, `sqlite-jdbc`, HikariCP | Lưu trữ bộ từ, thẻ học, nhật ký ôn tập và trạng thái FSRS |
+| **Speech** | Web Speech API (`SpeechSynthesis`) | Phát âm tiếng Nhật bản xứ với cơ chế chọn voice tối ưu |
+| **Backend** | Spring Boot 4.1.1, Java 24 | RESTful API, quản lý tệp tin, điều phối tiến trình, Backup/Restore |
+| **Spaced Repetition** | `io.github.open-spaced-repetition:fsrs` | Lập lịch ôn tập ngắt quãng 2 chiều theo thuật toán FSRS khoa học |
+| **Database** | SQLite, `sqlite-jdbc`, HikariCP | Lưu trữ bộ từ, thẻ học 2 chiều, nhật ký ôn tập và trạng thái FSRS |
 | **Data Migration** | Flyway-style SQL Runner | Tự động khởi tạo và cập nhật cấu trúc bảng dữ liệu |
 | **Automation Scripts** | PowerShell (`launch-app.ps1`), Batch (`start-app.cmd`) | Giám sát tiến trình, quản lý vòng đời ứng dụng 1-click |
 
@@ -204,16 +175,18 @@ marugoto-vocab-trainer/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/vn/marugoto/trainer/
-│   │   │   │   ├── VocabTrainerApplication.java  # Khởi chạy Spring Boot & tạo thư mục dữ liệu
+│   │   │   │   ├── VocabTrainerApplication.java  # Khởi chạy Spring Boot & cấu hình thư mục
 │   │   │   │   ├── DeckController.java           # API quản lý bộ từ, tải file, thẻ tùy chỉnh
 │   │   │   │   ├── DeckService.java              # Nghiệp vụ xử lý bộ thẻ, lưu file, trùng lặp
-│   │   │   │   ├── StudyController.java          # API truy vấn thẻ học & thẻ đến hạn
-│   │   │   │   ├── StudyService.java             # Nghiệp vụ truy vấn và lọc thẻ học
-│   │   │   │   ├── ReviewController.java         # API ghi nhận kết quả đánh giá thẻ
-│   │   │   │   ├── ReviewService.java            # Cập nhật trạng thái FSRS và ghi log ôn tập
+│   │   │   │   ├── StudyController.java          # API truy vấn thẻ học 2 chiều & lọc từ khó
+│   │   │   │   ├── StudyService.java             # Nghiệp vụ truy vấn và lọc thẻ học FSRS
+│   │   │   │   ├── ReviewController.java         # API ghi nhận kết quả đánh giá thẻ kèm responseMs
+│   │   │   │   ├── ReviewService.java            # Cập nhật trạng thái FSRS và ghi nhật ký ôn tập
+│   │   │   │   ├── BackupController.java         # API xuất và nhập file sao lưu JSON
+│   │   │   │   ├── BackupService.java            # Nghiệp vụ Backup/Restore CSDL kèm pre-restore .bak
 │   │   │   │   ├── FsrsScheduler.java            # Khởi tạo và cấu hình bộ lập lịch FSRS
 │   │   │   │   ├── LifecycleController.java      # Quản lý heartbeat, watchdog & tự động tắt
-│   │   │   │   ├── ApiModels.java                # DTOs và Data Records
+│   │   │   │   ├── ApiModels.java                # DTOs, Data Records và tính toán isLeech
 │   │   │   │   ├── ApiExceptionHandler.java      # Bắt lỗi toàn cục và chuẩn hóa thông báo API
 │   │   │   │   └── DatabaseMigrationRunner.java  # Thực thi script migration CSDL tự động
 │   │   │   └── resources/
@@ -222,24 +195,28 @@ marugoto-vocab-trainer/
 │   │   │           └── V1__create_decks_cards_and_reviews.sql # Schema bảng dữ liệu
 │   │   └── test/
 │   │       └── java/vn/marugoto/trainer/
-│   │           └── DeckAndReviewIntegrationTest.java # Kiểm thử tích hợp trọn vẹn API
+│   │           └── DeckAndReviewIntegrationTest.java # Kiểm thử tích hợp trọn vẹn API (4 tests)
 │   ├── mvnw.cmd / mvnw                           # Maven Wrapper
 │   └── pom.xml                                   # Cấu hình dependencies backend (Java 24)
 ├── src/
-│   ├── main.jsx                                  # Toàn bộ giao diện React (Tabs, Modals, Audio...)
-│   ├── dictionary.js                             # Logic từ điển, lọc 50 hàng Gojuon, lọc trùng
+│   ├── main.jsx                                  # Toàn bộ giao diện React (Tabs, Modals, Audio, Backup...)
+│   ├── dictionary.js                             # Logic từ điển, lọc 50 hàng Gojuon, lọc trùng, isCardLeech
 │   ├── dictionary.test.js                        # Bộ kiểm thử cho dictionary.js
 │   ├── kanji.js                                  # Từ điển Kanji Marugoto, gợi ý và phân tích Hán tự
 │   ├── kanji.test.js                             # Bộ kiểm thử cho kanji.js
 │   ├── quizSession.js                            # Quản lý phiên làm bài test và hàng đợi lặp lại FSRS
 │   ├── quizSession.test.js                       # Bộ kiểm thử cho quizSession.js
+│   ├── api/client.js                             # API client giao tiếp backend (kèm Backup APIs)
+│   ├── utils/japaneseInput.js                    # Bộ gõ Romaji -> Hiragana & kiểm tra câu trả lời
+│   ├── utils/japaneseInput.test.js               # Bộ kiểm thử cho japaneseInput.js
 │   └── styles.css                                # Định kiểu giao diện hiện đại, responsive, hiệu ứng lật thẻ
-├── data/                                         # Thư mục chứa CSDL SQLite (trainer.db) và PDFs (tự tạo)
+├── data/                                         # Thư mục chứa CSDL SQLite cục bộ (loại khỏi Git)
 ├── index.html                                    # File HTML chính
 ├── package.json                                  # Cấu hình frontend dependencies (React 19, Vite 7)
 ├── vite.config.js                                # Cấu hình Vite dev server & proxy /api sang 8080
 ├── launch-app.ps1                                # PowerShell script chạy ứng dụng nền & giám sát vòng đời
 ├── start-app.cmd                                 # File kích hoạt 1-click cho người dùng Windows
+├── .gitignore                                    # Loại bỏ triệt để file CSDL *.db, *.bak, data/ khỏi Git
 └── README.md                                     # Tài liệu hướng dẫn sử dụng và giới thiệu dự án
 ```
 
@@ -290,22 +267,23 @@ Dự án có độ bao phủ kiểm thử cao cho cả frontend và backend:
 ```powershell
 npm test
 ```
-*Chạy toàn bộ 18 bài kiểm tra độc lập bằng Node test runner: kiểm tra chuẩn hóa Gojuon, lọc từ điển, phát hiện từ trùng, gợi ý chữ Hán, hàng đợi FSRS lặp lại...*
+*Chạy toàn bộ **26 bài kiểm tra độc lập** bằng Node test runner: kiểm tra chuẩn hóa Gojuon, lọc từ điển, phát hiện từ trùng, bảo toàn từ đồng âm, nhận diện thẻ khó (`isCardLeech`), gợi ý chữ Hán, hàng đợi FSRS lặp lại, bộ gõ Romaji $\to$ Hiragana và thẩm định câu trả lời.*
 
 ### Kiểm thử Backend:
 ```powershell
 cd backend
 .\mvnw.cmd test
 ```
-*Chạy các bài kiểm thử tích hợp (Spring Boot MockMvc) kiểm tra trọn vẹn luồng tải PDF, trích xuất thẻ, cập nhật thẻ, ghi nhận đánh giá FSRS và xóa bộ thẻ.*
+*Chạy toàn bộ **4 bài kiểm tra tích hợp** (Spring Boot MockMvc): kiểm tra trọn vẹn luồng tải PDF, trích xuất thẻ 2 chiều, cập nhật thẻ, ghi nhận đánh giá FSRS kèm thời gian phản xạ, xuất/nhập file sao lưu Backup/Restore JSON và lọc thẻ khó.*
 
 ---
 
-## 7. Giới hạn & Lưu ý hiện tại
+## 7. Bảo mật CSDL cá nhân & Lưu ý
 
-1. **Định dạng file PDF**: Hệ thống trích xuất văn bản dựa trên lớp ký tự (text layer) của PDF dạng vector/digital. Đối với file PDF scan hoàn toàn bằng hình ảnh chụp, cần phải qua công đoạn OCR trước khi nhập vì ứng dụng hiện tại chưa tích hợp engine OCR hình ảnh nặng.
-2. **Chất lượng giọng đọc (TTS)**: Tính năng phát âm dựa trên `window.speechSynthesis` của trình duyệt. Trải nghiệm giọng đọc phụ thuộc vào engine TTS tiếng Nhật có sẵn trên hệ điều hành của bạn (ví dụ: Google Japanese trên Google Chrome hoặc Microsoft Nanami trên Microsoft Edge).
-3. **Phạm vi lưu trữ**: Dữ liệu tiến trình học tập được lưu trữ cục bộ trong file SQLite `trainer.db`. Khi muốn sao lưu hoặc chuyển đổi máy tính, bạn chỉ cần sao chép toàn bộ thư mục `data/` (hoặc thư mục được chỉ định bởi biến môi trường `APP_DATA_DIR`).
+1. **Bảo mật dữ liệu cá nhân trong Git**: Cấu hình `.gitignore` ở cả thư mục gốc và thư mục backend đã được thiết lập để loại trừ triệt để toàn bộ file cơ sở dữ liệu (`*.db`, `*.db.*`, `*.db-shm`, `*.db-wal`, `*.bak`, `data/`, `pdfs/`). Tiến trình học tập của bạn hoàn toàn riêng tư và không bao giờ bị vô tình đẩy lên Git.
+2. **Sao lưu dữ liệu định kỳ**: Sử dụng tính năng **💾 Sao lưu & Khôi phục** trực tiếp trên thanh công cụ của ứng dụng để tải file `.json` lưu vào Google Drive hoặc USB.
+3. **Định dạng file PDF**: Hệ thống trích xuất văn bản dựa trên lớp ký tự (text layer) của PDF dạng vector/digital. Đối với file PDF scan hoàn toàn bằng hình ảnh chụp, cần phải qua công đoạn OCR trước khi nhập.
+4. **Chất lượng giọng đọc (TTS)**: Ứng dụng đã tự động ưu tiên giọng đọc bản xứ `ja-JP`. Bạn có thể cài thêm các gói giọng nói tiếng Nhật chất lượng cao trong phần cài đặt Speech của Windows để có trải nghiệm tốt nhất.
 
 ---
 ---
@@ -326,122 +304,86 @@ cd backend
 - **安全なクライアントサイド解析**: `pdfjs-dist` を使用し、ブラウザ内で完結してテキスト抽出を行います。外部のOCRサーバーやクラウドサービスにPDFファイルを送信しないため、高速かつプライバシーが守られます。
 - **「まるごと」固有レイアウトの自動解析**:
   - 2カラム構造の自動認識: 左カラム（日本語表記・ローマ字）、右カラム（ベトナム語の意味）。
-  - Y座標に基づく行結合（Multi-line Grouping）: 複数行にまたがる単語や説明文を正確に1つのエントリーとして結合。
+  - Y座標に基づく行結合（Multi-line Grouping）: 複数行にまたがる単語や説明文を正確に結合。
   - ページ番号（例: `1 / 18`）や行頭の記号・ビュレット（`•`, `–` など）の自動除去。
   - Unicode `NFKC` による表記ゆれの正規化。
-- **重複単語のスマート検出と解決（Duplicate Detection）**:
-  - インポート時に、データベース内の既存単語と自動照合。
-  - 日本語表記の完全一致、および読み（かな）の正規化キー（`canonicalKanaKey`）による重複を検知。
-  - 重複プレビューモーダルを表示し、「重複をスキップして新規のみインポート」または「すべてインポート」を選択可能。
-- **元PDFファイルのバックアップとダウンロード**: アップロードされたPDFはサーバー側の `data/pdfs/` に安全に保管され、いつでもワンクリックで再ダウンロード可能です。
-- **単語帳（デッキ）管理**: 作成日時、ファイルサイズ、総単語数、復習期日到来数を一覧表示。不要になったデッキの削除（関連する単語とPDFファイルのカスケード削除）に対応。
+- **同音異義語を保護するスマート重複検知（Homophone-aware Deduplication）**:
+  - インポート時に、既存単語と自動照合。
+  - かなの読みが同じでも、漢字表記や意味が異なる同音異義語（例: `橋（はし）` と `箸（はし）`）を誤って重複とみなさず安全に保持。
+- **元PDFファイルのバックアップとダウンロード**: アップロードされたPDFはサーバー側の `data/pdfs/` に安全に保管され、いつでも再ダウンロード可能。
 
 ---
 
-### 2.2. インタラクティブ単語帳・辞書（Interactive Dictionary）
-- **表示切り替え**: 詳細な「リスト表示（テーブル）」と、視覚的な「カード表示（グリッド）」を瞬時に切り替え可能。
-- **強力なオムニ検索（Omni-search）**:
-  - 漢字、ひらがな／カタカナ、ローマ字、ベトナム語（声調記号の有無を問わず検索可能）に対応。
-  - 検索キーワードの一致部分をリアルタイムでハイライト表示。
-- **五十音行フィルター（Gojuon Filter）**:
-  - あ行、か行、さ行、た行、な行、は行、ま行、や行、ら行、わ行、その他（英数字・記号）の11区分で絞り込み。
-- **学習ステータスフィルター**:
-  - *すべて (All)*: 全単語。
-  - *復習期日 (Due)*: FSRSアルゴリズムにより復習タイミングに達した単語。
-  - *学習中 (Reviewed)*: 学習済みで、まだ次回の復習期日に達していない単語。
-  - *未学習 (New)*: 一度も復習・テストを行っていない新規単語。
-- **デッキ絞り込み**: 全単語帳、指定したPDFデッキ、またはカスタム単語帳のみの絞り込み。
-- **多彩なソート（並び替え）**:
-  - 五十音順（昇順／降順）。
-  - 間違い回数が多い順（苦手な単語を集中的に克服可能）。
-  - 復習回数が多い順。
-  - 新しく追加された順。
-- **クイックアクション**: 音声再生、漢字の割り当て・編集、単語情報の編集、単語の削除。
+### 2.2. 双方向独立FSRS学習（Dual Study Directions）
+- **「日 $\to$ 越」および「越 $\to$ 日」の完全双方向対応**:
+  - 日本語 $\to$ ベトナム語 (`JP_TO_VI`): 受動的認知・語彙理解の定着。
+  - ベトナム語 $\to$ 日本語 (`VI_TO_JP`): 能動的想起・発話力と作文力の養成。
+- **方向ごとに完全独立したFSRSステータス**: それぞれの方向で個別のカードレコードを持ち、安定度（stability）、難易度（difficulty）、復習期日（due_at）を独立して更新。片方の学習結果がもう一方のスケジュールを狂わせることがありません。
 
 ---
 
-### 2.3. 漢字辞書と自動マッピング（Kanji Management & Auto-mapping）
-- **ビルトイン漢字辞書 (`kanji.js`)**: まるごと A1・A2 レベルおよび日常生活の重要語彙に対応した漢字マッピングデータを内蔵。
-- **漢字・ふりがなの自動抽出**: `魚（さかな）` のような表記から漢字部分 `魚` と読み `さかな` を正確に抽出・分解。
-- **スマート1対1漢字サジェスト (`findKanjiSuggestions`)**:
-  - かな表記のみの単語に対し、発音とベトナム語の意味を照合して最適な漢字表記を自動提案。
-  - 同音異義語（Homophones）を検出し、誤った漢字の割り当てを防止。
-- **単語ごとの漢字編集モーダル**: 提案された漢字候補からワンクリックで選択、または任意の漢字・読みを入力して保存可能。
-- **一括漢字マッピング（Batch Auto-map Kanji）**:
-  - 辞書全体または絞り込み中の単語をスキャンし、かな単語に漢字を一括割り当て。
-  - 完全に1対1で一致する単語、複数の同音異義語候補がある単語、候補のない単語に分類してプレビュー表示。
-  - ユーザーの確認後、API (`PUT /api/decks/cards/batch`) を通じて一括更新を実行。
-- **3つの漢字表示モード**:
-  1. `ルビ表示 (Ruby)`: 漢字にふりがなを併記（例: `魚（さかな）`）。
-  2. `漢字のみ (Kanji-only)`: 読みを隠して漢字のみを表示（漢字の読みテストに最適）。
-  3. `かなのみ (Kana-only)`: 初学者向けに純粋なかな表記のみを表示。
+### 2.3. 回答時間に基づくFSRS自動評価（Auto Rating by Response Time）
+- **回答所要時間（`responseMs`）のミリ秒単位計測**: 問題表示から回答までの時間を精密に測定。
+- **制限時間スライダー（3秒 〜 30秒）**: 学習スタイルに応じた制限時間設定。
+- **速度に基づく自動判定ルール**:
+  - ⚡ **Easy**: 瞬時回答（制限時間の30%以内、かつ3.5秒以内）。
+  - ⏱️ **Good**: 標準的なペースでの正解（30%〜75%）。
+  - 🐢 **Hard**: 思考時間を要した正解（75%超過）。
+  - ⌛ **Again**: タイムアウト（時間切れ）。
+- **デフォルトONの快適仕様**: 設定で自動評価を有効にしておくことで、キーボードの数字キーを押すことなくテンポよく高速学習が可能。
 
 ---
 
-### 2.4. カスタム単語帳（Custom Deck）
-- 日本語、ローマ字、ベトナム語の意味を入力して、いつでも手動で新しい単語を追加可能。
-- 追加された単語には自動的にFSRS学習ステータスが付与されます。
-- PDFから取り込んだ単語とまとめて、あるいはカスタム単語のみを抽出して学習できます。
+### 2.4. タイピング回答モード（Typed Recall）＆ かなIME変換内蔵
+- **直接タイピングによる回答**: 選択肢を選ぶだけでなく、キーボードから直接スペルを入力して正確なスペリング力を強化。
+- **内蔵ローマ字 $\to$ ひらがな変換**:
+  - 特別な日本語IMEを起動していなくても、ローマ字入力でリアルタイムにひらがなへ自動変換（濁音・半濁音・拗音・促音 `っ` に完全対応）。
+- **柔軟な回答照合ロジック (`checkTypedAnswer`)**: ひらがな、カタカナ、漢字、ローマ字、声調記号なしベトナム語のいずれの入力でも正解判定が可能。
 
 ---
 
-### 2.5. ネイティブ音声読み上げ（Audio / TTS）
-- ブラウザ標準の **Web Speech API (`ja-JP`)** を利用した自然な日本語音声読み上げ。
-- 辞書画面、フラッシュカードの表・裏面、テスト問題・選択肢、復習画面のすべてに音声ボタンを配置。
+### 2.5. 苦手単語（Leech Cards）の自動検出と集中特訓
+- **苦手カードの自動判定（`isLeech`）**: 誤答回数が3回以上（`wrongCount >= 3`）、または復習3回以上かつ誤答率35%以上の単語を自動特定。
+- **視覚的バッジ**: 辞書およびフラッシュカード上に 🔥 **苦手単語** バッジを表示。
+- **辞書フィルター**: 「🔥 苦手単語／要復習」でワンクリック絞り込み。
+- **集中テスト機能**: フラッシュカード、テスト、復習モードにおいて「苦手単語のみ」を対象とした集中特訓が可能。
 
 ---
 
-### 2.6. インタラクティブ・フラッシュカード（Flashcards）
-- **滑らかな3Dカードめくりアニメーション**:
-  - 表面: 日本語表記、ローマ字、音声再生ボタン。
-  - 裏面: ベトナム語の意味、漢字詳細、復習回数・誤答回数の統計。
-- **FSRS準拠の4段階評価ボタン**:
-  - `Again` (1): 思い出せなかった（復習間隔をリセットし、セッション内で再出題）。
-  - `Hard` (2): 思い出すのが難しかった。
-  - `Good` (3): 適切に思い出せた（標準的な間隔延長）。
-  - `Easy` (4): 簡単に思い出せた（より長い復習間隔を設定）。
-- **キーボードショートカット**: `Space` キーでカード反転、数字キー `1 - 4` で評価選択、矢印キーで前後のカードへ移動。
+### 2.6. 完全バックアップ＆リストア（Backup & Restore）
+- **JSON形式でのフルエクスポート**: 単語帳、語彙データ、FSRS学習進捗、復習履歴ログのすべてを単一の `.json` ファイルとして一括保存。
+- **安全な復元機能**:
+  - 他のPCへのデータ移行や万が一のリカバリが容易。
+  - **自動プリリストアバックアップ**: リストア実行直前に、既存DBの `.pre-restore.<timestamp>.bak` ファイルを自動生成するため、データ消失の恐れがありません。
 
 ---
 
-### 2.7. 5択テスト機能（Quiz / Test Mode）
-- **5択式クイズ**: 選択したデッキのプールから自動的に誤答選択肢（distractors）を抽出して出題。
-- **出題方向の選択**:
-  - 日本語 $\to$ ベトナム語
-  - ベトナム語 $\to$ 日本語
-- **漢字出題モード**: ルビ表示、漢字のみ、かなのみから選択可能。
-- **問題数の柔軟な設定**: 5問、10問、20問、全問、または任意の数値を指定可能。
-- **スマート出題アルゴリズム (`selectInitialCards`)**: 復習期日に達している単語を最優先で出題し、不足分を未到来の単語からランダムに補充。
-- **快適な操作性**: キーボードの `1 - 5` キーで回答選択、`Enter` キーで次の問題へ進行。
-- **即時ビジュアルフィードバック**: 正解（緑色）／不正解（赤色）の明快な表示、正解単語の音声再生。
-- **結果レポート画面**: スコア、一発正解率（% First-try Accuracy）、正解単語および要復習単語のリストを表示。
+### 2.7. ネイティブ日本語音声読み上げの最適化（TTS Voice Selection）
+- **`ja-JP` ネイティブ音声の優先選択**: OSに組み込まれている高品質な日本語ボイス（Microsoft Haruka, Ichiro, Google 日本語など）を自動検知して優先適用。
+- **読み上げテキストのクレンジング**: 括弧書きの補足や波ダッシュ（`～`）を適切に除去し、自然で明瞭な発音を実現。
 
 ---
 
-### 2.8. FSRSアルゴリズムによる科学的復習（Due Review Mode）
-- **公式 Java ライブラリ採用 (`io.github.open-spaced-repetition:fsrs v0.6.0`)**:
-  - 目標記憶保持率 (*Desired Retention*): **90%**
-  - 学習ステップ (*Learning steps*): **1分、10分**
-  - 再学習ステップ (*Relearning step*): **10分**
-  - 最大復習間隔 (*Maximum interval*): **36,500日**（約100年）
-  - ファジング (*Fuzzing*): 有効（期日集中を防止）
-- **セッション内再出題キュー (`quizSession.js`)**:
-  - 復習セッション中に間違えた単語は即座に `Again` として記録され、一時待機リスト（`waiting list`）に入ります。
-  - 規定の待機時間（1分または10分）が経過すると自動的に出題キューへ再投入され、正解するまでセッション内で繰り返し復習させます。
-  - 待機中の単語がある場合は、画面上に分かりやすい秒数カウントダウンタイマーが表示されます。
+### 2.8. インタラクティブ単語帳・辞書（Interactive Dictionary）
+- **表示切り替え**: リスト（テーブル）表示とグリッド（カード）表示の即時切り替え。
+- **強力なオムニ検索**: 漢字・かな・ローマ字・ベトナム語の一括検索とキーワードハイライト。
+- **五十音行フィルター**: 11グループによる分類。
+- **多彩なソート**: 五十音順、間違い回数順、復習回数順、追加日時順。
 
 ---
 
-### 2.9. ワンクリック起動と完全自動ライフサイクル管理（Auto Lifecycle）
-- **黒い画面（CUI）不要のワンクリック起動**: `start-app.cmd` または `launch-app.ps1` をダブルクリックするだけ。
-- **環境自動チェック**: Java 24 および Node.js のインストール状況を自動検知し、不足している場合は日本語・ベトナム語でダイアログ案内。
-- **依存関係の自動構築**: `node_modules` が存在しない場合、バックグラウンドで自動的に `npm install` を実行。
-- **完全バックグラウンド実行（WindowStyle: Hidden）**: Spring Boot および Vite dev server の両方を完全に裏側で起動し、煩わしい黒いコマンドプロンプト画面を一切表示させません。
-- **ブラウザ自動起動**: サービスが立ち上がると、自動的に既定のブラウザで `http://localhost:5173` を開きます。
-- **Watchdog & ハートビートによる自動プロセス終了 (`LifecycleController.java`)**:
-  - フロントエンドから定期的にハートビート信号を送信。
-  - ブラウザのタブが閉じられると、バックエンドが数秒以内にそれを検知し、安全にシャットダウン（Graceful Shutdown）を実行。
-  - ポート `8080` および `5173` を占有しているプロセスを自動的にクリーンアップ。タスクマネージャーを開いて手動でプロセスを終了させる手間が一切不要です。
+### 2.9. 漢字辞書と自動マッピング（Kanji Management）
+- **ビルトイン漢字辞書 (`kanji.js`)**: まるごと A1・A2 レベルの語彙に対応。
+- **FSRS進捗を維持した一括マッピング**: 復習履歴や間隔を100%保持したまま、かな単語に漢字を一括付与。
+- **かな戻し（Flush）**: 必要に応じて漢字表記を解除し、純粋なかな表記へワンクリックで戻す機能。
+- **3つの漢字表示モード**: ルビ表示、漢字のみ（読みテスト用）、かなのみ。
+
+---
+
+### 2.10. ワンクリック起動と完全自動ライフサイクル管理（Auto Lifecycle）
+- **CUI不要のワンクリック起動**: `start-app.cmd` または `launch-app.ps1` をダブルクリックするだけ。
+- **非表示バックグラウンド起動**: 煩わしい黒いコンソール画面を出さずに静かに立ち上げ。
+- **ブラウザタブ連動の自動シャットダウン**: ブラウザを閉じるだけで、ポート `8080` と `5173` のプロセスを自動的かつ安全に完全終了。
 
 ---
 
@@ -449,14 +391,14 @@ cd backend
 
 | レイヤー | 採用技術・ライブラリ | 役割・用途 |
 | :--- | :--- | :--- |
-| **フロントエンド** | React 19, Vite 7 | 高速SPA、リアクティブ状態管理、レスポンシブUI |
-| **PDFエンジン** | `pdfjs-dist` (v6.3) | クライアント側でのPDFテキスト抽出とレイアウト解析 |
-| **音声合成** | Web Speech API (`SpeechSynthesis`) | ネイティブな日本語発音のリアルタイム読み上げ |
-| **バックエンド** | Spring Boot 4.1.1, Java 24 | REST API、ファイル管理、ライフサイクル制御 |
-| **記憶間隔スケジューラー** | `io.github.open-spaced-repetition:fsrs` | FSRS (Free Spaced Repetition Scheduler) アルゴリズム |
-| **データベース** | SQLite, `sqlite-jdbc`, HikariCP | 単語、デッキ、復習ログ、FSRS状態のローカル永続化 |
-| **マイグレーション** | SQL Runner | 起動時のテーブル自動作成・外部キー制約有効化 |
-| **自動化スクリプト** | PowerShell, Windows Batch | 環境検証、バックグラウンド起動、プロセス監視 |
+| **Frontend** | React 19, Vite 7 | ユーザーインターフェース、SPA、Reactive State、内蔵かなIME |
+| **PDF Engine** | `pdfjs-dist` (v6.3) | クライアントサイドでのPDFテキスト抽出・構造解析 |
+| **Speech** | Web Speech API (`SpeechSynthesis`) | 最適化された日本語ネイティブ音声合成 |
+| **Backend** | Spring Boot 4.1.1, Java 24 | RESTful API、双方向FSRS管理、JSONバックアップ・リストア |
+| **Spaced Repetition** | `io.github.open-spaced-repetition:fsrs` | 最先端の科学的間隔反復スケジューラー（双方向独立） |
+| **Database** | SQLite, `sqlite-jdbc`, HikariCP | 単語、双方向学習カード、復習ログのローカル永続化 |
+| **Data Migration** | Flyway-style SQL Runner | データベーススキーマの自動構築および自動マイグレーション |
+| **Automation Scripts** | PowerShell (`launch-app.ps1`), Batch (`start-app.cmd`) | ワンクリック起動およびライフサイクル監視 |
 
 ---
 
@@ -466,45 +408,23 @@ cd backend
 marugoto-vocab-trainer/
 ├── backend/
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/vn/marugoto/trainer/
-│   │   │   │   ├── VocabTrainerApplication.java  # Spring Bootエントリーポイント
-│   │   │   │   ├── DeckController.java           # デッキ・カード操作エンドポイント
-│   │   │   │   ├── DeckService.java              # デッキ管理・重複検知・PDF保存ロジック
-│   │   │   │   ├── StudyController.java          # 学習カード取得エンドポイント
-│   │   │   │   ├── StudyService.java             # 期日到来カードおよび学習データ抽出
-│   │   │   │   ├── ReviewController.java         # 復習結果送信エンドポイント
-│   │   │   │   ├── ReviewService.java            # FSRS計算更新およびログ記録
-│   │   │   │   ├── FsrsScheduler.java            # FSRSスケジューラー定義
-│   │   │   │   ├── LifecycleController.java      # ハートビート監視と自動終了コントローラー
-│   │   │   │   ├── ApiModels.java                # APIリクエスト/レスポンスDTO
-│   │   │   │   ├── ApiExceptionHandler.java      # グローバル例外ハンドラー
-│   │   │   │   └── DatabaseMigrationRunner.java  # DBマイグレーション実行
-│   │   │   └── resources/
-│   │   │       ├── application.properties        # SQLite & ストレージパス設定
-│   │   │       └── db/migration/
-│   │   │           └── V1__create_decks_cards_and_reviews.sql # DBスキーマ定義
-│   │   └── test/
-│   │       └── java/vn/marugoto/trainer/
-│   │           └── DeckAndReviewIntegrationTest.java # バックエンド結合テスト
-│   ├── mvnw.cmd / mvnw                           # Mavenラッパー
-│   └── pom.xml                                   # バックエンド依存関係設定 (Java 24)
+│   │   ├── main/java/vn/marugoto/trainer/   # Spring Boot 4 API & FSRSサービス
+│   │   └── test/java/vn/marugoto/trainer/   # バックエンド統合テスト（4テスト）
+│   ├── mvnw.cmd / mvnw                      # Maven Wrapper
+│   └── pom.xml                              # バックエンド設定 (Java 24)
 ├── src/
-│   ├── main.jsx                                  # ReactメインUI（全画面・モーダル・音声統合）
-│   ├── dictionary.js                             # 辞書ロジック、五十音判定、重複検知
-│   ├── dictionary.test.js                        # 辞書ロジックの単体テスト
-│   ├── kanji.js                                  # まるごと漢字辞書、サジェスト、ルビ解析
-│   ├── kanji.test.js                             # 漢字ロジックの単体テスト
-│   ├── quizSession.js                            # クイズ・復習セッションおよび再出題キュー管理
-│   ├── quizSession.test.js                       # セッション管理の単体テスト
-│   └── styles.css                                # モダンUIスタイルシート、カード反転アニメーション
-├── data/                                         # SQLite DB (trainer.db) と PDF保存先（自動生成）
-├── index.html                                    # アプリケーションHTML
-├── package.json                                  # フロントエンド依存関係 (React 19, Vite 7)
-├── vite.config.js                                # Vite設定および /api プロキシ定義
-├── launch-app.ps1                                # 起動・プロセス監視PowerShellスクリプト
-├── start-app.cmd                                 # Windows用ワンクリック起動バッチ
-└── README.md                                     # 本ドキュメント
+│   ├── main.jsx                             # メインUI（React 19）
+│   ├── dictionary.js                        # 五十音分類・同音異義語保護・苦手判定
+│   ├── kanji.js                             # 漢字辞書・サジェスト・自動マッピング
+│   ├── quizSession.js                       # テスト＆FSRSセッション内再出題キュー
+│   ├── api/client.js                        # バックエンド通信（バックアップAPI含む）
+│   ├── utils/japaneseInput.js               # ローマ字→ひらがな変換＆回答判定
+│   └── styles.css                           # UIスタイルシート
+├── data/                                    # ローカルSQLite DBとPDF（Git管理外）
+├── launch-app.ps1                           # 起動＆監視PowerShellスクリプト
+├── start-app.cmd                            # ワンクリック起動バッチファイル
+├── .gitignore                               # 個人用DBファイル（*.db, *.bak等）の除外設定
+└── README.md                                # 本ドキュメント
 ```
 
 ---
@@ -554,19 +474,20 @@ npm run dev
 ```powershell
 npm test
 ```
-*Node test runnerにより、五十音ソート、辞書フィルター、重複検知、漢字サジェスト、FSRS再出題キューなど18項目のテストが実行されます。*
+*Node test runnerにより、五十音ソート、辞書フィルター、重複検知、同音異義語保護、苦手判定（`isCardLeech`）、漢字サジェスト、FSRS再出題キュー、かなIME変換、回答判定など**全26項目のテスト**が実行されます。*
 
 ### バックエンドテスト:
 ```powershell
 cd backend
 .\mvnw.cmd test
 ```
-*Spring Boot MockMvcによるAPI統合テストが実行され、PDFアップロード、単語取得、FSRS復習ログ記録、デッキ削除などの動作が検証されます。*
+*Spring Boot MockMvcによるAPI統合テストが実行され、PDFアップロード、双方向カード取得、回答時間付きFSRS復習ログ記録、JSONバックアップ・リストア、苦手カード抽出など**全4項目の統合テスト**が検証されます。*
 
 ---
 
-## 7. 現在の制限事項・留意点
+## 7. 個人DBの保護と留意点
 
-1. **PDFファイルの種類**: ベクター／デジタル形式のテキスト層（text layer）を持つPDFにのみ対応しています。画像のみをスキャンしたPDFは、本アプリに取り込む前に外部のOCRソフト等でテキスト化しておく必要があります。
-2. **音声読み上げ（TTS）**: ブラウザの `window.speechSynthesis` を利用しているため、発音の明瞭さや声質はお使いのOSにインストールされている日本語音声エンジン（ChromeのGoogle日本語、EdgeのMicrosoft Nanamiなど）に依存します。
-3. **データの保存場所**: 学習進捗データはすべてローカルのSQLiteファイル（`trainer.db`）に保存されます。バックアップや環境移行を行う場合は、`data/` ディレクトリ全体をコピーしてください。
+1. **Gitにおける個人データの除外**: ルートおよびbackendの `.gitignore` により、すべてのデータベースファイル（`*.db`, `*.db.*`, `*.db-shm`, `*.db-wal`, `*.bak`, `data/`, `pdfs/`）が厳格にGitの追跡から除外されています。個人の学習履歴や独自データが誤って公開リポジトリへ流出することはありません。
+2. **データの定期バックアップ**: アプリ上部の「💾 **Sao lưu & Khôi phục**」ボタンから、いつでもワンクリックで最新の学習進捗をJSONファイルとして保存可能です。
+3. **PDFファイルの種類**: ベクター／デジタル形式のテキスト層を持つPDFに対応しています。
+4. **音声読み上げ（TTS）**: ブラウザの `window.speechSynthesis` を利用しており、`ja-JP` ネイティブ音声を自動優先します。

@@ -19,8 +19,9 @@ class StudyController {
             @RequestParam(required = false, defaultValue = "all") String deckId,
             @RequestParam(required = false, defaultValue = "all") String mode,
             @RequestParam(required = false, defaultValue = "false") boolean includeCustom,
-            @RequestParam(required = false, defaultValue = "JP_TO_VI") String cardType
+            @RequestParam(required = false, defaultValue = "JP_TO_VI") String cardType,
+            @RequestParam(required = false, defaultValue = "false") boolean leechOnly
     ) {
-        return study.cards(deckId, mode, includeCustom, cardType);
+        return study.cards(deckId, mode, includeCustom, cardType, leechOnly);
     }
 }

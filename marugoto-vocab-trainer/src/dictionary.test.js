@@ -9,6 +9,7 @@ import {
   removeDiacritics,
   canonicalKanaKey,
   findDuplicates,
+  isCardLeech,
 } from './dictionary.js';
 
 test('getKanaRow maps kana, kanji with readings, and prefixes properly', () => {
@@ -143,4 +144,22 @@ test('findDuplicates preserves Japanese homophones sharing the same kana reading
     ['箸（はし）', '飴（あめ）']
   );
 });
+
+test('isCardLeech identifies difficult cards and statusFilter: leech filters properly', () => {
+  const normalCard = { id: '1', jp: 'ねこ', reviewCount: 5, wrongCount: 1, dueAt: Date.now() + 10000 };
+  const leechCard1 = { id: '2', jp: 'いぬ', reviewCount: 3, wrongCount: 3, dueAt: Date.now() + 10000 }; // wrongCount >= 3
+  const leechCard2 = { id: '3', jp: 'みず', reviewCount: 4, wrongCount: 2, dueAt: Date.now() + 10000 }; // 2/4 = 50% >= 35%
+  const explicitLeech = { id: '4', jp: 'やま', isLeech: true, reviewCount: 1, wrongCount: 1, dueAt: Date.now() + 10000 };
+
+  assert.equal(isCardLeech(normalCard), false);
+  assert.equal(isCardLeech(leechCard1), true);
+  assert.equal(isCardLeech(leechCard2), true);
+  assert.equal(isCardLeech(explicitLeech), true);
+
+  const cards = [normalCard, leechCard1, leechCard2, explicitLeech];
+  const leeches = filterAndSortDictionary(cards, { statusFilter: 'leech' });
+  assert.equal(leeches.length, 3);
+  assert.deepEqual(leeches.map((c) => c.id).sort(), ['2', '3', '4']);
+});
+
 
