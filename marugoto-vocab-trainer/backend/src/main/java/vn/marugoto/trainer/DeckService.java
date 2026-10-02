@@ -122,16 +122,18 @@ class DeckService {
                         VALUES(?,?,?,?)
                         """, UUID.randomUUID().toString(), vocabId, deckId, now);
 
-                Integer cardCount = jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM study_cards WHERE vocabulary_id=? AND card_type='JP_TO_VI'",
-                        Integer.class, vocabId);
-                if (cardCount == null || cardCount == 0) {
-                    Card state = fsrs.newCard();
-                    jdbc.update("""
-                            INSERT INTO study_cards(id,vocabulary_id,card_type,fsrs_card_json,due_at,created_at)
-                            VALUES(?,?,?,?,?,?)
-                            """, UUID.randomUUID().toString(), vocabId, "JP_TO_VI",
-                            fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
+                for (String cType : List.of("JP_TO_VI", "VI_TO_JP")) {
+                    Integer cardCount = jdbc.queryForObject(
+                            "SELECT COUNT(*) FROM study_cards WHERE vocabulary_id=? AND card_type=?",
+                            Integer.class, vocabId, cType);
+                    if (cardCount == null || cardCount == 0) {
+                        Card state = fsrs.newCard();
+                        jdbc.update("""
+                                INSERT INTO study_cards(id,vocabulary_id,card_type,fsrs_card_json,due_at,created_at)
+                                VALUES(?,?,?,?,?,?)
+                                """, UUID.randomUUID().toString(), vocabId, cType,
+                                fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
+                    }
                 }
             }
         } catch (RuntimeException exception) {
@@ -145,8 +147,8 @@ class DeckService {
         long now = System.currentTimeMillis();
         return jdbc.query("""
                 SELECT d.id, d.title, d.original_filename, d.created_at,
-                       COUNT(DISTINCT s.id) AS card_count,
-                       SUM(CASE WHEN s.due_at <= ? THEN 1 ELSE 0 END) AS due_count
+                       COUNT(DISTINCT vs.vocabulary_id) AS card_count,
+                       SUM(CASE WHEN s.due_at <= ? AND s.card_type = 'JP_TO_VI' THEN 1 ELSE 0 END) AS due_count
                 FROM decks d
                 LEFT JOIN vocabulary_sources vs ON vs.deck_id = d.id
                 LEFT JOIN study_cards s ON s.vocabulary_id = vs.vocabulary_id
@@ -225,14 +227,23 @@ class DeckService {
                 VALUES(?,?,?,?)
                 """, UUID.randomUUID().toString(), vocabId, "custom", now);
 
-        String cardId = UUID.randomUUID().toString();
-        Card state = fsrs.newCard();
+        String jpCardId = UUID.randomUUID().toString();
+        Card jpState = fsrs.newCard();
         jdbc.update("""
                 INSERT INTO study_cards(id,vocabulary_id,card_type,fsrs_card_json,due_at,created_at)
                 VALUES(?,?,?,?,?,?)
-                """, cardId, vocabId, "JP_TO_VI",
-                fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
-        return new StudyCardDto(cardId, "custom", "Từ vựng tùy chỉnh", jp, romaji, vi, fsrs.dueAt(state), 0, 0);
+                """, jpCardId, vocabId, "JP_TO_VI",
+                fsrs.write(jpState), fsrs.dueAt(jpState).toEpochMilli(), now);
+
+        String viCardId = UUID.randomUUID().toString();
+        Card viState = fsrs.newCard();
+        jdbc.update("""
+                INSERT INTO study_cards(id,vocabulary_id,card_type,fsrs_card_json,due_at,created_at)
+                VALUES(?,?,?,?,?,?)
+                """, viCardId, vocabId, "VI_TO_JP",
+                fsrs.write(viState), fsrs.dueAt(viState).toEpochMilli(), now);
+
+        return new StudyCardDto(jpCardId, "custom", "Từ vựng tùy chỉnh", jp, romaji, vi, fsrs.dueAt(jpState), 0, 0);
     }
 
     @Transactional
@@ -245,17 +256,9 @@ class DeckService {
         if (vocabIds.isEmpty()) throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng.");
         String vocabId = vocabIds.getFirst();
 
-        int deleted = jdbc.update("DELETE FROM study_cards WHERE id=?", cardId);
-        if (deleted == 0) throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng.");
-
-        Integer remainingCards = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM study_cards WHERE vocabulary_id=?",
-                Integer.class,
-                vocabId
-        );
-        if (remainingCards == null || remainingCards == 0) {
-            jdbc.update("DELETE FROM vocabularies WHERE id=?", vocabId);
-        }
+        jdbc.update("DELETE FROM study_cards WHERE vocabulary_id=?", vocabId);
+        jdbc.update("DELETE FROM vocabulary_sources WHERE vocabulary_id=?", vocabId);
+        jdbc.update("DELETE FROM vocabularies WHERE id=?", vocabId);
     }
 
     @Transactional
@@ -333,8 +336,8 @@ class DeckService {
         long now = System.currentTimeMillis();
         return jdbc.query("""
                 SELECT d.id, d.title, d.original_filename, d.created_at,
-                       COUNT(DISTINCT s.id) AS card_count,
-                       SUM(CASE WHEN s.due_at <= ? THEN 1 ELSE 0 END) AS due_count
+                       COUNT(DISTINCT vs.vocabulary_id) AS card_count,
+                       SUM(CASE WHEN s.due_at <= ? AND s.card_type = 'JP_TO_VI' THEN 1 ELSE 0 END) AS due_count
                 FROM decks d
                 LEFT JOIN vocabulary_sources vs ON vs.deck_id = d.id
                 LEFT JOIN study_cards s ON s.vocabulary_id = vs.vocabulary_id

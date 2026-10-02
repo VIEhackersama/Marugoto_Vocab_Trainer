@@ -18,8 +18,9 @@ class StudyController {
     StudyResponse cards(
             @RequestParam(required = false, defaultValue = "all") String deckId,
             @RequestParam(required = false, defaultValue = "all") String mode,
-            @RequestParam(required = false, defaultValue = "false") boolean includeCustom
+            @RequestParam(required = false, defaultValue = "false") boolean includeCustom,
+            @RequestParam(required = false, defaultValue = "JP_TO_VI") String cardType
     ) {
-        return study.cards(deckId, mode, includeCustom);
+        return study.cards(deckId, mode, includeCustom, cardType);
     }
 }

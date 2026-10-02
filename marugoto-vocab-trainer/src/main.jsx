@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as pdfjsLib from 'pdfjs-dist';
 import {
   createQuizSession,
   nextWaitingDueAt,
@@ -29,103 +28,11 @@ import {
   getTestJapaneseDisplay,
   resolveCardKanjiDetails,
 } from './kanji.js';
+import { extractPdfPages, parseVocabulary, normalizeText as normalize } from './utils/pdfParser.js';
+import { api } from './api/client.js';
+import { RatingToolbar } from './components/RatingToolbar.jsx';
+import { romajiToHiragana, checkTypedAnswer } from './utils/japaneseInput.js';
 import './styles.css';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
-
-function normalize(s) {
-  return s.normalize('NFKC').replace(/[\u3000\t]+/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function isJapanese(s) {
-  return /[\u3040-\u30ff\u3400-\u9fff]/.test(s);
-}
-
-function isRomaji(s) {
-  const letters = s.replace(/[^A-Za-z]/g, '');
-  return letters.length >= 3 && letters.length / Math.max(s.length, 1) > 0.55;
-}
-
-function cleanLine(s) {
-  return normalize(s).replace(/^[•·–—]+\s*/, '');
-}
-
-async function extractPdfPages(file) {
-  const data = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjsLib.getDocument({ data, enableScripting: false }).promise;
-  const pages = [];
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    const viewport = page.getViewport({ scale: 1 });
-    const items = content.items
-      .filter((item) => typeof item.str === 'string' && item.str.trim())
-      .map((item) => ({
-        text: cleanLine(item.str),
-        x: item.transform?.[4] ?? 0,
-        y: Math.round(viewport.height - (item.transform?.[5] ?? 0)),
-      }));
-    const columnBoundary = viewport.width * 0.44;
-    const lines = [];
-    for (const item of items.sort((a, b) => a.y - b.y || a.x - b.x)) {
-      const column = item.x >= columnBoundary ? 'right' : 'left';
-      let line = lines.find((candidate) => candidate.column === column && Math.abs(candidate.y - item.y) < 3);
-      if (!line) {
-        line = { y: item.y, column, items: [] };
-        lines.push(line);
-      }
-      line.items.push(item);
-    }
-    pages.push(lines
-      .map((line) => ({
-        y: line.y,
-        column: line.column,
-        text: cleanLine(line.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(' ')),
-      }))
-      .filter((line) => line.text)
-      .sort((a, b) => a.y - b.y || a.column.localeCompare(b.column)));
-  }
-  return pages;
-}
-
-function parseVocabulary(pages) {
-  const entries = [];
-  for (const page of pages) {
-    const left = page.filter((line) => line.column === 'left' && !/^\d+\s*\/\s*\d+$/.test(line.text));
-    const right = page.filter((line) => line.column === 'right' && !/^\d+\s*\/\s*\d+$/.test(line.text));
-    const japaneseRows = left.filter((line) => isJapanese(line.text));
-    for (let i = 0; i < japaneseRows.length; i++) {
-      const start = japaneseRows[i].y;
-      const end = japaneseRows[i + 1]?.y ?? Infinity;
-      const rowLeft = left.filter((line) => line.y >= start && line.y < end);
-      const rowRight = right.filter((line) => line.y >= start && line.y < end);
-      const jp = rowLeft.filter((line) => isJapanese(line.text)).map((line) => line.text).join(' ');
-      const romaji = rowLeft.filter((line) => !isJapanese(line.text) && isRomaji(line.text)).map((line) => line.text).join(' ');
-      const vi = rowRight.map((line) => line.text).join(' ');
-      if (jp && vi) entries.push({ jp, romaji, vi });
-    }
-  }
-  const seen = new Set();
-  return entries.filter((entry) => {
-    const key = `${entry.jp}|${entry.vi}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-async function api(path, options = {}) {
-  const response = await fetch(path, options);
-  if (!response.ok) {
-    const result = await response.json().catch(() => ({}));
-    throw new Error(result.error || `Lỗi máy chủ (${response.status}).`);
-  }
-  if (response.status === 204) return null;
-  return response.json();
-}
 
 function shuffled(items) {
   const result = [...items];
@@ -375,6 +282,57 @@ function App() {
     } catch {}
   }
 
+  // Romaji visibility mode: 'always' (luôn hiện) | 'reveal' (khi lật/trả lời) | 'never' (tắt)
+  const [romajiMode, setRomajiMode] = useState(() => {
+    try {
+      return localStorage.getItem('marugoto_romaji_mode') || 'reveal';
+    } catch {
+      return 'reveal';
+    }
+  });
+
+  function handleSetRomajiMode(newMode) {
+    setRomajiMode(newMode);
+    try {
+      localStorage.setItem('marugoto_romaji_mode', newMode);
+    } catch {}
+  }
+
+  // Flashcard study mode: 'flip' | 'test' | 'typed'
+  const [studyMode, setStudyMode] = useState(() => {
+    try {
+      return localStorage.getItem('marugoto_study_mode') || 'flip';
+    } catch {
+      return 'flip';
+    }
+  });
+
+  function handleSetStudyMode(newMode) {
+    setStudyMode(newMode);
+    try {
+      localStorage.setItem('marugoto_study_mode', newMode);
+    } catch {}
+    setRevealed(false);
+    setFlashcardStatus(null);
+    setFlashcardMessage('');
+  }
+
+  // Quiz question type: 'multiple_choice' | 'typed'
+  const [quizQuestionType, setQuizQuestionType] = useState(() => {
+    try {
+      return localStorage.getItem('marugoto_quiz_question_type') || 'multiple_choice';
+    } catch {
+      return 'multiple_choice';
+    }
+  });
+
+  function handleSetQuizQuestionType(newType) {
+    setQuizQuestionType(newType);
+    try {
+      localStorage.setItem('marugoto_quiz_question_type', newType);
+    } catch {}
+  }
+
   // Flashcard font size state (range: 28px - 68px, default: 46px)
   const [flashcardFontSize, setFlashcardFontSize] = useState(() => {
     try {
@@ -430,10 +388,43 @@ function App() {
       return true;
     }
   });
+
+  // Typed Recall state
+  const [typedInput, setTypedInput] = useState('');
+  const [typedFeedback, setTypedFeedback] = useState(null);
+  const [quizTypedInput, setQuizTypedInput] = useState('');
+  const [autoConvertRomaji, setAutoConvertRomaji] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marugoto_auto_convert_romaji');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+  const typedInputRef = useRef(null);
+  const quizTypedInputRef = useRef(null);
+
   const [cardStartTime, setCardStartTime] = useState(Date.now());
   useEffect(() => {
     setCardStartTime(Date.now());
+    setTypedInput('');
+    setTypedFeedback(null);
   }, [index, tab]);
+
+  useEffect(() => {
+    setQuizTypedInput('');
+  }, [quizSession?.queue?.[0]?.entry?.id]);
+
+  function calculateResponseRating(elapsedSeconds, limitSeconds = 10) {
+    const ratio = elapsedSeconds / limitSeconds;
+    if (ratio <= 0.30 && elapsedSeconds <= 3.5) {
+      return 'EASY';
+    } else if (ratio <= 0.75) {
+      return 'GOOD';
+    } else {
+      return 'HARD';
+    }
+  }
 
   const [quizAvailablePool, setQuizAvailablePool] = useState([]);
   const [quizAvailableDue, setQuizAvailableDue] = useState(0);
@@ -498,11 +489,13 @@ function App() {
     return { pdfDecks, custom };
   }
 
-  async function loadCards(deckId = selectedDeckId) {
+  async function loadCards(deckId = selectedDeckId, studyDirection = mode) {
+    const cardType = studyDirection === 'jp-vi' ? 'JP_TO_VI' : 'VI_TO_JP';
     const query = new URLSearchParams({
       deckId,
       mode: 'all',
       includeCustom: deckId === 'all' || deckId === 'custom',
+      cardType,
     });
     const result = await api(`/api/study/cards?${query}`);
     setEntries(result.cards);
@@ -511,7 +504,7 @@ function App() {
     setRevealed(false);
     setFlashcardStatus(null);
     setFlashcardMessage('');
-    setFlashcardOptions(result.cards.length >= 5 ? makeOptions(result.cards[0], result.cards, mode) : []);
+    setFlashcardOptions(result.cards.length >= 5 ? makeOptions(result.cards[0], result.cards, studyDirection) : []);
   }
 
   async function refreshDictionary() {
@@ -614,7 +607,7 @@ function App() {
     setQuizSession(null);
     setQuizDone(false);
     try {
-      await loadCards(deckId);
+      await loadCards(deckId, mode);
       await refreshDecks(deckId);
     } catch (loadError) {
       setError(loadError.message);
@@ -743,13 +736,75 @@ function App() {
     const correct = option.id === current.id;
     setFlashcardStatus(correct ? 'correct' : 'wrong');
     const answerDisplay = mode === 'jp-vi' ? current.vi : getTestJapaneseDisplay(current, testKanjiMode);
-    setFlashcardMessage(correct
-      ? 'Chính xác. Bạn thấy câu này dễ đến mức nào?'
-      : `Chưa đúng. Đáp án: ${answerDisplay}`);
-    if (!correct) {
+
+    const elapsed = Math.max(0.1, (Date.now() - cardStartTime) / 1000);
+    const elapsedMs = Math.round(elapsed * 1000);
+
+    if (correct) {
+      const calculatedRating = calculateResponseRating(elapsed, 10);
+      setAutoRating(calculatedRating);
+      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy' : calculatedRating === 'GOOD' ? '🟡 Good' : '🟠 Hard';
+      if (autoRateByResponseTime) {
+        setFlashcardMessage(`Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`);
+        setCardSaving(true);
+        try {
+          await recordReview(current, calculatedRating, 'RECALL', elapsedMs);
+        } catch (saveError) {
+          setError(`Không lưu được lượt ôn: ${saveError.message}`);
+        } finally {
+          setCardSaving(false);
+        }
+      } else {
+        setFlashcardMessage(`Chính xác! (${elapsed.toFixed(1)}s · Gợi ý: ${ratingLabel} — Bấm 1-4 hoặc Enter để tiếp tục)`);
+      }
+    } else {
+      setAutoRating('AGAIN');
+      setFlashcardMessage(`Chưa đúng. Đáp án: ${answerDisplay}`);
       setCardSaving(true);
       try {
-        const elapsedMs = Math.max(100, Date.now() - cardStartTime);
+        await recordReview(current, 'AGAIN', 'RECALL', elapsedMs);
+      } catch (saveError) {
+        setError(`Không lưu được lượt ôn: ${saveError.message}`);
+      } finally {
+        setCardSaving(false);
+      }
+    }
+  }
+
+  async function submitFlashcardTypedAnswer(e) {
+    if (e) e.preventDefault();
+    if (!current || flashcardStatus || cardSaving) return;
+    const direction = mode === 'jp-vi' ? 'VI' : 'JP';
+    const result = checkTypedAnswer(typedInput, current, direction);
+    setTypedFeedback(result);
+    setFlashcardStatus(result.isCorrect ? 'correct' : 'wrong');
+
+    const elapsed = Math.max(0.1, (Date.now() - cardStartTime) / 1000);
+    const elapsedMs = Math.round(elapsed * 1000);
+
+    if (result.isCorrect) {
+      const calculatedRating = calculateResponseRating(elapsed, 10);
+      setAutoRating(calculatedRating);
+      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy' : calculatedRating === 'GOOD' ? '🟡 Good' : '🟠 Hard';
+      if (autoRateByResponseTime) {
+        setFlashcardMessage(`Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`);
+        setCardSaving(true);
+        try {
+          await recordReview(current, calculatedRating, 'RECALL', elapsedMs);
+        } catch (saveError) {
+          setError(`Không lưu được lượt ôn: ${saveError.message}`);
+        } finally {
+          setCardSaving(false);
+        }
+      } else {
+        setFlashcardMessage(`Chính xác! (${elapsed.toFixed(1)}s · Gợi ý: ${ratingLabel} — Bấm 1-4 hoặc Enter để tiếp tục)`);
+      }
+    } else {
+      setAutoRating('AGAIN');
+      const expectedStr = direction === 'JP' ? (current.jp || '') : (current.vi || '');
+      setFlashcardMessage(`Chưa chính xác. Đáp án đúng: ${expectedStr}`);
+      setCardSaving(true);
+      try {
         await recordReview(current, 'AGAIN', 'RECALL', elapsedMs);
       } catch (saveError) {
         setError(`Không lưu được lượt ôn: ${saveError.message}`);
@@ -1076,10 +1131,11 @@ function App() {
   }
 
 
-  async function updateQuizSetupPool(scope = selectedDeckId, incCustom = includeCustom) {
+  async function updateQuizSetupPool(scope = selectedDeckId, incCustom = includeCustom, studyDirection = mode) {
     try {
       const inc = scope === 'custom' ? true : incCustom;
-      const query = new URLSearchParams({ deckId: scope, mode: 'all', includeCustom: inc });
+      const cardType = studyDirection === 'jp-vi' ? 'JP_TO_VI' : 'VI_TO_JP';
+      const query = new URLSearchParams({ deckId: scope, mode: 'all', includeCustom: inc, cardType });
       const result = await api(`/api/study/cards?${query}`);
       setQuizAvailablePool(result.cards);
       setQuizAvailableDue(result.dueCount);
@@ -1091,9 +1147,9 @@ function App() {
 
   useEffect(() => {
     if (tab === 'quiz' || tab === 'review') {
-      updateQuizSetupPool(selectedDeckId, includeCustom);
+      updateQuizSetupPool(selectedDeckId, includeCustom, mode);
     }
-  }, [tab, selectedDeckId, includeCustom]);
+  }, [tab, selectedDeckId, includeCustom, mode]);
 
   // Question timer effect
   useEffect(() => {
@@ -1122,7 +1178,31 @@ function App() {
   // Keyboard shortcuts: Space/Enter to advance & 1..4 keys for options/ratings
   useEffect(() => {
     function handleKeyDown(event) {
-      if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) return;
+      if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
+        if (event.key === 'Enter') {
+          if ((tab === 'quiz' || tab === 'review') && quizStatus && !quizSaving) {
+            event.preventDefault();
+            event.target.blur();
+            if (quizStatus === 'correct' && !autoRateByResponseTime && autoRating) {
+              rateQuiz(autoRating);
+            } else {
+              advanceQuizQuestion();
+            }
+            return;
+          }
+          if (tab === 'flashcards' && flashcardStatus && !cardSaving) {
+            event.preventDefault();
+            event.target.blur();
+            if (flashcardStatus === 'wrong') {
+              advanceCard();
+            } else {
+              rateFlashcard(autoRating || 'GOOD');
+            }
+            return;
+          }
+        }
+        return;
+      }
 
       // Quiz / Review tab
       if (tab === 'quiz' || tab === 'review') {
@@ -1255,16 +1335,17 @@ function App() {
     setBusy(true);
     setError('');
     try {
+      const cardType = mode === 'jp-vi' ? 'JP_TO_VI' : 'VI_TO_JP';
       const incCustom = selectedDeckId === 'custom' ? true : includeCustom;
-      const query = new URLSearchParams({ deckId: selectedDeckId, mode: 'due', includeCustom: incCustom });
+      const query = new URLSearchParams({ deckId: selectedDeckId, mode: 'due', includeCustom: incCustom, cardType });
       const dueCards = (await api(`/api/study/cards?${query}`)).cards;
       if (kind === 'DUE' && !dueCards.length) {
         setError('Hiện không có thẻ nào đến hạn ôn.');
         return;
       }
-      const allQuery = new URLSearchParams({ deckId: selectedDeckId, mode: 'all', includeCustom: incCustom });
+      const allQuery = new URLSearchParams({ deckId: selectedDeckId, mode: 'all', includeCustom: incCustom, cardType });
       const allCards = (await api(`/api/study/cards?${allQuery}`)).cards;
-      if (new Set(allCards.map((card) => optionKey(card, mode))).size < 5) {
+      if (quizQuestionType === 'multiple_choice' && new Set(allCards.map((card) => optionKey(card, mode))).size < 5) {
         setError('Cần ít nhất 5 đáp án khác nhau để tạo đủ lựa chọn trắc nghiệm.');
         return;
       }
@@ -1285,6 +1366,7 @@ function App() {
       setQuizStatus(null);
       setQuizSelectedOptionId(null);
       setQuizMessage('');
+      setQuizTypedInput('');
       setQuestionStartTime(Date.now());
       setQuestionTimeLeft(timeLimit);
       setAutoRating(null);
@@ -1351,17 +1433,67 @@ function App() {
     } else {
       const elapsed = questionStartTime ? Math.max(0.1, (Date.now() - questionStartTime) / 1000) : 1;
       const responseMs = Math.round(elapsed * 1000);
-      let calculatedRating = 'GOOD';
-      if (isCurrentTimerActive) {
-        const ratio = elapsed / timeLimit;
-        if (ratio <= 0.30 && elapsed <= 3.5) {
-          calculatedRating = 'EASY';
-        } else if (ratio <= 0.75) {
-          calculatedRating = 'GOOD';
-        } else {
-          calculatedRating = 'HARD';
+      const calculatedRating = calculateResponseRating(elapsed, timeLimit);
+      setAutoRating(calculatedRating);
+      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy (Dễ)' : calculatedRating === 'GOOD' ? '🟡 Good (Vừa)' : '🟠 Hard (Khó)';
+      if (autoRateByResponseTime) {
+        setQuizMessage(isCurrentTimerActive
+          ? `Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`
+          : `Chính xác! (Đã tự động lưu: ${ratingLabel})`);
+        setQuizSaving(true);
+        try {
+          const source = quizMode === 'DUE' ? 'TEST' : quizMode;
+          await recordReview(currentQuestion.entry, calculatedRating, source, responseMs);
+        } catch (saveError) {
+          setError(`Không lưu được lượt ôn: ${saveError.message}`);
+        } finally {
+          setQuizSaving(false);
         }
+      } else {
+        setQuizMessage(isCurrentTimerActive
+          ? `Chính xác! (${elapsed.toFixed(1)}s · Gợi ý: ${ratingLabel} — Bấm 1-4 hoặc Enter để xác nhận)`
+          : `Chính xác! (Gợi ý: ${ratingLabel} — Bấm 1-4 hoặc Enter để xác nhận)`);
       }
+    }
+  }
+
+  async function submitQuizTypedAnswer(e) {
+    if (e) e.preventDefault();
+    if (quizDone || quizStatus || quizSaving || !currentQuestion) return;
+    const direction = mode === 'jp-vi' ? 'VI' : 'JP';
+    const result = checkTypedAnswer(quizTypedInput, currentQuestion.entry, direction);
+    setTypedFeedback(result);
+    const correct = result.isCorrect;
+
+    if (!currentQuestion.repeat) {
+      setQuizSession((session) => session
+        ? recordFirstAttempt(session, currentQuestion.entry.id, correct)
+        : session);
+    }
+    setQuizStatus(correct ? 'correct' : 'wrong');
+
+    const elapsed = questionStartTime ? Math.max(0.1, (Date.now() - questionStartTime) / 1000) : 1;
+    const responseMs = Math.round(elapsed * 1000);
+
+    if (!correct) {
+      const answerDisplay = direction === 'VI' ? currentQuestion.entry.vi : getTestJapaneseDisplay(currentQuestion.entry, testKanjiMode);
+      setQuizMessage(`Chưa đúng. Đáp án: ${answerDisplay}`);
+      setQuizSaving(true);
+      try {
+        const source = quizMode === 'DUE' ? 'TEST' : quizMode;
+        const res = await recordReview(currentQuestion.entry, 'AGAIN', source, responseMs);
+        setQuizSession((session) => session
+          ? scheduleAgain(session, currentQuestion.entry, res.dueAt)
+          : session);
+      } catch (saveError) {
+        setError(`Không lưu được lượt ôn: ${saveError.message}`);
+        setQuizStatus(null);
+        setQuizMessage('');
+      } finally {
+        setQuizSaving(false);
+      }
+    } else {
+      const calculatedRating = calculateResponseRating(elapsed, timeLimit);
       setAutoRating(calculatedRating);
       const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy (Dễ)' : calculatedRating === 'GOOD' ? '🟡 Good (Vừa)' : '🟠 Hard (Khó)';
       if (autoRateByResponseTime) {
@@ -1453,60 +1585,14 @@ function App() {
   }
 
   function renderRatings(onRate, disabled = false, includeAgain = true) {
-    const badgeText = autoRateByResponseTime ? 'Tự động' : 'Gợi ý';
     return (
-      <div className="rating-options-toolbar" aria-label="Đánh giá mức độ ghi nhớ">
-        {includeAgain && (
-          <button
-            type="button"
-            disabled={disabled}
-            className={`rating-pill-btn again ${autoRating === 'AGAIN' ? 'highlight-rating' : ''}`}
-            onClick={() => onRate('AGAIN')}
-            title="Quên hoàn toàn, cần học lại (Phím 1)"
-          >
-            <span className="rating-emoji">🔄</span>
-            <span className="rating-name">Again</span>
-            <span className="rating-shortcut-tag">1</span>
-            {autoRating === 'AGAIN' && <span className="auto-pill-badge">{badgeText}</span>}
-          </button>
-        )}
-        <button
-          type="button"
-          disabled={disabled}
-          className={`rating-pill-btn hard ${autoRating === 'HARD' ? 'highlight-rating' : ''}`}
-          onClick={() => onRate('HARD')}
-          title="Nhớ khó khăn, mất nhiều thời gian (Phím 2)"
-        >
-          <span className="rating-emoji">🐢</span>
-          <span className="rating-name">Hard</span>
-          <span className="rating-shortcut-tag">2</span>
-          {autoRating === 'HARD' && <span className="auto-pill-badge">{badgeText}</span>}
-        </button>
-        <button
-          type="button"
-          disabled={disabled}
-          className={`rating-pill-btn good ${autoRating === 'GOOD' ? 'highlight-rating' : ''}`}
-          onClick={() => onRate('GOOD')}
-          title="Nhớ bình thường, phản xạ vừa phải (Phím 3)"
-        >
-          <span className="rating-emoji">⏱️</span>
-          <span className="rating-name">Good</span>
-          <span className="rating-shortcut-tag">3</span>
-          {autoRating === 'GOOD' && <span className="auto-pill-badge">{badgeText}</span>}
-        </button>
-        <button
-          type="button"
-          disabled={disabled}
-          className={`rating-pill-btn easy ${autoRating === 'EASY' ? 'highlight-rating' : ''}`}
-          onClick={() => onRate('EASY')}
-          title="Nhớ rất nhanh, phản xạ tức thì (Phím 4)"
-        >
-          <span className="rating-emoji">⚡</span>
-          <span className="rating-name">Easy</span>
-          <span className="rating-shortcut-tag">4</span>
-          {autoRating === 'EASY' && <span className="auto-pill-badge">{badgeText}</span>}
-        </button>
-      </div>
+      <RatingToolbar
+        onRate={onRate}
+        disabled={disabled}
+        includeAgain={includeAgain}
+        autoRating={autoRating}
+        autoRateByResponseTime={autoRateByResponseTime}
+      />
     );
   }
 
@@ -1616,7 +1702,17 @@ function App() {
         </select>
         <div className="direction-picker">
           <label htmlFor="direction-select">Chiều học</label>
-          <select id="direction-select" value={mode} disabled={Boolean(quizSession && !quizDone)} onChange={(event) => setMode(event.target.value)}>
+          <select
+            id="direction-select"
+            value={mode}
+            disabled={Boolean(quizSession && !quizDone)}
+            onChange={async (event) => {
+              const newMode = event.target.value;
+              setMode(newMode);
+              await loadCards(selectedDeckId, newMode);
+              await updateQuizSetupPool(selectedDeckId, includeCustom, newMode);
+            }}
+          >
             <option value="jp-vi">Nhật → Việt</option>
             <option value="vi-jp">Việt → Nhật</option>
           </select>
@@ -2078,9 +2174,63 @@ function App() {
                   Chỉ Kana
                 </button>
               </div>
+
+              <div className="romaji-segmented-group" title="Chế độ hiển thị Romaji">
+                <button
+                  type="button"
+                  className={`romaji-seg-pill ${romajiMode === 'always' ? 'active' : ''}`}
+                  onClick={() => handleSetRomajiMode('always')}
+                  title="Luôn hiển thị phiên âm Romaji"
+                >
+                  Romaji: Hiện
+                </button>
+                <button
+                  type="button"
+                  className={`romaji-seg-pill ${romajiMode === 'reveal' ? 'active' : ''}`}
+                  onClick={() => handleSetRomajiMode('reveal')}
+                  title="Chỉ hiện Romaji khi lật thẻ hoặc trả lời"
+                >
+                  Khi lật thẻ
+                </button>
+                <button
+                  type="button"
+                  className={`romaji-seg-pill ${romajiMode === 'never' ? 'active' : ''}`}
+                  onClick={() => handleSetRomajiMode('never')}
+                  title="Tắt Romaji hoàn toàn"
+                >
+                  Tắt Romaji
+                </button>
+              </div>
             </div>
 
             <div className="flashcard-toolbar-right">
+              <div className="study-mode-segmented-group" title="Hình thức học Flashcard">
+                <button
+                  type="button"
+                  className={`study-mode-pill ${studyMode === 'flip' ? 'active' : ''}`}
+                  onClick={() => handleSetStudyMode('flip')}
+                  title="Thẻ lật truyền thống"
+                >
+                  🎴 Thẻ lật
+                </button>
+                <button
+                  type="button"
+                  className={`study-mode-pill ${studyMode === 'test' ? 'active' : ''}`}
+                  onClick={() => handleSetStudyMode('test')}
+                  title="Trắc nghiệm 1 trong 5"
+                >
+                  📝 Trắc nghiệm
+                </button>
+                <button
+                  type="button"
+                  className={`study-mode-pill ${studyMode === 'typed' ? 'active' : ''}`}
+                  onClick={() => handleSetStudyMode('typed')}
+                  title="Gõ câu trả lời trực tiếp (Typed Recall)"
+                >
+                  ⌨️ Gõ từ
+                </button>
+              </div>
+
               <div className="font-size-control-group" title="Điều chỉnh cỡ chữ Flashcard (28px - 68px)">
                 <button
                   type="button"
@@ -2138,6 +2288,10 @@ function App() {
               {mode === 'jp-vi' ? renderFlashcardJp(current, testKanjiMode, flashcardFontSize) : current.vi}
             </div>
 
+            {mode === 'jp-vi' && romajiMode === 'always' && current.romaji && (
+              <div className="flashcard-front-romaji">{current.romaji}</div>
+            )}
+
             {mode === 'jp-vi' && (
               <button
                 type="button"
@@ -2168,7 +2322,7 @@ function App() {
                 >
                   {mode === 'jp-vi' ? current.vi : renderFlashcardJp(current, testKanjiMode, flashcardFontSize)}
                 </div>
-                {current.romaji && (
+                {current.romaji && romajiMode !== 'never' && (
                   <small
                     className="answer-romaji"
                     style={{ fontSize: `${Math.max(13, Math.round(flashcardFontSize * 0.34))}px` }}
@@ -2194,39 +2348,117 @@ function App() {
             )}
           </div>
 
-          <div className="manual-test">
-            <h3>Recall trực tiếp · chọn 1 trong 5</h3>
-            {!hasFiveChoices ? <p>Cần ít nhất 5 đáp án khác nhau theo chiều học này để tạo đủ lựa chọn.</p> : !revealed && (
-              <div className="options">
-                {flashcardOptions.map((option) => {
-                  const isCorrect = option.id === current.id;
-                  const isSelectedWrong = flashcardStatus === 'wrong' && option.id === flashcardSelectedId;
-                  const optClass = flashcardStatus
-                    ? isCorrect
-                      ? 'correct-option'
-                      : isSelectedWrong
-                        ? 'wrong-option'
-                        : ''
-                    : '';
-                  return (
-                    <button
-                      disabled={Boolean(flashcardStatus) || cardSaving}
-                      className={optClass}
-                      key={option.id}
-                      onClick={() => chooseFlashcardOption(option)}
-                    >
-                      {optionText(option)}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {flashcardMessage && <div className={`feedback ${flashcardStatus === 'correct' ? 'ok' : 'bad'}`}>{flashcardMessage}</div>}
-            {flashcardStatus === 'correct' && renderRatings(rateFlashcard, cardSaving, false)}
-            {flashcardStatus === 'wrong' && <button className="primary next-button" disabled={cardSaving} onClick={advanceCard}>Tiếp theo</button>}
-          </div>
+          {studyMode === 'test' && (
+            <div className="manual-test">
+              <h3>Recall trực tiếp · chọn 1 trong 5</h3>
+              {!hasFiveChoices ? <p>Cần ít nhất 5 đáp án khác nhau theo chiều học này để tạo đủ lựa chọn.</p> : !revealed && (
+                <div className="options">
+                  {flashcardOptions.map((option) => {
+                    const isCorrect = option.id === current.id;
+                    const isSelectedWrong = flashcardStatus === 'wrong' && option.id === flashcardSelectedId;
+                    const optClass = flashcardStatus
+                      ? isCorrect
+                        ? 'correct-option'
+                        : isSelectedWrong
+                          ? 'wrong-option'
+                          : ''
+                      : '';
+                    return (
+                      <button
+                        disabled={Boolean(flashcardStatus) || cardSaving}
+                        className={optClass}
+                        key={option.id}
+                        onClick={() => chooseFlashcardOption(option)}
+                      >
+                        {optionText(option)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {flashcardMessage && <div className={`feedback ${flashcardStatus === 'correct' ? 'ok' : 'bad'}`}>{flashcardMessage}</div>}
+              {flashcardStatus === 'correct' && renderRatings(rateFlashcard, cardSaving, false)}
+              {flashcardStatus === 'wrong' && <button className="primary next-button" disabled={cardSaving} onClick={advanceCard}>Tiếp theo</button>}
+            </div>
+          )}
 
-          {revealed && !flashcardStatus && <div className="actions">{renderRatings(rateFlashcard, cardSaving)}</div>}
+          {studyMode === 'typed' && (
+            <div className="typed-recall-section">
+              <div className="typed-recall-header">
+                <span className="typed-recall-title">⌨️ Gõ câu trả lời (Typed Recall)</span>
+                {mode === 'vi-jp' && (
+                  <label className="typed-convert-toggle">
+                    <input
+                      type="checkbox"
+                      checked={autoConvertRomaji}
+                      onChange={(e) => {
+                        setAutoConvertRomaji(e.target.checked);
+                        try { localStorage.setItem('marugoto_auto_convert_romaji', String(e.target.checked)); } catch {}
+                      }}
+                    />
+                    <span>Chuyển Romaji ➔ Hiragana</span>
+                  </label>
+                )}
+              </div>
+              <form onSubmit={submitFlashcardTypedAnswer} className="typed-input-wrapper">
+                <input
+                  ref={typedInputRef}
+                  type="text"
+                  className={`typed-input-box ${flashcardStatus === 'correct' ? 'correct' : flashcardStatus === 'wrong' ? 'wrong' : ''}`}
+                  placeholder={mode === 'jp-vi' ? 'Nhập nghĩa tiếng Việt...' : 'Nhập tiếng Nhật (hoặc gõ Romaji)...'}
+                  value={typedInput}
+                  disabled={Boolean(flashcardStatus) || cardSaving}
+                  autoFocus
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (mode === 'vi-jp' && autoConvertRomaji) {
+                      val = romajiToHiragana(val, { isFinal: false });
+                    }
+                    setTypedInput(val);
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="typed-submit-btn"
+                  disabled={Boolean(flashcardStatus) || cardSaving || !typedInput.trim()}
+                >
+                  Kiểm tra ↵
+                </button>
+              </form>
+
+              {mode === 'vi-jp' && typedInput && !flashcardStatus && (
+                <div className="typed-hint-bar">
+                  <span>Đang nhập:</span>
+                  <span className="typed-preview-badge">{romajiToHiragana(typedInput, { isFinal: true })}</span>
+                </div>
+              )}
+
+              {typedFeedback && (
+                <div className={`typed-diff-feedback ${typedFeedback.isCorrect ? 'correct' : 'wrong'}`}>
+                  {typedFeedback.isCorrect ? (
+                    <div>✓ Chính xác! Bạn đã nhớ từ này.</div>
+                  ) : (
+                    <div>
+                      <div>✗ Chưa đúng: <span className="user-answer">{typedInput}</span></div>
+                      <span className="expected-answer">Đáp án đúng: {mode === 'jp-vi' ? current.vi : current.jp}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {flashcardMessage && <div className={`feedback ${flashcardStatus === 'correct' ? 'ok' : 'bad'}`}>{flashcardMessage}</div>}
+              {flashcardStatus === 'correct' && renderRatings(rateFlashcard, cardSaving, false)}
+              {flashcardStatus === 'wrong' && (
+                <button className="primary next-button" disabled={cardSaving} onClick={advanceCard}>
+                  Tiếp theo (Phím Space/Enter)
+                </button>
+              )}
+            </div>
+          )}
+
+          {studyMode === 'flip' && revealed && !flashcardStatus && (
+            <div className="actions">{renderRatings(rateFlashcard, cardSaving)}</div>
+          )}
         </section>
       )}
 
@@ -2258,6 +2490,59 @@ function App() {
                     </label>
                   </div>
                 )}
+
+                <div className="setup-option-card">
+                  <div className="option-text-group" style={{ marginBottom: '10px' }}>
+                    <span className="option-title">⌨️ Hình thức trả lời</span>
+                    <span className="option-desc">Chọn làm bài bằng trắc nghiệm hoặc tự gõ câu trả lời (Typed Recall)</span>
+                  </div>
+                  <div className="study-mode-segmented-group">
+                    <button
+                      type="button"
+                      className={`study-mode-pill ${quizQuestionType === 'multiple_choice' ? 'active' : ''}`}
+                      onClick={() => handleSetQuizQuestionType('multiple_choice')}
+                    >
+                      🔘 Trắc nghiệm (1 trong 5)
+                    </button>
+                    <button
+                      type="button"
+                      className={`study-mode-pill ${quizQuestionType === 'typed' ? 'active' : ''}`}
+                      onClick={() => handleSetQuizQuestionType('typed')}
+                    >
+                      ⌨️ Tự gõ từ (Typed Recall)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="setup-option-card">
+                  <div className="option-text-group" style={{ marginBottom: '10px' }}>
+                    <span className="option-title">🔤 Chế độ hiển thị Romaji</span>
+                    <span className="option-desc">Tùy chọn hiển thị phiên âm Romaji trong bài kiểm tra</span>
+                  </div>
+                  <div className="romaji-segmented-group">
+                    <button
+                      type="button"
+                      className={`romaji-seg-pill ${romajiMode === 'always' ? 'active' : ''}`}
+                      onClick={() => handleSetRomajiMode('always')}
+                    >
+                      Luôn hiện
+                    </button>
+                    <button
+                      type="button"
+                      className={`romaji-seg-pill ${romajiMode === 'reveal' ? 'active' : ''}`}
+                      onClick={() => handleSetRomajiMode('reveal')}
+                    >
+                      Chỉ khi trả lời
+                    </button>
+                    <button
+                      type="button"
+                      className={`romaji-seg-pill ${romajiMode === 'never' ? 'active' : ''}`}
+                      onClick={() => handleSetRomajiMode('never')}
+                    >
+                      Tắt Romaji
+                    </button>
+                  </div>
+                </div>
 
                 <div className="setup-option-card">
                   <div className="option-text-group" style={{ marginBottom: '10px' }}>
@@ -2611,6 +2896,10 @@ function App() {
                           ))}
                         </div>
                       )}
+
+                      {mode === 'jp-vi' && currentQuestion.entry.romaji && (romajiMode === 'always' || (romajiMode === 'reveal' && quizStatus)) && (
+                        <div className="flashcard-front-romaji">{currentQuestion.entry.romaji}</div>
+                      )}
                     </div>
                   </div>
                 );
@@ -2620,58 +2909,126 @@ function App() {
                 </div>
               )}
 
-              <div className="quiz-prompt-heading">
-                <span>Chọn đáp án đúng:</span>
-                <span className="quiz-keyboard-hint">Nhấn phím <b>1</b> – <b>5</b> để chọn nhanh</span>
-              </div>
-
-              <div className="quiz-options-list" role="radiogroup">
-                {currentQuestion.options.map((option, idx) => {
-                  const optDetails = resolveCardKanjiDetails(option);
-                  const isCorrect = option.id === currentQuestion.entry.id;
-                  const isSelectedWrong = quizStatus === 'wrong' && option.id === quizSelectedOptionId;
-                  let cardStateClass = '';
-                  if (quizStatus) {
-                    if (isCorrect) cardStateClass = 'is-correct';
-                    else if (isSelectedWrong) cardStateClass = 'is-wrong';
-                    else cardStateClass = 'is-dimmed';
-                  }
-
-                  return (
-                    <button
-                      type="button"
+              {quizQuestionType === 'typed' ? (
+                <div className="typed-recall-section" style={{ marginTop: '16px' }}>
+                  <div className="typed-recall-header">
+                    <span className="typed-recall-title">⌨️ Gõ câu trả lời</span>
+                    {mode === 'vi-jp' && (
+                      <label className="typed-convert-toggle">
+                        <input
+                          type="checkbox"
+                          checked={autoConvertRomaji}
+                          onChange={(e) => {
+                            setAutoConvertRomaji(e.target.checked);
+                            try { localStorage.setItem('marugoto_auto_convert_romaji', String(e.target.checked)); } catch {}
+                          }}
+                        />
+                        <span>Chuyển Romaji ➔ Hiragana</span>
+                      </label>
+                    )}
+                  </div>
+                  <form onSubmit={submitQuizTypedAnswer} className="typed-input-wrapper">
+                    <input
+                      ref={quizTypedInputRef}
+                      type="text"
+                      className={`typed-input-box ${quizStatus === 'correct' ? 'correct' : quizStatus === 'wrong' ? 'wrong' : ''}`}
+                      placeholder={mode === 'jp-vi' ? 'Nhập nghĩa tiếng Việt...' : 'Nhập tiếng Nhật (hoặc gõ Romaji)...'}
+                      value={quizTypedInput}
                       disabled={Boolean(quizStatus) || quizSaving}
-                      className={`quiz-choice-card ${cardStateClass}`}
-                      key={option.id}
-                      onClick={() => answerQuiz(option)}
+                      autoFocus
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (mode === 'vi-jp' && autoConvertRomaji) {
+                          val = romajiToHiragana(val, { isFinal: false });
+                        }
+                        setQuizTypedInput(val);
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      className="typed-submit-btn"
+                      disabled={Boolean(quizStatus) || quizSaving || !quizTypedInput.trim()}
                     >
-                      <span className="choice-number">{idx + 1}</span>
-                      <div className="choice-text">
-                        {mode === 'jp-vi' ? (
-                          <span className="choice-vi">{option.vi}</span>
-                        ) : (
-                          <span className="choice-jp" lang="ja">
-                            {testKanjiMode === 'kanji-only' ? (
-                              <b className="opt-kanji jp-text">{optDetails.kanji || optDetails.reading}</b>
-                            ) : testKanjiMode === 'kana-only' ? (
-                              <span className="opt-kana-sub jp-text">{optDetails.reading}</span>
-                            ) : optDetails.hasKanji && optDetails.kanji !== optDetails.reading ? (
-                              <>
-                                <b className="opt-kanji jp-text">{optDetails.kanji}</b>
-                                <span className="opt-kana-sub jp-text">（{optDetails.reading}）</span>
-                              </>
-                            ) : (
-                              <span className="opt-kana-sub jp-text">{optDetails.reading}</span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {quizStatus && isCorrect && <span className="choice-indicator correct">✓</span>}
-                      {quizStatus && isSelectedWrong && <span className="choice-indicator wrong">✕</span>}
+                      Kiểm tra ↵
                     </button>
-                  );
-                })}
-              </div>
+                  </form>
+
+                  {mode === 'vi-jp' && quizTypedInput && !quizStatus && (
+                    <div className="typed-hint-bar">
+                      <span>Đang nhập:</span>
+                      <span className="typed-preview-badge">{romajiToHiragana(quizTypedInput, { isFinal: true })}</span>
+                    </div>
+                  )}
+
+                  {typedFeedback && quizStatus && (
+                    <div className={`typed-diff-feedback ${typedFeedback.isCorrect ? 'correct' : 'wrong'}`}>
+                      {typedFeedback.isCorrect ? (
+                        <div>✓ Chính xác!</div>
+                      ) : (
+                        <div>
+                          <div>✗ Bạn đã nhập: <span className="user-answer">{quizTypedInput}</span></div>
+                          <span className="expected-answer">Đáp án đúng: {mode === 'jp-vi' ? currentQuestion.entry.vi : currentQuestion.entry.jp}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="quiz-prompt-heading">
+                    <span>Chọn đáp án đúng:</span>
+                    <span className="quiz-keyboard-hint">Nhấn phím <b>1</b> – <b>5</b> để chọn nhanh</span>
+                  </div>
+
+                  <div className="quiz-options-list" role="radiogroup">
+                    {currentQuestion.options.map((option, idx) => {
+                      const optDetails = resolveCardKanjiDetails(option);
+                      const isCorrect = option.id === currentQuestion.entry.id;
+                      const isSelectedWrong = quizStatus === 'wrong' && option.id === quizSelectedOptionId;
+                      let cardStateClass = '';
+                      if (quizStatus) {
+                        if (isCorrect) cardStateClass = 'is-correct';
+                        else if (isSelectedWrong) cardStateClass = 'is-wrong';
+                        else cardStateClass = 'is-dimmed';
+                      }
+
+                      return (
+                        <button
+                          type="button"
+                          disabled={Boolean(quizStatus) || quizSaving}
+                          className={`quiz-choice-card ${cardStateClass}`}
+                          key={option.id}
+                          onClick={() => answerQuiz(option)}
+                        >
+                          <span className="choice-number">{idx + 1}</span>
+                          <div className="choice-text">
+                            {mode === 'jp-vi' ? (
+                              <span className="choice-vi">{option.vi}</span>
+                            ) : (
+                              <span className="choice-jp" lang="ja">
+                                {testKanjiMode === 'kanji-only' ? (
+                                  <b className="opt-kanji jp-text">{optDetails.kanji || optDetails.reading}</b>
+                                ) : testKanjiMode === 'kana-only' ? (
+                                  <span className="opt-kana-sub jp-text">{optDetails.reading}</span>
+                                ) : optDetails.hasKanji && optDetails.kanji !== optDetails.reading ? (
+                                  <>
+                                    <b className="opt-kanji jp-text">{optDetails.kanji}</b>
+                                    <span className="opt-kana-sub jp-text">（{optDetails.reading}）</span>
+                                  </>
+                                ) : (
+                                  <span className="opt-kana-sub jp-text">{optDetails.reading}</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          {quizStatus && isCorrect && <span className="choice-indicator correct">✓</span>}
+                          {quizStatus && isSelectedWrong && <span className="choice-indicator wrong">✕</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {quizStatus && (
                 <div className={`quiz-feedback-box ${quizStatus === 'correct' ? 'ok' : 'bad'}`}>
