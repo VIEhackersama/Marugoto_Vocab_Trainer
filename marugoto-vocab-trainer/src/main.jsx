@@ -422,6 +422,19 @@ function App() {
   const [questionStartTime, setQuestionStartTime] = useState(null);
   const [questionTimeLeft, setQuestionTimeLeft] = useState(10);
   const [autoRating, setAutoRating] = useState(null);
+  const [autoRateByResponseTime, setAutoRateByResponseTime] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marugoto_auto_rate');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+  const [cardStartTime, setCardStartTime] = useState(Date.now());
+  useEffect(() => {
+    setCardStartTime(Date.now());
+  }, [index, tab]);
+
   const [quizAvailablePool, setQuizAvailablePool] = useState([]);
   const [quizAvailableDue, setQuizAvailableDue] = useState(0);
 
@@ -694,11 +707,17 @@ function App() {
     }
   }
 
-  async function recordReview(entry, rating, source) {
+  async function recordReview(entry, rating, source, responseMs = null) {
     const result = await api('/api/reviews', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardId: entry.id, rating, source }),
+      body: JSON.stringify({
+        cardId: entry.id,
+        rating,
+        source,
+        responseMs: typeof responseMs === 'number' ? Math.round(responseMs) : null,
+        cardType: mode === 'vi-jp' ? 'VI_TO_JP' : 'JP_TO_VI',
+      }),
     });
     setEntries((cards) => cards.map((card) => card.id === entry.id
       ? { ...card, dueAt: result.dueAt, reviewCount: result.reviewCount, wrongCount: result.wrongCount }
@@ -730,7 +749,8 @@ function App() {
     if (!correct) {
       setCardSaving(true);
       try {
-        await recordReview(current, 'AGAIN', 'RECALL');
+        const elapsedMs = Math.max(100, Date.now() - cardStartTime);
+        await recordReview(current, 'AGAIN', 'RECALL', elapsedMs);
       } catch (saveError) {
         setError(`Không lưu được lượt ôn: ${saveError.message}`);
       } finally {
@@ -743,7 +763,8 @@ function App() {
     if (!current || cardSaving) return;
     setCardSaving(true);
     try {
-      await recordReview(current, rating, flashcardStatus ? 'RECALL' : 'FLASHCARD');
+      const elapsedMs = Math.max(100, Date.now() - cardStartTime);
+      await recordReview(current, rating, flashcardStatus ? 'RECALL' : 'FLASHCARD', elapsedMs);
       advanceCard();
     } catch (saveError) {
       setError(`Không lưu được lượt ôn: ${saveError.message}`);
@@ -1098,28 +1119,120 @@ function App() {
     return () => window.clearInterval(interval);
   }, [currentQuestion?.entry?.id, currentQuestion?.repeat, quizDone, Boolean(quizStatus), isCurrentTimerActive, questionStartTime, timeLimit]);
 
-  // Space/Enter to advance when answered & 1..5 keys to choose options
+  // Keyboard shortcuts: Space/Enter to advance & 1..4 keys for options/ratings
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) return;
 
-      if ((event.key === 'Enter' || event.key === ' ') && quizStatus && !quizSaving) {
-        event.preventDefault();
-        advanceQuizQuestion();
+      // Quiz / Review tab
+      if (tab === 'quiz' || tab === 'review') {
+        if (quizStatus && !quizSaving) {
+          if (event.key === '1') {
+            event.preventDefault();
+            rateQuiz('AGAIN');
+            return;
+          }
+          if (event.key === '2') {
+            event.preventDefault();
+            rateQuiz('HARD');
+            return;
+          }
+          if (event.key === '3') {
+            event.preventDefault();
+            rateQuiz('GOOD');
+            return;
+          }
+          if (event.key === '4') {
+            event.preventDefault();
+            rateQuiz('EASY');
+            return;
+          }
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            if (quizStatus === 'correct' && !autoRateByResponseTime && autoRating) {
+              rateQuiz(autoRating);
+            } else {
+              advanceQuizQuestion();
+            }
+            return;
+          }
+        }
+
+        if (!quizStatus && currentQuestion?.options?.length && !quizSaving) {
+          const num = parseInt(event.key, 10);
+          if (num >= 1 && num <= currentQuestion.options.length) {
+            event.preventDefault();
+            answerQuiz(currentQuestion.options[num - 1]);
+          }
+        }
         return;
       }
 
-      if (!quizStatus && currentQuestion?.options?.length && !quizSaving) {
-        const num = parseInt(event.key, 10);
-        if (num >= 1 && num <= currentQuestion.options.length) {
+      // Flashcards tab
+      if (tab === 'flashcards' && !cardSaving && current) {
+        if (!revealed && !flashcardStatus && studyMode === 'test' && flashcardOptions?.length) {
+          const num = parseInt(event.key, 10);
+          if (num >= 1 && num <= flashcardOptions.length) {
+            event.preventDefault();
+            chooseFlashcardOption(flashcardOptions[num - 1]);
+            return;
+          }
+        }
+
+        if (revealed || flashcardStatus) {
+          if (event.key === '1') {
+            event.preventDefault();
+            rateFlashcard('AGAIN');
+            return;
+          }
+          if (event.key === '2') {
+            event.preventDefault();
+            rateFlashcard('HARD');
+            return;
+          }
+          if (event.key === '3') {
+            event.preventDefault();
+            rateFlashcard('GOOD');
+            return;
+          }
+          if (event.key === '4') {
+            event.preventDefault();
+            rateFlashcard('EASY');
+            return;
+          }
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            if (flashcardStatus === 'wrong') {
+              advanceCard();
+            } else {
+              rateFlashcard('GOOD');
+            }
+            return;
+          }
+        } else {
+          if (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            setRevealed(true);
+            return;
+          }
+        }
+
+        if (event.key === 'ArrowLeft') {
           event.preventDefault();
-          answerQuiz(currentQuestion.options[num - 1]);
+          setIndex((v) => (v - 1 + Math.max(entries.length, 1)) % Math.max(entries.length, 1));
+          setRevealed(false);
+          setFlashcardStatus(null);
+          setFlashcardSelectedId(null);
+          setFlashcardMessage('');
+        } else if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          advanceCard();
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [quizStatus, quizSaving, currentQuestion]);
+  }, [tab, quizStatus, quizSaving, currentQuestion, autoRateByResponseTime, autoRating, cardSaving, current, revealed, flashcardStatus, studyMode, flashcardOptions, entries.length]);
 
   function openQuizSetup(kind = 'TEST') {
     if (quizSession && !quizDone) {
@@ -1195,7 +1308,7 @@ function App() {
     setQuizMessage(`Hết thời gian (${timeLimit}s)! Bạn cần ôn lại từ này. Đáp án: ${answerDisplay}`);
     setQuizSaving(true);
     try {
-      const result = await recordReview(currentQuestion.entry, 'AGAIN', 'TEST');
+      const result = await recordReview(currentQuestion.entry, 'AGAIN', 'TEST', timeLimit * 1000);
       setQuizSession((session) => session
         ? scheduleAgain(session, currentQuestion.entry, result.dueAt)
         : session);
@@ -1221,7 +1334,9 @@ function App() {
       setQuizMessage(`Chưa đúng. Đáp án: ${answerDisplay}`);
       setQuizSaving(true);
       try {
-        const result = await recordReview(currentQuestion.entry, 'AGAIN', 'TEST');
+        const elapsed = questionStartTime ? Math.max(0.1, (Date.now() - questionStartTime) / 1000) : 1;
+        const responseMs = Math.round(elapsed * 1000);
+        const result = await recordReview(currentQuestion.entry, 'AGAIN', 'TEST', responseMs);
         setQuizSession((session) => session
           ? scheduleAgain(session, currentQuestion.entry, result.dueAt)
           : session);
@@ -1235,6 +1350,7 @@ function App() {
       }
     } else {
       const elapsed = questionStartTime ? Math.max(0.1, (Date.now() - questionStartTime) / 1000) : 1;
+      const responseMs = Math.round(elapsed * 1000);
       let calculatedRating = 'GOOD';
       if (isCurrentTimerActive) {
         const ratio = elapsed / timeLimit;
@@ -1248,17 +1364,23 @@ function App() {
       }
       setAutoRating(calculatedRating);
       const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy (Dễ)' : calculatedRating === 'GOOD' ? '🟡 Good (Vừa)' : '🟠 Hard (Khó)';
-      setQuizMessage(isCurrentTimerActive
-        ? `Chính xác! (${elapsed.toFixed(1)}s · Đã lưu mức: ${ratingLabel})`
-        : `Chính xác! (Đã lưu mức: ${ratingLabel})`);
-      setQuizSaving(true);
-      try {
-        const source = quizMode === 'DUE' ? 'TEST' : quizMode;
-        await recordReview(currentQuestion.entry, calculatedRating, source);
-      } catch (saveError) {
-        setError(`Không lưu được lượt ôn: ${saveError.message}`);
-      } finally {
-        setQuizSaving(false);
+      if (autoRateByResponseTime) {
+        setQuizMessage(isCurrentTimerActive
+          ? `Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`
+          : `Chính xác! (Đã tự động lưu: ${ratingLabel})`);
+        setQuizSaving(true);
+        try {
+          const source = quizMode === 'DUE' ? 'TEST' : quizMode;
+          await recordReview(currentQuestion.entry, calculatedRating, source, responseMs);
+        } catch (saveError) {
+          setError(`Không lưu được lượt ôn: ${saveError.message}`);
+        } finally {
+          setQuizSaving(false);
+        }
+      } else {
+        setQuizMessage(isCurrentTimerActive
+          ? `Chính xác! (${elapsed.toFixed(1)}s · Gợi ý: ${ratingLabel} — Bấm 1-4 hoặc Enter để xác nhận)`
+          : `Chính xác! (Gợi ý: ${ratingLabel} — Bấm 1-4 hoặc Enter để xác nhận)`);
       }
     }
   }
@@ -1268,7 +1390,8 @@ function App() {
     setQuizSaving(true);
     try {
       const source = quizMode === 'DUE' ? 'TEST' : quizMode;
-      await recordReview(currentQuestion.entry, rating, source);
+      const elapsed = questionStartTime ? Math.max(0.1, (Date.now() - questionStartTime) / 1000) : 1;
+      await recordReview(currentQuestion.entry, rating, source, Math.round(elapsed * 1000));
       advanceQuizQuestion();
     } catch (saveError) {
       setError(`Không lưu được lượt ôn: ${saveError.message}`);
@@ -1330,6 +1453,7 @@ function App() {
   }
 
   function renderRatings(onRate, disabled = false, includeAgain = true) {
+    const badgeText = autoRateByResponseTime ? 'Tự động' : 'Gợi ý';
     return (
       <div className="rating-options-toolbar" aria-label="Đánh giá mức độ ghi nhớ">
         {includeAgain && (
@@ -1338,11 +1462,12 @@ function App() {
             disabled={disabled}
             className={`rating-pill-btn again ${autoRating === 'AGAIN' ? 'highlight-rating' : ''}`}
             onClick={() => onRate('AGAIN')}
-            title="Quên hoàn toàn, cần học lại"
+            title="Quên hoàn toàn, cần học lại (Phím 1)"
           >
             <span className="rating-emoji">🔄</span>
             <span className="rating-name">Again</span>
-            {autoRating === 'AGAIN' && <span className="auto-pill-badge">Tự động</span>}
+            <span className="rating-shortcut-tag">1</span>
+            {autoRating === 'AGAIN' && <span className="auto-pill-badge">{badgeText}</span>}
           </button>
         )}
         <button
@@ -1350,33 +1475,36 @@ function App() {
           disabled={disabled}
           className={`rating-pill-btn hard ${autoRating === 'HARD' ? 'highlight-rating' : ''}`}
           onClick={() => onRate('HARD')}
-          title="Nhớ khó khăn, mất nhiều thời gian"
+          title="Nhớ khó khăn, mất nhiều thời gian (Phím 2)"
         >
           <span className="rating-emoji">🐢</span>
           <span className="rating-name">Hard</span>
-          {autoRating === 'HARD' && <span className="auto-pill-badge">Tự động</span>}
+          <span className="rating-shortcut-tag">2</span>
+          {autoRating === 'HARD' && <span className="auto-pill-badge">{badgeText}</span>}
         </button>
         <button
           type="button"
           disabled={disabled}
           className={`rating-pill-btn good ${autoRating === 'GOOD' ? 'highlight-rating' : ''}`}
           onClick={() => onRate('GOOD')}
-          title="Nhớ bình thường, phản xạ vừa phải"
+          title="Nhớ bình thường, phản xạ vừa phải (Phím 3)"
         >
           <span className="rating-emoji">⏱️</span>
           <span className="rating-name">Good</span>
-          {autoRating === 'GOOD' && <span className="auto-pill-badge">Tự động</span>}
+          <span className="rating-shortcut-tag">3</span>
+          {autoRating === 'GOOD' && <span className="auto-pill-badge">{badgeText}</span>}
         </button>
         <button
           type="button"
           disabled={disabled}
           className={`rating-pill-btn easy ${autoRating === 'EASY' ? 'highlight-rating' : ''}`}
           onClick={() => onRate('EASY')}
-          title="Nhớ rất nhanh, phản xạ tức thì"
+          title="Nhớ rất nhanh, phản xạ tức thì (Phím 4)"
         >
           <span className="rating-emoji">⚡</span>
           <span className="rating-name">Easy</span>
-          {autoRating === 'EASY' && <span className="auto-pill-badge">Tự động</span>}
+          <span className="rating-shortcut-tag">4</span>
+          {autoRating === 'EASY' && <span className="auto-pill-badge">{badgeText}</span>}
         </button>
       </div>
     );
@@ -2224,6 +2352,27 @@ function App() {
                       </div>
 
                       <div className="try-again-sub-option">
+                        <label className="setup-option-label" htmlFor="auto-rate-toggle">
+                          <div className="option-text-group">
+                            <span className="option-sub-title">Tự động chọn mức nhớ theo phản xạ (Mặc định: Bật)</span>
+                            <span className="option-desc">Tự động lưu Easy/Good/Hard theo thời gian làm bài để học nhanh. Tắt để xác nhận thủ công hoặc dùng phím 1-4</span>
+                          </div>
+                          <input
+                            id="auto-rate-toggle"
+                            type="checkbox"
+                            className="toggle-switch small-switch"
+                            checked={autoRateByResponseTime}
+                            onChange={(e) => {
+                              setAutoRateByResponseTime(e.target.checked);
+                              try {
+                                localStorage.setItem('marugoto_auto_rate', e.target.checked ? 'true' : 'false');
+                              } catch {}
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="try-again-sub-option">
                         <label className="setup-option-label" htmlFor="disable-repeat-toggle">
                           <div className="option-text-group">
                             <span className="option-sub-title">Tắt timeout khi gặp từ cần Try Again</span>
@@ -2535,7 +2684,11 @@ function App() {
 
                   {quizStatus === 'correct' && (
                     <div className="feedback-rating-panel">
-                      <div className="rating-panel-heading">Đã tự động lưu theo thời gian phản xạ. Bạn có thể chọn mức khác bên dưới nếu muốn đổi:</div>
+                      <div className="rating-panel-heading">
+                        {autoRateByResponseTime
+                          ? 'Đã tự động lưu theo thời gian phản xạ. Bạn có thể chọn mức khác bên dưới nếu muốn đổi (Phím 1-4):'
+                          : 'Gợi ý mức nhớ dựa trên thời gian phản xạ. Vui lòng bấm chọn hoặc nhấn phím 1-4 để xác nhận:'}
+                      </div>
                       {renderRatings(rateQuiz, quizSaving, false)}
                     </div>
                   )}

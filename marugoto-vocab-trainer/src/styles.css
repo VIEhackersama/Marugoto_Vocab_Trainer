@@ -1060,6 +1060,18 @@ ruby.dict-ruby rt { font-size:0.54em; color:#db2777; font-weight:600; letter-spa
   margin-left: 2px;
 }
 
+.rating-shortcut-tag {
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-family: monospace;
+  font-weight: 700;
+  color: #64748b;
+  margin-left: 2px;
+}
+
 .feedback-actions-row {
   display: flex;
   justify-content: flex-end;
