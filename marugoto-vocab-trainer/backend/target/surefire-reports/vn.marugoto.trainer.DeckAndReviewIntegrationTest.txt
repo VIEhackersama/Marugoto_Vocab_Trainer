@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: vn.marugoto.trainer.DeckAndReviewIntegrationTest
--------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.579 s -- in vn.marugoto.trainer.DeckAndReviewIntegrationTest
