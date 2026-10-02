@@ -80,19 +80,11 @@ class DeckService {
         }
         entries = validatedEntries(entries);
         if (skipDuplicates) {
-            Set<String> existingKana = new HashSet<>(jdbc.query(
-                    "SELECT japanese FROM cards",
-                    (rs, i) -> canonicalKanaKey(rs.getString("japanese"))
-            ));
-            Set<String> existingJp = new HashSet<>(jdbc.query(
-                    "SELECT japanese FROM cards",
-                    (rs, i) -> rs.getString("japanese").trim().toLowerCase(Locale.ROOT)
-            ));
-            entries = entries.stream().filter(entry -> {
-                String jp = entry.jp().trim().toLowerCase(Locale.ROOT);
-                String kana = canonicalKanaKey(entry.jp());
-                return !existingJp.contains(jp) && (kana.isEmpty() || !existingKana.contains(kana));
-            }).toList();
+            List<ExistingVocab> existingVocabs = jdbc.query(
+                    "SELECT id, spelling, reading, meanings_vi FROM vocabularies",
+                    (rs, i) -> new ExistingVocab(rs.getString("id"), rs.getString("spelling"), rs.getString("reading"), rs.getString("meanings_vi"))
+            );
+            entries = entries.stream().filter(entry -> !isDuplicate(entry, existingVocabs)).toList();
         }
         if (entries.isEmpty()) throw new ResponseStatusException(BAD_REQUEST, "PDF không có từ vựng hợp lệ để lưu.");
         if (entries.size() > MAX_CARDS_PER_PDF) throw new ResponseStatusException(BAD_REQUEST, "PDF có quá nhiều từ vựng.");
@@ -107,14 +99,40 @@ class DeckService {
             if (title.isEmpty()) title = "Bộ từ mới";
             jdbc.update("INSERT INTO decks(id,title,original_filename,stored_filename,file_size,created_at) VALUES(?,?,?,?,?,?)",
                     deckId, title, filename, storedFilename, bytes.length, now);
+
+            List<ExistingVocab> allVocabs = new ArrayList<>(jdbc.query(
+                    "SELECT id, spelling, reading, meanings_vi FROM vocabularies",
+                    (rs, i) -> new ExistingVocab(rs.getString("id"), rs.getString("spelling"), rs.getString("reading"), rs.getString("meanings_vi"))
+            ));
+
             for (CardInput entry : entries) {
-                Card state = fsrs.newCard();
+                String vocabId = findMatchingVocabId(entry, allVocabs);
+                String reading = extractReading(entry.jp());
+                if (vocabId == null) {
+                    vocabId = UUID.randomUUID().toString();
+                    jdbc.update("""
+                            INSERT INTO vocabularies(id,spelling,reading,romaji,meanings_vi,created_at)
+                            VALUES(?,?,?,?,?,?)
+                            """, vocabId, entry.jp(), reading, entry.romaji(), entry.vi(), now);
+                    allVocabs.add(new ExistingVocab(vocabId, entry.jp(), reading, entry.vi()));
+                }
+
                 jdbc.update("""
-                        INSERT INTO cards(id,deck_id,japanese,romaji,vietnamese,fsrs_card_json,due_at,created_at)
-                        VALUES(?,?,?,?,?,?,?,?)
-                        """,
-                        UUID.randomUUID().toString(), deckId, entry.jp(), entry.romaji(), entry.vi(),
-                        fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
+                        INSERT INTO vocabulary_sources(id,vocabulary_id,deck_id,created_at)
+                        VALUES(?,?,?,?)
+                        """, UUID.randomUUID().toString(), vocabId, deckId, now);
+
+                Integer cardCount = jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM study_cards WHERE vocabulary_id=? AND card_type='JP_TO_VI'",
+                        Integer.class, vocabId);
+                if (cardCount == null || cardCount == 0) {
+                    Card state = fsrs.newCard();
+                    jdbc.update("""
+                            INSERT INTO study_cards(id,vocabulary_id,card_type,fsrs_card_json,due_at,created_at)
+                            VALUES(?,?,?,?,?,?)
+                            """, UUID.randomUUID().toString(), vocabId, "JP_TO_VI",
+                            fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
+                }
             }
         } catch (RuntimeException exception) {
             Files.deleteIfExists(storedPath);
@@ -126,10 +144,12 @@ class DeckService {
     List<DeckDto> list() {
         long now = System.currentTimeMillis();
         return jdbc.query("""
-                SELECT d.id,d.title,d.original_filename,d.created_at,
-                       COUNT(c.id) AS card_count,
-                       SUM(CASE WHEN c.due_at <= ? THEN 1 ELSE 0 END) AS due_count
-                FROM decks d LEFT JOIN cards c ON c.deck_id=d.id
+                SELECT d.id, d.title, d.original_filename, d.created_at,
+                       COUNT(DISTINCT s.id) AS card_count,
+                       SUM(CASE WHEN s.due_at <= ? THEN 1 ELSE 0 END) AS due_count
+                FROM decks d
+                LEFT JOIN vocabulary_sources vs ON vs.deck_id = d.id
+                LEFT JOIN study_cards s ON s.vocabulary_id = vs.vocabulary_id
                 WHERE d.id != 'custom'
                 GROUP BY d.id ORDER BY d.created_at DESC
                 """, DECK_MAPPER, now);
@@ -161,6 +181,8 @@ class DeckService {
             throw new ResponseStatusException(BAD_REQUEST, "Không thể xóa bộ từ vựng tùy chỉnh.");
         }
         Path pdfPath = pdfPath(deckId);
+        jdbc.update("DELETE FROM vocabulary_sources WHERE deck_id=?", deckId);
+        jdbc.update("DELETE FROM vocabularies WHERE id NOT IN (SELECT vocabulary_id FROM vocabulary_sources)");
         int deleted = jdbc.update("DELETE FROM decks WHERE id=?", deckId);
         if (deleted == 0) throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy bộ từ vựng.");
         Files.deleteIfExists(pdfPath);
@@ -191,21 +213,49 @@ class DeckService {
         ensureCustomDeck();
 
         long now = System.currentTimeMillis();
+        String vocabId = UUID.randomUUID().toString();
+        String reading = extractReading(jp);
+        jdbc.update("""
+                INSERT INTO vocabularies(id,spelling,reading,romaji,meanings_vi,created_at)
+                VALUES(?,?,?,?,?,?)
+                """, vocabId, jp, reading, romaji, vi, now);
+
+        jdbc.update("""
+                INSERT INTO vocabulary_sources(id,vocabulary_id,deck_id,created_at)
+                VALUES(?,?,?,?)
+                """, UUID.randomUUID().toString(), vocabId, "custom", now);
+
         String cardId = UUID.randomUUID().toString();
         Card state = fsrs.newCard();
         jdbc.update("""
-                INSERT INTO cards(id,deck_id,japanese,romaji,vietnamese,fsrs_card_json,due_at,created_at)
-                VALUES(?,?,?,?,?,?,?,?)
-                """,
-                cardId, "custom", jp, romaji, vi,
+                INSERT INTO study_cards(id,vocabulary_id,card_type,fsrs_card_json,due_at,created_at)
+                VALUES(?,?,?,?,?,?)
+                """, cardId, vocabId, "JP_TO_VI",
                 fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
         return new StudyCardDto(cardId, "custom", "Từ vựng tùy chỉnh", jp, romaji, vi, fsrs.dueAt(state), 0, 0);
     }
 
     @Transactional
     void deleteCard(String cardId) {
-        int deleted = jdbc.update("DELETE FROM cards WHERE id=?", cardId);
+        List<String> vocabIds = jdbc.query(
+                "SELECT vocabulary_id FROM study_cards WHERE id=?",
+                (rs, i) -> rs.getString("vocabulary_id"),
+                cardId
+        );
+        if (vocabIds.isEmpty()) throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng.");
+        String vocabId = vocabIds.getFirst();
+
+        int deleted = jdbc.update("DELETE FROM study_cards WHERE id=?", cardId);
         if (deleted == 0) throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng.");
+
+        Integer remainingCards = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM study_cards WHERE vocabulary_id=?",
+                Integer.class,
+                vocabId
+        );
+        if (remainingCards == null || remainingCards == 0) {
+            jdbc.update("DELETE FROM vocabularies WHERE id=?", vocabId);
+        }
     }
 
     @Transactional
@@ -217,18 +267,28 @@ class DeckService {
         if (jp.isBlank()) throw new ResponseStatusException(BAD_REQUEST, "Tiếng Nhật không được để trống.");
         if (vi.isBlank()) throw new ResponseStatusException(BAD_REQUEST, "Nghĩa tiếng Việt không được để trống.");
 
-        int updated = jdbc.update("""
-                UPDATE cards SET japanese = ?, romaji = ?, vietnamese = ?
+        List<String> vocabIds = jdbc.query(
+                "SELECT vocabulary_id FROM study_cards WHERE id=?",
+                (rs, i) -> rs.getString("vocabulary_id"),
+                cardId
+        );
+        if (vocabIds.isEmpty()) throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng.");
+        String vocabId = vocabIds.getFirst();
+        String reading = extractReading(jp);
+
+        jdbc.update("""
+                UPDATE vocabularies SET spelling = ?, reading = ?, romaji = ?, meanings_vi = ?
                 WHERE id = ?
-                """, jp, romaji, vi, cardId);
-        if (updated == 0) {
-            throw new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng.");
-        }
+                """, jp, reading, romaji, vi, vocabId);
+
         return jdbc.query("""
-                SELECT c.id, c.deck_id, d.title AS deck_title, c.japanese, c.romaji, c.vietnamese,
-                       c.due_at, c.review_count, c.wrong_count
-                FROM cards c JOIN decks d ON d.id = c.deck_id
-                WHERE c.id = ?
+                SELECT s.id, vs.deck_id, d.title AS deck_title, v.spelling AS japanese, v.romaji, v.meanings_vi AS vietnamese,
+                       s.due_at, s.review_count, s.wrong_count
+                FROM study_cards s
+                JOIN vocabularies v ON v.id = s.vocabulary_id
+                JOIN vocabulary_sources vs ON vs.vocabulary_id = v.id
+                JOIN decks d ON d.id = vs.deck_id
+                WHERE s.id = ?
                 """, STUDY_CARD_MAPPER, cardId).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Không tìm thấy từ vựng."));
     }
@@ -243,26 +303,42 @@ class DeckService {
             String vi = normalize(item.vi());
             String romaji = item.romaji() == null ? "" : normalize(item.romaji());
             if (jp.isBlank() || vi.isBlank()) continue;
-            int rows = jdbc.update("UPDATE cards SET japanese = ?, romaji = ?, vietnamese = ? WHERE id = ?", jp, romaji, vi, item.id());
-            if (rows > 0) {
+
+            List<String> vocabIds = jdbc.query(
+                    "SELECT vocabulary_id FROM study_cards WHERE id=?",
+                    (rs, i) -> rs.getString("vocabulary_id"),
+                    item.id()
+            );
+            if (!vocabIds.isEmpty()) {
+                String vocabId = vocabIds.getFirst();
+                String reading = extractReading(jp);
+                jdbc.update("UPDATE vocabularies SET spelling = ?, reading = ?, romaji = ?, meanings_vi = ? WHERE id = ?",
+                        jp, reading, romaji, vi, vocabId);
                 updatedIds.add(item.id());
             }
         }
         if (updatedIds.isEmpty()) return List.of();
         String inSql = String.join(",", java.util.Collections.nCopies(updatedIds.size(), "?"));
         return jdbc.query("""
-                SELECT c.id, c.deck_id, d.title AS deck_title, c.japanese, c.romaji, c.vietnamese,
-                       c.due_at, c.review_count, c.wrong_count
-                FROM cards c JOIN decks d ON d.id = c.deck_id
-                WHERE c.id IN (""" + inSql + ")", STUDY_CARD_MAPPER, updatedIds.toArray());
+                SELECT s.id, vs.deck_id, d.title AS deck_title, v.spelling AS japanese, v.romaji, v.meanings_vi AS vietnamese,
+                       s.due_at, s.review_count, s.wrong_count
+                FROM study_cards s
+                JOIN vocabularies v ON v.id = s.vocabulary_id
+                JOIN vocabulary_sources vs ON vs.vocabulary_id = v.id
+                JOIN decks d ON d.id = vs.deck_id
+                WHERE s.id IN (""" + inSql + ")", STUDY_CARD_MAPPER, updatedIds.toArray());
     }
 
     DeckDto findDeck(String deckId) {
         long now = System.currentTimeMillis();
         return jdbc.query("""
-                SELECT d.id,d.title,d.original_filename,d.created_at,COUNT(c.id) AS card_count,
-                       SUM(CASE WHEN c.due_at <= ? THEN 1 ELSE 0 END) AS due_count
-                FROM decks d LEFT JOIN cards c ON c.deck_id=d.id WHERE d.id=? GROUP BY d.id
+                SELECT d.id, d.title, d.original_filename, d.created_at,
+                       COUNT(DISTINCT s.id) AS card_count,
+                       SUM(CASE WHEN s.due_at <= ? THEN 1 ELSE 0 END) AS due_count
+                FROM decks d
+                LEFT JOIN vocabulary_sources vs ON vs.deck_id = d.id
+                LEFT JOIN study_cards s ON s.vocabulary_id = vs.vocabulary_id
+                WHERE d.id=? GROUP BY d.id
                 """, DECK_MAPPER, now, deckId).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Không tìm thấy bộ từ vựng."));
     }
@@ -327,5 +403,112 @@ class DeckService {
                                 .replaceAll("[～~\\-・\\s\\d\\(\\[\"'`\\./]+$", "")
                                 .strip();
         return toHiragana(cleaned).toLowerCase(Locale.ROOT);
+    }
+
+    public record ExistingVocab(String id, String spelling, String reading, String meaningsVi) {}
+
+    public static String extractKanjiOnly(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= '\u4e00' && c <= '\u9faf') {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    public static boolean areWordsHomophones(String jp1, String vi1, String jp2, String vi2) {
+        String kana1 = canonicalKanaKey(jp1);
+        String kana2 = canonicalKanaKey(jp2);
+        if (kana1.isEmpty() || !kana1.equals(kana2)) return false;
+
+        String kanji1 = extractKanjiOnly(jp1);
+        String kanji2 = extractKanjiOnly(jp2);
+
+        // If both have kanji and their kanji characters differ -> homophones! (e.g. 橋 vs 箸)
+        if (!kanji1.isEmpty() && !kanji2.isEmpty() && !kanji1.equals(kanji2)) {
+            return true;
+        }
+
+        // If one or both lack kanji, check if meanings are distinct
+        if (vi1 != null && vi2 != null && !vi1.isBlank() && !vi2.isBlank()) {
+            boolean overlap = meaningsOverlap(vi1, vi2);
+            if (!overlap && !kanji1.equals(kanji2)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean meaningsOverlap(String vi1, String vi2) {
+        if (vi1 == null || vi2 == null || vi1.isBlank() || vi2.isBlank()) return true;
+        Set<String> words1 = extractMeaningWords(vi1);
+        Set<String> words2 = extractMeaningWords(vi2);
+        if (words1.isEmpty() || words2.isEmpty()) return true;
+        for (String w : words1) {
+            if (words2.contains(w)) return true;
+        }
+        return false;
+    }
+
+    private static Set<String> extractMeaningWords(String vi) {
+        String normalized = java.text.Normalizer.normalize(vi.toLowerCase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^a-z0-9\\s]", " ");
+        String[] parts = normalized.split("\\s+");
+        Set<String> set = new HashSet<>();
+        for (String p : parts) {
+            if (p.length() > 1) set.add(p);
+        }
+        return set;
+    }
+
+    private static boolean isDuplicate(CardInput candidate, List<ExistingVocab> existingList) {
+        String candJp = candidate.jp().trim().toLowerCase(Locale.ROOT);
+        String candKana = canonicalKanaKey(candidate.jp());
+
+        for (ExistingVocab ex : existingList) {
+            String exJp = ex.spelling().trim().toLowerCase(Locale.ROOT);
+            if (candJp.equals(exJp)) {
+                return true;
+            }
+
+            String exKana = ex.reading() == null || ex.reading().isBlank()
+                    ? canonicalKanaKey(ex.spelling())
+                    : canonicalKanaKey(ex.reading());
+
+            if (!candKana.isEmpty() && candKana.equals(exKana)) {
+                if (areWordsHomophones(candidate.jp(), candidate.vi(), ex.spelling(), ex.meaningsVi())) {
+                    continue;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String findMatchingVocabId(CardInput candidate, List<ExistingVocab> existingList) {
+        String candJp = candidate.jp().trim().toLowerCase(Locale.ROOT);
+        String candKana = canonicalKanaKey(candidate.jp());
+
+        for (ExistingVocab ex : existingList) {
+            String exJp = ex.spelling().trim().toLowerCase(Locale.ROOT);
+            if (candJp.equals(exJp)) {
+                return ex.id();
+            }
+
+            String exKana = ex.reading() == null || ex.reading().isBlank()
+                    ? canonicalKanaKey(ex.spelling())
+                    : canonicalKanaKey(ex.reading());
+
+            if (!candKana.isEmpty() && candKana.equals(exKana)) {
+                if (!areWordsHomophones(candidate.jp(), candidate.vi(), ex.spelling(), ex.meaningsVi())) {
+                    return ex.id();
+                }
+            }
+        }
+        return null;
     }
 }

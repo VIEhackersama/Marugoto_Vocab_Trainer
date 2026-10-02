@@ -61,21 +61,41 @@ export function canonicalKanaKey(cardOrJp) {
   return toHiragana(cleaned).toLowerCase();
 }
 
-export function findDuplicates(candidateCards, existingCards) {
-  const existingByKana = new Map();
-  const existingByJp = new Map();
+export function extractKanjiOnly(s) {
+  return ((s || '').match(/[\u4e00-\u9faf]/g) || []).join('');
+}
 
-  for (const card of (existingCards || [])) {
-    const jpKey = (card.jp || '').trim().toLowerCase();
-    if (jpKey && !existingByJp.has(jpKey)) {
-      existingByJp.set(jpKey, card);
-    }
-    const kanaKey = canonicalKanaKey(card);
-    if (kanaKey && !existingByKana.has(kanaKey)) {
-      existingByKana.set(kanaKey, card);
+export function areWordsHomophones(card1, card2) {
+  const kana1 = canonicalKanaKey(card1);
+  const kana2 = canonicalKanaKey(card2);
+  if (!kana1 || !kana2 || kana1 !== kana2) return false;
+
+  const kanji1 = extractKanjiOnly(typeof card1 === 'string' ? card1 : card1?.jp);
+  const kanji2 = extractKanjiOnly(typeof card2 === 'string' ? card2 : card2?.jp);
+
+  // If both have kanji and their kanji characters differ -> homophones! (e.g. 橋 vs 箸)
+  if (kanji1 && kanji2 && kanji1 !== kanji2) {
+    return true;
+  }
+
+  // If one or both lack kanji, check if meanings are distinct
+  const vi1 = (typeof card1 === 'object' ? card1?.vi : '') || '';
+  const vi2 = (typeof card2 === 'object' ? card2?.vi : '') || '';
+  if (vi1 && vi2) {
+    const w1 = removeDiacritics(vi1).replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 1);
+    const w2 = removeDiacritics(vi2).replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 1);
+    const set1 = new Set(w1);
+    const hasOverlap = w2.some(w => set1.has(w));
+    if (!hasOverlap && kanji1 !== kanji2) {
+      return true;
     }
   }
 
+  return false;
+}
+
+export function findDuplicates(candidateCards, existingCards) {
+  const existingList = existingCards || [];
   const duplicates = [];
   const uniqueCards = [];
   const seenInBatch = new Set();
@@ -83,27 +103,45 @@ export function findDuplicates(candidateCards, existingCards) {
   for (const card of (candidateCards || [])) {
     const jpKey = (card.jp || '').trim().toLowerCase();
     const kanaKey = canonicalKanaKey(card);
+    const kanjiOnly = extractKanjiOnly(card.jp);
+    const viNorm = removeDiacritics(card.vi || '');
 
-    const batchKey = kanaKey || jpKey;
+    // Batch key should include kanji/meaning to avoid conflating homophones in the same batch
+    const batchKey = kanjiOnly ? `${kanjiOnly}|${kanaKey}` : `${jpKey}|${viNorm}`;
     if (batchKey && seenInBatch.has(batchKey)) {
       continue;
     }
     if (batchKey) seenInBatch.add(batchKey);
 
-    const matchByJp = existingByJp.get(jpKey);
-    const matchByKana = existingByKana.get(kanaKey);
+    let match = null;
+    let matchReason = '';
 
-    if (matchByJp) {
+    for (const ex of existingList) {
+      const exJpKey = (ex.jp || '').trim().toLowerCase();
+      const exKanaKey = canonicalKanaKey(ex);
+
+      if (jpKey && jpKey === exJpKey) {
+        match = ex;
+        matchReason = 'Trùng khớp hoàn toàn chữ Nhật';
+        break;
+      }
+
+      if (kanaKey && kanaKey === exKanaKey) {
+        if (areWordsHomophones(card, ex)) {
+          // Homophone (e.g. 箸 vs 橋), do not treat as duplicate
+          continue;
+        }
+        match = ex;
+        matchReason = 'Trùng từ vựng (cùng cách đọc & nghĩa)';
+        break;
+      }
+    }
+
+    if (match) {
       duplicates.push({
         candidate: card,
-        existing: matchByJp,
-        reason: 'Trùng khớp hoàn toàn chữ Nhật',
-      });
-    } else if (matchByKana && kanaKey) {
-      duplicates.push({
-        candidate: card,
-        existing: matchByKana,
-        reason: 'Trùng cách đọc Kana',
+        existing: match,
+        reason: matchReason,
       });
     } else {
       uniqueCards.push(card);

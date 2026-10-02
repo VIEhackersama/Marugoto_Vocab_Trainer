@@ -121,3 +121,26 @@ test('findDuplicates identifies duplicate words and separates unique words', () 
   assert.equal(result.duplicates[1].existing.deckTitle, 'Bài 1');
 });
 
+test('findDuplicates preserves Japanese homophones sharing the same kana reading', () => {
+  const existingInDb = [
+    { id: '1', jp: '橋（はし）', vi: 'cây cầu', deckTitle: 'Bài 1' },
+    { id: '2', jp: '雨（あめ）', vi: 'cơn mưa', deckTitle: 'Bài 2' },
+  ];
+
+  const candidateBatch = [
+    { jp: '箸（はし）', vi: 'đôi đũa' }, // Same kana 'はし', different kanji '箸' vs '橋' & different meaning
+    { jp: '飴（あめ）', vi: 'kẹo' }, // Same kana 'あめ', different kanji '飴' vs '雨' & different meaning
+    { jp: '橋（はし）', vi: 'cây cầu' }, // Genuine duplicate
+  ];
+
+  const result = findDuplicates(candidateBatch, existingInDb);
+  assert.equal(result.hasDuplicates, true);
+  assert.equal(result.duplicates.length, 1);
+  assert.equal(result.duplicates[0].candidate.jp, '橋（はし）');
+  assert.equal(result.uniqueCards.length, 2);
+  assert.deepEqual(
+    result.uniqueCards.map((c) => c.jp),
+    ['箸（はし）', '飴（あめ）']
+  );
+});
+

@@ -140,4 +140,57 @@ class DeckAndReviewIntegrationTest {
         mvc.perform(delete("/api/decks/cards/{cardId}", cardId))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    void homophonesAreNotTreatedAsDuplicates() throws Exception {
+        // First deck has 橋（はし） - cây cầu
+        String deck1Json = """
+                [{"jp":"橋（はし）","romaji":"hashi","vi":"cây cầu"}]
+                """;
+        MockMultipartFile pdf1 = new MockMultipartFile("file", "deck1.pdf", "application/pdf",
+                "%PDF-1.7\nfixture1".getBytes(StandardCharsets.US_ASCII));
+        String res1 = mvc.perform(multipart("/api/decks").file(pdf1).param("cards", deck1Json))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String deckId1 = objectMapper.readTree(res1).get("id").asString();
+
+        // Second deck has 箸（はし） - đôi đũa (same kana reading はし, different kanji & meaning)
+        // With skipDuplicates=true, it MUST NOT be discarded as a duplicate!
+        String deck2Json = """
+                [
+                  {"jp":"橋（はし）","romaji":"hashi","vi":"cây cầu"},
+                  {"jp":"箸（はし）","romaji":"hashi","vi":"đôi đũa"}
+                ]
+                """;
+        MockMultipartFile pdf2 = new MockMultipartFile("file", "deck2.pdf", "application/pdf",
+                "%PDF-1.7\nfixture2".getBytes(StandardCharsets.US_ASCII));
+        String res2 = mvc.perform(multipart("/api/decks").file(pdf2).param("cards", deck2Json).param("skipDuplicates", "true"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode deck2 = objectMapper.readTree(res2);
+        String deckId2 = deck2.get("id").asString();
+
+        // deck2 should contain exactly 1 card: 箸（はし） (the genuine duplicate 橋 was skipped, but homophone 箸 was preserved)
+        assertEquals(1, deck2.get("cardCount").asInt());
+
+        JsonNode cards = objectMapper.readTree(mvc.perform(get("/api/study/cards").param("deckId", deckId2).param("mode", "all"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(1, cards.get("cards").size());
+        assertEquals("箸（はし）", cards.get("cards").get(0).get("jp").asString());
+        assertEquals("đôi đũa", cards.get("cards").get(0).get("vi").asString());
+
+        // Test review with responseMs and cardType
+        String cardId = cards.get("cards").get(0).get("id").asString();
+        String reviewRes = mvc.perform(post("/api/reviews")
+                        .contentType("application/json")
+                        .content("{\"cardId\":\"" + cardId + "\",\"rating\":\"GOOD\",\"source\":\"FLASHCARD\",\"responseMs\":1450,\"cardType\":\"JP_TO_VI\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode review = objectMapper.readTree(reviewRes);
+        assertEquals("GOOD", review.get("rating").asString());
+        assertEquals(1, review.get("reviewCount").asInt());
+
+        mvc.perform(delete("/api/decks/{deckId}", deckId1)).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/decks/{deckId}", deckId2)).andExpect(status().isNoContent());
+    }
 }

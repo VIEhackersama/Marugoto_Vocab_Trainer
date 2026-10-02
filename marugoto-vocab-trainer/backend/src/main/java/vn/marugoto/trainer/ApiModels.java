@@ -19,7 +19,11 @@ record StudyCardDto(
         int wrongCount
 ) {}
 
-record ReviewRequest(String cardId, String rating, String source) {}
+record ReviewRequest(String cardId, String rating, String source, Long responseMs, String cardType) {
+    public ReviewRequest(String cardId, String rating, String source) {
+        this(cardId, rating, source, null, "JP_TO_VI");
+    }
+}
 
 record ReviewResponse(String cardId, String rating, Instant reviewedAt, Instant dueAt, int reviewCount, int wrongCount) {}
 

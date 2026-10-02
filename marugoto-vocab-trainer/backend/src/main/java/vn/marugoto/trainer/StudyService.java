@@ -50,34 +50,43 @@ class StudyService {
             if (includeCustom) {
                 scopeClause = "";
             } else {
-                scopeClause = " AND c.deck_id != 'custom'";
+                scopeClause = " AND vs.deck_id != 'custom'";
             }
         } else if ("custom".equalsIgnoreCase(deckId)) {
-            scopeClause = " AND c.deck_id = 'custom'";
+            scopeClause = " AND vs.deck_id = 'custom'";
         } else {
             if (includeCustom) {
-                scopeClause = " AND (c.deck_id = ? OR c.deck_id = 'custom')";
+                scopeClause = " AND (vs.deck_id = ? OR vs.deck_id = 'custom')";
                 args.add(deckId);
             } else {
-                scopeClause = " AND c.deck_id = ?";
+                scopeClause = " AND vs.deck_id = ?";
                 args.add(deckId);
             }
         }
 
-        String dueClause = normalizedMode.equals("due") ? " AND c.due_at <= ?" : "";
+        String dueClause = normalizedMode.equals("due") ? " AND s.due_at <= ?" : "";
         if (normalizedMode.equals("due")) {
             args.add(now);
         }
 
         String sql = """
-                SELECT c.id,c.deck_id,d.title AS deck_title,c.japanese,c.romaji,c.vietnamese,
-                       c.due_at,c.review_count,c.wrong_count
-                FROM cards c JOIN decks d ON d.id=c.deck_id WHERE 1=1
-                """ + scopeClause + dueClause + " ORDER BY c.due_at ASC,c.created_at ASC";
+                SELECT s.id, vs.deck_id, d.title AS deck_title, v.spelling AS japanese, v.romaji, v.meanings_vi AS vietnamese,
+                       s.due_at, s.review_count, s.wrong_count
+                FROM study_cards s
+                JOIN vocabularies v ON v.id = s.vocabulary_id
+                JOIN vocabulary_sources vs ON vs.vocabulary_id = v.id
+                JOIN decks d ON d.id = vs.deck_id
+                WHERE 1=1
+                """ + scopeClause + dueClause + " ORDER BY s.due_at ASC, s.created_at ASC";
 
         List<StudyCardDto> cards = jdbc.query(sql, CARD_MAPPER, args.toArray());
 
-        String dueSql = "SELECT COUNT(*) FROM cards c WHERE c.due_at <= ?" + scopeClause;
+        String dueSql = """
+                SELECT COUNT(DISTINCT s.id)
+                FROM study_cards s
+                JOIN vocabulary_sources vs ON vs.vocabulary_id = s.vocabulary_id
+                WHERE s.due_at <= ?
+                """ + scopeClause;
         List<Object> dueArgs = new ArrayList<>();
         dueArgs.add(now);
         if (!allDecks && !"custom".equalsIgnoreCase(deckId)) {
