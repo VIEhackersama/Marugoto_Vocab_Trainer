@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   createQuizSession,
@@ -14,9 +14,7 @@ import {
   KANA_ROWS,
   extractReading,
   getKanaRow,
-  compareJapanese,
   filterAndSortDictionary,
-  canonicalKanaKey,
   findDuplicates,
   isCardLeech,
 } from './dictionary.js';
@@ -24,7 +22,6 @@ import {
   hasKanji,
   parseKanjiReading,
   formatKanjiTerm,
-  findKanjiSuggestions,
   autoMapKanjiForCards,
   getTestJapaneseDisplay,
   resolveCardKanjiDetails,
@@ -33,7 +30,22 @@ import { extractPdfPages, parseVocabulary, normalizeText as normalize } from './
 import { api, getBackupExportUrl, importBackupFile } from './api/client.js';
 import { RatingToolbar } from './components/RatingToolbar.jsx';
 import { romajiToHiragana, checkTypedAnswer } from './utils/japaneseInput.js';
+import { VocabularyEditor } from './components/VocabularyEditor.jsx';
+import { DictionaryWorkspace } from './components/DictionaryWorkspace.jsx';
+import { AppHeader } from './components/AppHeader.jsx';
+import { DeckLibrary } from './components/DeckLibrary.jsx';
+import { SettingsPanel } from './components/SettingsPanel.jsx';
+import { DialogFrame } from './components/DialogFrame.jsx';
+import { Icon } from './components/Icon.jsx';
 import './styles.css';
+import './workspace.css';
+
+function dictionaryPreference(key, fallback, allowed) {
+  try {
+    const value = JSON.parse(localStorage.getItem(`marugoto_dictionary_${key}`));
+    return allowed ? (allowed.includes(value) ? value : fallback) : (typeof value === typeof fallback ? value : fallback);
+  } catch { return fallback; }
+}
 
 function shuffled(items) {
   const result = [...items];
@@ -250,7 +262,7 @@ function App() {
   const [selectedDeckId, setSelectedDeckId] = useState('all');
   const [entries, setEntries] = useState([]);
   const [dueCount, setDueCount] = useState(0);
-  const [tab, setTab] = useState('import');
+  const [tab, setTab] = useState('flashcards');
   const [mode, setMode] = useState('jp-vi');
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -266,10 +278,18 @@ function App() {
   // Custom vocab state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
-  const [newJp, setNewJp] = useState('');
-  const [newVi, setNewVi] = useState('');
-  const [keepAdding, setKeepAdding] = useState(false);
-  const [modalError, setModalError] = useState('');
+  const [editorKey, setEditorKey] = useState(0);
+  const editorRequestRef = useRef(null);
+  const [notice, setNotice] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
+  const [showFlashcardDisplay, setShowFlashcardDisplay] = useState(false);
+  const [smallScreen, setSmallScreen] = useState(() => window.matchMedia('(max-width: 760px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 760px)');
+    const update = event => setSmallScreen(event.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const [showCustomList, setShowCustomList] = useState(false);
   const [customCards, setCustomCards] = useState([]);
   const [importValidation, setImportValidation] = useState(null);
@@ -285,21 +305,25 @@ function App() {
 
   // Dictionary state
   const [dictionaryCards, setDictionaryCards] = useState([]);
-  const [dictSearchQuery, setDictSearchQuery] = useState('');
-  const [dictDeckFilter, setDictDeckFilter] = useState('all');
-  const [dictStatusFilter, setDictStatusFilter] = useState('all');
-  const [dictRowSelect, setDictRowSelect] = useState('all');
-  const [dictSortOrder, setDictSortOrder] = useState('gojuon-asc');
-  const [dictViewMode, setDictViewMode] = useState('cards');
-  const [dictShowRomaji, setDictShowRomaji] = useState(true);
-
-  // Kanji modal state
-  const [kanjiModalCard, setKanjiModalCard] = useState(null);
-  const [kanjiInput, setKanjiInput] = useState('');
-  const [kanaInput, setKanaInput] = useState('');
-  const [kanjiFormat, setKanjiFormat] = useState('ruby');
-  const [kanjiSaving, setKanjiSaving] = useState(false);
-  const [kanjiModalError, setKanjiModalError] = useState('');
+  const [dictSearchQuery, setDictSearchQuery] = useState(() => dictionaryPreference('search', ''));
+  const [dictDeckFilter, setDictDeckFilter] = useState(() => dictionaryPreference('deck', 'all'));
+  const [dictStatusFilter, setDictStatusFilter] = useState(() => dictionaryPreference('status', 'all', ['all', 'due', 'reviewed', 'new', 'leech']));
+  const [dictRowSelect, setDictRowSelect] = useState(() => dictionaryPreference('row', 'all', ['all', ...KANA_ROWS.map(row => row.label)]));
+  const [dictSortOrder, setDictSortOrder] = useState(() => dictionaryPreference('sort', 'gojuon-asc', ['gojuon-asc', 'gojuon-desc', 'wrong-desc', 'review-desc', 'recent']));
+  const [dictViewMode, setDictViewMode] = useState(() => dictionaryPreference('view', 'table', ['table', 'cards']));
+  const [dictShowRomaji, setDictShowRomaji] = useState(() => dictionaryPreference('romaji', true));
+  const [dictionaryNow, setDictionaryNow] = useState(Date.now());
+  useEffect(() => {
+    const interval = window.setInterval(() => setDictionaryNow(Date.now()), 60000);
+    return () => window.clearInterval(interval);
+  }, []);
+  useEffect(() => {
+    const preferences = { search: dictSearchQuery, deck: dictDeckFilter, status: dictStatusFilter, row: dictRowSelect, sort: dictSortOrder, view: dictViewMode, romaji: dictShowRomaji };
+    try { for (const [key, value] of Object.entries(preferences)) localStorage.setItem(`marugoto_dictionary_${key}`, JSON.stringify(value)); } catch {}
+  }, [dictSearchQuery, dictDeckFilter, dictStatusFilter, dictRowSelect, dictSortOrder, dictViewMode, dictShowRomaji]);
+  useEffect(() => {
+    if (!loading && dictDeckFilter !== 'all' && dictDeckFilter !== 'custom' && !decks.some(deck => deck.id === dictDeckFilter)) setDictDeckFilter('all');
+  }, [loading, decks, dictDeckFilter]);
 
   // Batch auto-map modal state
   const [batchKanjiModalOpen, setBatchKanjiModalOpen] = useState(false);
@@ -473,6 +497,8 @@ function App() {
 
   const current = entries[index] || null;
   const currentQuestion = quizSession?.queue[0] || null;
+  const quizPaused = !['quiz', 'review'].includes(tab) || isModalOpen || Boolean(importValidation) || batchKanjiModalOpen || isBackupModalOpen || Boolean(confirmation);
+  const questionPauseRef = useRef(null);
   const hasFiveChoices = new Set(entries.map((entry) => optionKey(entry, mode))).size >= 5;
   const quizScore = quizSession?.correctFirstTry || 0;
   const quizInitialCompleted = quizSession?.initialCompleted || 0;
@@ -480,14 +506,14 @@ function App() {
   const pendingRepeatSeconds = quizSession ? secondsUntilNextRepeat(quizSession, quizClock) : 0;
 
   const trimmedDictSearch = dictSearchQuery.trim();
-  const sortedDictionaryCards = filterAndSortDictionary(dictionaryCards, {
+  const sortedDictionaryCards = useMemo(() => filterAndSortDictionary(dictionaryCards, {
     searchQuery: dictSearchQuery,
     deckFilter: dictDeckFilter,
     statusFilter: dictStatusFilter,
     rowSelect: dictRowSelect,
     sortOrder: dictSortOrder,
-    now: Date.now(),
-  });
+    now: dictionaryNow,
+  }), [dictionaryCards, dictSearchQuery, dictDeckFilter, dictStatusFilter, dictRowSelect, dictSortOrder, dictionaryNow]);
 
   const rowCounts = {};
   for (const card of dictionaryCards) {
@@ -497,6 +523,7 @@ function App() {
     if (dictStatusFilter === 'due' && !isDue) continue;
     if (dictStatusFilter === 'reviewed' && (card.reviewCount === 0 || isDue)) continue;
     if (dictStatusFilter === 'new' && card.reviewCount > 0) continue;
+    if (dictStatusFilter === 'leech' && !isCardLeech(card)) continue;
     if (trimmedDictSearch) {
       const searchNorm = removeDiacritics(trimmedDictSearch);
       const searchLower = trimmedDictSearch.toLowerCase();
@@ -548,6 +575,7 @@ function App() {
     setFlashcardStatus(null);
     setFlashcardMessage('');
     setFlashcardOptions(result.cards.length >= 5 ? makeOptions(result.cards[0], result.cards, studyDirection) : []);
+    return result;
   }
 
   async function refreshDictionary() {
@@ -565,7 +593,8 @@ function App() {
     async function initialize() {
       try {
         const { custom } = await refreshDecks('all');
-        await loadCards('all');
+        const study = await loadCards('all');
+        if (!study.cards.length) setTab('import');
         await refreshDictionary();
         if (custom && custom.cardCount > 0) {
           const res = await api('/api/study/cards?deckId=custom&mode=all').catch(() => null);
@@ -706,6 +735,11 @@ function App() {
   }
 
   async function handleFiles(event) {
+    if (quizSession && !quizDone) {
+      setNotice({ message: 'Kết thúc phiên học hiện tại trước khi nhập bộ từ mới.' });
+      event.target.value = '';
+      return;
+    }
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
     setBusy(true);
@@ -786,7 +820,7 @@ function App() {
     if (correct) {
       const calculatedRating = calculateResponseRating(elapsed, 10);
       setAutoRating(calculatedRating);
-      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy' : calculatedRating === 'GOOD' ? '🟡 Good' : '🟠 Hard';
+      const ratingLabel = calculatedRating === 'EASY' ? 'Easy' : calculatedRating === 'GOOD' ? 'Good' : 'Hard';
       if (autoRateByResponseTime) {
         setFlashcardMessage(`Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`);
         setCardSaving(true);
@@ -828,7 +862,7 @@ function App() {
     if (result.isCorrect) {
       const calculatedRating = calculateResponseRating(elapsed, 10);
       setAutoRating(calculatedRating);
-      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy' : calculatedRating === 'GOOD' ? '🟡 Good' : '🟠 Hard';
+      const ratingLabel = calculatedRating === 'EASY' ? 'Easy' : calculatedRating === 'GOOD' ? 'Good' : 'Hard';
       if (autoRateByResponseTime) {
         setFlashcardMessage(`Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`);
         setCardSaving(true);
@@ -871,82 +905,53 @@ function App() {
     }
   }
 
-  function openAddModal() {
-    setEditingCard(null);
-    setNewJp('');
-    setNewVi('');
-    setModalError('');
-    setIsModalOpen(true);
+  function askConfirmation(description, confirmLabel = 'Xác nhận', title = 'Xác nhận thao tác') {
+    return new Promise(resolve => setConfirmation({ description, confirmLabel, title, resolve }));
   }
 
-  function openEditModal(card) {
-    setEditingCard(card);
-    setNewJp(card.jp);
-    setNewVi(card.vi);
-    setModalError('');
-    setIsModalOpen(true);
+  function resolveConfirmation(accepted) {
+    confirmation?.resolve(accepted);
+    setConfirmation(null);
   }
 
-  async function handleSaveCustomCard(e) {
-    e.preventDefault();
-    setModalError('');
-    if (!newJp.trim() || !newVi.trim()) {
-      setModalError('Tiếng Nhật và Nghĩa tiếng Việt không được để trống.');
-      return;
-    }
+  function openBackup() {
+    setBackupStatus(null);
+    setIsBackupModalOpen(true);
+  }
 
-    if (!editingCard) {
-      const trimmedJp = newJp.trim();
-      const kanaKey = canonicalKanaKey(trimmedJp);
-      const existingMatch = dictionaryCards.find((c) =>
-        c.jp.trim().toLowerCase() === trimmedJp.toLowerCase() ||
-        (kanaKey && canonicalKanaKey(c) === kanaKey)
-      );
-      if (existingMatch) {
-        const confirmMsg = `⚠️ Từ vựng này (hoặc cách đọc kana: “${kanaKey || trimmedJp}”) đã tồn tại trong bộ “${existingMatch.deckTitle}” (${existingMatch.jp} - ${existingMatch.vi}).\n\nBạn có chắc chắn vẫn muốn thêm thẻ này không?`;
-        if (!window.confirm(confirmMsg)) {
-          return;
-        }
-      }
-    }
+  function openEditor(card = null) {
+    const open = () => { setEditingCard(card); setEditorKey(key => key + 1); setIsModalOpen(true); };
+    if (isModalOpen) editorRequestRef.current?.(open);
+    else open();
+  }
 
+  function openAddModal() { openEditor(); }
+  function openEditModal(card) { openEditor(card); }
+
+  async function saveVocabulary(input, original) {
     setCardSaving(true);
     try {
-      if (editingCard) {
-        const updated = await api(`/api/decks/cards/${editingCard.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jp: newJp.trim(), romaji: editingCard.romaji || '', vi: newVi.trim() }),
-        });
-        setCustomCards((prev) => prev.map((c) => (c.id === editingCard.id ? updated : c)));
-        setEntries((prev) => prev.map((c) => (c.id === editingCard.id ? { ...c, jp: updated.jp, vi: updated.vi, romaji: updated.romaji } : c)));
-        setDictionaryCards((prev) => prev.map((c) => (c.id === editingCard.id ? updated : c)));
+      const updated = await api(original ? `/api/decks/cards/${original.id}` : '/api/decks/custom-card', {
+        method: original ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+      });
+      const mergeContent = card => card.id === updated.id ? { ...card, jp: updated.jp, romaji: updated.romaji, vi: updated.vi } : card;
+      const merge = card => ({ ...mergeContent(card), ...(card.quizOptions ? { quizOptions: card.quizOptions.map(mergeContent) } : {}) });
+      setCustomCards(cards => original ? cards.map(merge) : [...cards, updated]);
+      setEntries(cards => original ? cards.map(merge) : cards);
+      setDictionaryCards(cards => original ? cards.map(merge) : [...cards, updated]);
+      // Keep the question/options already queued consistent without restarting the session.
+      if (original) setQuizSession(session => session ? { ...session,
+        queue: session.queue.map(question => ({ ...question, entry: merge(question.entry), options: question.options.map(merge) })),
+        waiting: session.waiting.map(item => ({ ...item, entry: merge(item.entry) })),
+      } : session);
+      // A successful write must not be reported as failed when a follow-up refresh fails.
+      try {
         await refreshDecks();
-        setIsModalOpen(false);
-      } else {
-        await api('/api/decks/custom-card', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jp: newJp.trim(), romaji: '', vi: newVi.trim() }),
-        });
-        await refreshDecks();
-        await loadCards();
         await refreshDictionary();
-        if (showCustomList) {
-          const res = await api('/api/study/cards?deckId=custom&mode=all');
-          setCustomCards(res.cards);
-        }
-        setNewJp('');
-        setNewVi('');
-        if (!keepAdding) {
-          setIsModalOpen(false);
-        }
-      }
-    } catch (saveErr) {
-      setModalError(saveErr.message);
-    } finally {
-      setCardSaving(false);
-    }
+        if (!original && !quizSession) await loadCards();
+      } catch { setError('Từ đã được lưu. Chưa tải lại được danh sách; hãy tải lại trang khi kết nối sẵn sàng.'); }
+      return updated;
+    } finally { setCardSaving(false); }
   }
 
   async function toggleShowCustomCards() {
@@ -962,7 +967,8 @@ function App() {
   }
 
   async function handleDeleteCard(card) {
-    if (!window.confirm(`Xóa từ “${card.jp} (${card.vi})”?`)) return;
+    if (quizSession && !quizDone) { setNotice({ message: 'Kết thúc phiên học trước khi xóa từ.' }); return; }
+    if (!await askConfirmation(`Xóa từ “${card.jp}” (${card.vi}) và lịch sử ôn của từ này?`, 'Xóa từ', 'Xóa từ vựng')) return;
     try {
       await api(`/api/decks/cards/${card.id}`, { method: 'DELETE' });
       setCustomCards((prev) => prev.filter((c) => c.id !== card.id));
@@ -975,76 +981,6 @@ function App() {
     }
   }
 
-  function applyCustomKanjiSuggestion(sug) {
-    setNewJp(sug.formatted);
-    if (!newVi.trim() && sug.vi) setNewVi(sug.vi);
-  }
-
-  function handleAutoFindKanjiCustom() {
-    const { bestMatch, suggestions } = findKanjiSuggestions({ jp: newJp, vi: newVi });
-    if (bestMatch) {
-      applyCustomKanjiSuggestion(bestMatch);
-    } else if (suggestions.length > 0) {
-      applyCustomKanjiSuggestion(suggestions[0]);
-    } else {
-      alert('Không tìm thấy gợi ý Chữ Hán 1-1 phù hợp cho từ này.');
-    }
-  }
-
-  function openKanjiModal(card) {
-    setKanjiModalCard(card);
-    setKanjiModalError('');
-    const parsed = parseKanjiReading(card.jp);
-    if (parsed.hasKanji) {
-      setKanjiInput(parsed.kanji);
-      setKanaInput(parsed.reading || extractReading(card));
-      setKanjiFormat('ruby');
-    } else {
-      const { bestMatch } = findKanjiSuggestions(card);
-      if (bestMatch) {
-        setKanjiInput(bestMatch.kanji);
-        setKanaInput(bestMatch.reading);
-      } else {
-        setKanjiInput('');
-        setKanaInput(card.jp || '');
-      }
-      setKanjiFormat('ruby');
-    }
-  }
-
-  async function handleSaveKanji() {
-    if (!kanjiModalCard) return;
-    setKanjiSaving(true);
-    setKanjiModalError('');
-    try {
-      const finalJp = formatKanjiTerm(kanjiInput, kanaInput, kanjiFormat);
-      if (!finalJp) {
-        setKanjiModalError('Tiếng Nhật không được để trống.');
-        setKanjiSaving(false);
-        return;
-      }
-      const updated = await api(`/api/decks/cards/${kanjiModalCard.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jp: finalJp,
-          romaji: kanjiModalCard.romaji || '',
-          vi: kanjiModalCard.vi,
-        }),
-      });
-
-      setDictionaryCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      setEntries((prev) => prev.map((c) => (c.id === updated.id ? { ...c, jp: updated.jp, romaji: updated.romaji, vi: updated.vi } : c)));
-      setCustomCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      await refreshDecks();
-      setKanjiModalCard(null);
-    } catch (err) {
-      setKanjiModalError(`Không lưu được chữ Hán: ${err.message}`);
-    } finally {
-      setKanjiSaving(false);
-    }
-  }
-
   function openBatchKanjiModal(scopeChoice = 'all') {
     const targetPool = scopeChoice === 'all' ? dictionaryCards : sortedDictionaryCards;
     const unmapped = targetPool.filter((c) => !hasKanji(c.jp));
@@ -1052,7 +988,7 @@ function App() {
       if (scopeChoice === 'filtered' && dictionaryCards.some((c) => !hasKanji(c.jp))) {
         return openBatchKanjiModal('all');
       }
-      alert('Tất cả các từ trong phạm vi này đã có Chữ Hán!');
+      setNotice({ message: 'Tất cả các từ trong phạm vi này đã có Chữ Hán!' });
       return;
     }
     const result = autoMapKanjiForCards(unmapped, { style: 'ruby' });
@@ -1060,7 +996,7 @@ function App() {
       if (scopeChoice === 'filtered' && autoMapKanjiForCards(dictionaryCards.filter((c) => !hasKanji(c.jp)), { style: 'ruby' }).mappedCount > 0) {
         return openBatchKanjiModal('all');
       }
-      alert('Không tìm thấy gợi ý Chữ Hán 1-1 từ giáo trình cho các từ chưa có Chữ Hán.');
+      setNotice({ message: 'Không tìm thấy gợi ý Chữ Hán 1-1 từ giáo trình cho các từ chưa có Chữ Hán.' });
       return;
     }
     setBatchKanjiScope(scopeChoice);
@@ -1107,7 +1043,7 @@ function App() {
       await refreshDecks();
       setBatchKanjiModalOpen(false);
     } catch (err) {
-      alert(`Lỗi khi cập nhật Chữ Hán: ${err.message}`);
+      setNotice({ message: `Lỗi khi cập nhật Chữ Hán: ${err.message}` });
     } finally {
       setBatchKanjiSaving(false);
     }
@@ -1116,7 +1052,7 @@ function App() {
   async function handleRejectKanji(card) {
     if (!card) return;
     const reading = parseKanjiReading(card.jp).reading || extractReading(card) || card.jp;
-    if (!window.confirm(`Gỡ bỏ Chữ Hán khỏi từ “${card.jp}” và lưu lại thành thuần Kana “${reading}” trong cơ sở dữ liệu?`)) return;
+    if (!await askConfirmation(`Chuyển “${card.jp}” về Kana “${reading}”? Tiến độ ôn được giữ nguyên.`, 'Chuyển về Kana', 'Gỡ Hán tự')) return;
 
     try {
       const updated = await api(`/api/decks/cards/${card.id}`, {
@@ -1138,7 +1074,7 @@ function App() {
       await refreshDecks();
       setQuizMessage(`✓ Đã gỡ Chữ Hán (Flush). Thẻ này đã chuyển về thuần Kana: “${reading}”`);
     } catch (err) {
-      alert(`Lỗi khi gỡ Chữ Hán: ${err.message}`);
+      setNotice({ message: `Lỗi khi gỡ Chữ Hán: ${err.message}` });
     }
   }
 
@@ -1165,7 +1101,7 @@ function App() {
       await refreshDecks();
       setQuizMessage(`✓ Đã lưu Chữ Hán “${finalJp}” vào cơ sở dữ liệu!`);
     } catch (err) {
-      alert(`Lỗi khi lưu Chữ Hán: ${err.message}`);
+      setNotice({ message: `Lỗi khi lưu Chữ Hán: ${err.message}` });
     }
   }
 
@@ -1205,7 +1141,21 @@ function App() {
   }, [currentQuestion?.entry?.id, currentQuestion?.repeat, quizDone]);
 
   useEffect(() => {
-    if (!currentQuestion || quizDone || quizStatus || !isCurrentTimerActive || !questionStartTime) return undefined;
+    if (!currentQuestion || quizDone || quizStatus) { questionPauseRef.current = null; return; }
+    const questionKey = `${currentQuestion.entry.id}:${currentQuestion.repeat}`;
+    if (quizPaused) {
+      if (questionPauseRef.current?.key !== questionKey) questionPauseRef.current = { key: questionKey, startedAt: Date.now() };
+    } else {
+      if (questionPauseRef.current?.key === questionKey) {
+        const pausedMs = Date.now() - questionPauseRef.current.startedAt;
+        setQuestionStartTime(start => start ? start + pausedMs : start);
+      }
+      questionPauseRef.current = null;
+    }
+  }, [quizPaused, currentQuestion?.entry?.id, currentQuestion?.repeat, quizDone, Boolean(quizStatus)]);
+
+  useEffect(() => {
+    if (quizPaused || !currentQuestion || quizDone || quizStatus || !isCurrentTimerActive || !questionStartTime) return undefined;
     const interval = window.setInterval(() => {
       const elapsedSec = (Date.now() - questionStartTime) / 1000;
       const remaining = Math.max(0, timeLimit - elapsedSec);
@@ -1216,11 +1166,12 @@ function App() {
       }
     }, 100);
     return () => window.clearInterval(interval);
-  }, [currentQuestion?.entry?.id, currentQuestion?.repeat, quizDone, Boolean(quizStatus), isCurrentTimerActive, questionStartTime, timeLimit]);
+  }, [quizPaused, currentQuestion?.entry?.id, currentQuestion?.repeat, quizDone, Boolean(quizStatus), isCurrentTimerActive, questionStartTime, timeLimit]);
 
   // Keyboard shortcuts: Space/Enter to advance & 1..4 keys for options/ratings
   useEffect(() => {
     function handleKeyDown(event) {
+      if (event.defaultPrevented || event.isComposing || isModalOpen || importValidation || batchKanjiModalOpen || isBackupModalOpen || confirmation || event.ctrlKey || event.metaKey || event.altKey || event.target?.isContentEditable || event.target?.tagName === 'SELECT') return;
       if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
         if (event.key === 'Enter') {
           if ((tab === 'quiz' || tab === 'review') && quizStatus && !quizSaving) {
@@ -1355,7 +1306,7 @@ function App() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tab, quizStatus, quizSaving, currentQuestion, autoRateByResponseTime, autoRating, cardSaving, current, revealed, flashcardStatus, studyMode, flashcardOptions, entries.length]);
+  }, [tab, quizStatus, quizSaving, currentQuestion, autoRateByResponseTime, autoRating, cardSaving, current, revealed, flashcardStatus, studyMode, flashcardOptions, entries.length, isModalOpen, importValidation, batchKanjiModalOpen, isBackupModalOpen, confirmation]);
 
   function openQuizSetup(kind = 'TEST') {
     if (quizSession && !quizDone) {
@@ -1425,7 +1376,7 @@ function App() {
   }
 
   async function handleQuizTimeout() {
-    if (quizDone || quizStatus || quizSaving || !currentQuestion || !isCurrentTimerActive) return;
+    if (quizPaused || quizDone || quizStatus || quizSaving || !currentQuestion || !isCurrentTimerActive) return;
     setQuizSelectedOptionId(null);
     if (!currentQuestion.repeat) {
       setQuizSession((session) => session
@@ -1482,7 +1433,7 @@ function App() {
       const responseMs = Math.round(elapsed * 1000);
       const calculatedRating = calculateResponseRating(elapsed, timeLimit);
       setAutoRating(calculatedRating);
-      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy (Dễ)' : calculatedRating === 'GOOD' ? '🟡 Good (Vừa)' : '🟠 Hard (Khó)';
+      const ratingLabel = calculatedRating === 'EASY' ? 'Easy (Dễ)' : calculatedRating === 'GOOD' ? 'Good (Vừa)' : 'Hard (Khó)';
       if (autoRateByResponseTime) {
         setQuizMessage(isCurrentTimerActive
           ? `Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`
@@ -1542,7 +1493,7 @@ function App() {
     } else {
       const calculatedRating = calculateResponseRating(elapsed, timeLimit);
       setAutoRating(calculatedRating);
-      const ratingLabel = calculatedRating === 'EASY' ? '🟢 Easy (Dễ)' : calculatedRating === 'GOOD' ? '🟡 Good (Vừa)' : '🟠 Hard (Khó)';
+      const ratingLabel = calculatedRating === 'EASY' ? 'Easy (Dễ)' : calculatedRating === 'GOOD' ? 'Good (Vừa)' : 'Hard (Khó)';
       if (autoRateByResponseTime) {
         setQuizMessage(isCurrentTimerActive
           ? `Chính xác! (${elapsed.toFixed(1)}s · Đã tự động lưu: ${ratingLabel})`
@@ -1597,14 +1548,15 @@ function App() {
     setQuizMessage('');
   }
 
-  function handleConfirmEndSession() {
-    if (window.confirm('Bạn có chắc muốn kết thúc sớm phiên kiểm tra này? Kết quả các câu đã làm vẫn sẽ được lưu.')) {
+  async function handleConfirmEndSession() {
+    if (await askConfirmation('Kết thúc phiên hiện tại? Kết quả các câu đã làm vẫn được lưu.', 'Kết thúc phiên', 'Kết thúc phiên học')) {
       endQuizSession();
     }
   }
 
   async function deleteDeck(deck) {
-    if (!window.confirm(`Xóa bộ “${deck.title}”, PDF và toàn bộ tiến độ ôn?`)) return;
+    if (quizSession && !quizDone) { setNotice({ message: 'Kết thúc phiên học trước khi xóa bộ từ.' }); return; }
+    if (!await askConfirmation(`Xóa bộ “${deck.title}”, PDF gốc và tiến độ của bộ này?`, 'Xóa bộ từ', 'Xóa bộ từ')) return;
     setBusy(true);
     setError('');
     try {
@@ -1643,577 +1595,82 @@ function App() {
     );
   }
 
-  function renderDictCard(card) {
-    const isDue = new Date(card.dueAt).getTime() <= Date.now();
-    const rowLabel = getKanaRow(card);
-    return (
-      <div key={card.id} className="dict-card">
-        <div className="dict-card-top">
-          <span className={`deck-tag ${card.deckId === 'custom' ? 'custom' : ''}`}>
-            {card.deckId === 'custom' ? '★ Tùy chỉnh' : (card.deckTitle || 'PDF')}
-          </span>
-          <div className="dict-card-badges">
-            <span className="kana-row-badge">{rowLabel}</span>
-            {hasKanji(card.jp) && (
-              <span className="kanji-tag-badge" title="Từ vựng có Chữ Hán">🈸 Hán tự</span>
-            )}
-            {isCardLeech(card) && (
-              <span className="dict-badge leech" title="Từ khó: đã trả lời sai ≥3 lần hoặc tỷ lệ quên cao">🔥 Từ khó</span>
-            )}
-            {isDue ? (
-              <span className="dict-badge due">⌛ Đến hạn</span>
-            ) : card.reviewCount > 0 ? (
-              <span className="dict-badge reviewed">✅ Đã ôn</span>
-            ) : (
-              <span className="dict-badge new">🌱 Mới</span>
-            )}
-          </div>
-        </div>
+  const studyTab = ['flashcards', 'quiz', 'review'].includes(tab);
+  const sessionActive = Boolean(quizSession && !quizDone);
+  const otherDialogOpen = Boolean(importValidation || batchKanjiModalOpen || isBackupModalOpen || confirmation);
+  const modalEditor = isModalOpen && (tab !== 'dictionary' || smallScreen);
+  const editor = isModalOpen ? <VocabularyEditor key={editorKey} card={editingCard} cards={dictionaryCards}
+    requestRef={editorRequestRef} modal={modalEditor} suspended={otherDialogOpen} onSave={saveVocabulary} onClose={() => setIsModalOpen(false)} onSpeak={speakJapanese}
+    onSaved={(card, keepAdding) => setNotice({ message: keepAdding ? 'Đã lưu từ. Bạn có thể thêm từ tiếp theo.' : 'Đã lưu từ vựng.', card })}/> : null;
 
-        <div className="dict-card-body">
-          <div className="dict-jp-row">
-            <h3 className="dict-jp-term">{renderJpDisplay(card.jp, dictSearchQuery)}</h3>
-            <button
-              type="button"
-              className="dict-audio-btn"
-              onClick={() => speakJapanese(card.jp)}
-              title="Phát âm tiếng Nhật"
-              aria-label="Phát âm tiếng Nhật"
-            >
-              🔊
-            </button>
-          </div>
-
-          {dictShowRomaji && card.romaji && (
-            <div className="dict-romaji-text">
-              {highlightMatch(card.romaji, dictSearchQuery)}
-            </div>
-          )}
-
-          <div className="dict-vi-text">
-            {highlightMatch(card.vi, dictSearchQuery)}
-          </div>
-        </div>
-
-        <div className="dict-card-footer">
-          <div className="dict-fsrs-meta">
-            <span title="Số lần đã ôn tập">🔄 {card.reviewCount || 0} lượt</span>
-            {card.wrongCount > 0 && (
-              <span className="dict-meta-wrong" title="Số lần trả lời sai">⚠️ {card.wrongCount} sai</span>
-            )}
-          </div>
-          <div className="dict-card-actions">
-            <button
-              type="button"
-              className={`dict-action-btn kanji ${hasKanji(card.jp) ? 'has-kanji' : ''}`}
-              onClick={() => openKanjiModal(card)}
-              title={hasKanji(card.jp) ? 'Chỉnh sửa Chữ Hán' : 'Thêm Chữ Hán 1-1'}
-            >
-              {hasKanji(card.jp) ? '🈸 Sửa Hán tự' : '🈸 + Hán tự'}
-            </button>
-            <button
-              type="button"
-              className="dict-action-btn edit"
-              onClick={() => openEditModal(card)}
-              title="Chỉnh sửa từ vựng"
-            >
-              ✏️ Sửa
-            </button>
-            <button
-              type="button"
-              className="dict-action-btn delete"
-              onClick={() => handleDeleteCard(card)}
-              title="Xóa từ vựng"
-            >
-              🗑️ Xóa
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  function setDictionaryFilters(filters) {
+    setDictSearchQuery(filters.search); setDictDeckFilter(filters.deck); setDictStatusFilter(filters.status); setDictRowSelect(filters.row); setDictSortOrder(filters.sort);
   }
+
+  function navigate(section) {
+    const go = () => setTab(section === 'study' ? (sessionActive ? quizMode === 'DUE' ? 'review' : 'quiz' : 'flashcards') : section);
+    if (isModalOpen) editorRequestRef.current?.(() => { setIsModalOpen(false); go(); });
+    else go();
+  }
+
+  const availableQuizChoices = new Set(quizAvailablePool.map(card => optionKey(card, mode))).size >= 5;
+  const canStartQuiz = quizAvailablePool.length > 0 && (quizQuestionType === 'typed' || availableQuizChoices) && (tab !== 'review' || quizAvailableDue > 0);
 
   return (
     <div className="app">
-      <header>
-        <div>
-          <h1>Marugoto Vocab Trainer</h1>
-          <p>Import PDF → flashcard → recall → test. PDF và tiến độ được lưu trên máy này.</p>
-        </div>
-        <div className="header-right-actions">
-          {entries.length > 0 && <div className="stats"><b>{entries.length}</b> thẻ · <b>{dueCount}</b> đến hạn</div>}
-          <button
-            type="button"
-            className="backup-btn"
-            onClick={() => {
-              setBackupStatus(null);
-              setIsBackupModalOpen(true);
-            }}
-            title="Sao lưu và khôi phục dữ liệu học tập"
-          >
-            💾 Sao lưu & Khôi phục
-          </button>
-        </div>
-      </header>
-
-      <div className="deck-toolbar">
-        <label htmlFor="deck-select">Bộ học</label>
-        <select id="deck-select" value={selectedDeckId} disabled={busy || loading || Boolean(quizSession && !quizDone)} onChange={(event) => selectDeck(event.target.value)}>
-          <option value="all">Tất cả bộ</option>
-          {customDeck && <option value="custom">★ Từ vựng tùy chỉnh · {customDeck.cardCount} từ</option>}
-          {decks.map((deck) => <option key={deck.id} value={deck.id}>{deck.title} · {deck.cardCount} từ</option>)}
-        </select>
-        <div className="direction-picker">
-          <label htmlFor="direction-select">Chiều học</label>
-          <select
-            id="direction-select"
-            value={mode}
-            disabled={Boolean(quizSession && !quizDone)}
-            onChange={async (event) => {
-              const newMode = event.target.value;
-              setMode(newMode);
-              await loadCards(selectedDeckId, newMode);
-              await updateQuizSetupPool(selectedDeckId, includeCustom, newMode);
-            }}
-          >
-            <option value="jp-vi">Nhật → Việt</option>
-            <option value="vi-jp">Việt → Nhật</option>
-          </select>
-        </div>
+      <div inert={otherDialogOpen || (modalEditor && tab !== 'dictionary') || (isModalOpen && smallScreen)}>
+        <AppHeader section={studyTab ? 'study' : tab} onNavigate={navigate} sessionActive={sessionActive} dueCount={dueCount}/>
       </div>
-
-      <nav className="tabs">
-        <button className={tab === 'dictionary' ? 'active' : ''} onClick={() => setTab('dictionary')}>
-          📖 Từ điển ({dictionaryCards.length})
-        </button>
-        <button className={tab === 'import' ? 'active' : ''} onClick={() => setTab('import')}>
-          Import
-        </button>
-        <button disabled={!entries.length || loading} className={tab === 'flashcards' ? 'active' : ''} onClick={() => setTab('flashcards')}>
-          Flashcards
-        </button>
-        <button disabled={!hasFiveChoices || loading || busy || Boolean(quizSession && !quizDone && quizMode !== 'TEST')} className={tab === 'quiz' ? 'active' : ''} onClick={() => openQuizSetup('TEST')}>
-          Test
-        </button>
-        <button disabled={!dueCount || !hasFiveChoices || loading || busy || Boolean(quizSession && !quizDone && quizMode !== 'DUE')} className={tab === 'review' ? 'active' : ''} onClick={() => openQuizSetup('DUE')}>
-          Ôn đến hạn ({dueCount})
-        </button>
-      </nav>
-
+      <main id="app-main" className={`app-main ${studyTab ? 'study-page' : ''}`} inert={otherDialogOpen || (modalEditor && tab !== 'dictionary')}>
+      {studyTab && <div className="study-page-heading"><div><span className="eyebrow">Học và ghi nhớ</span><h1>Học tập</h1></div><div className="study-summary"><b>{entries.length}</b> từ trong phạm vi <span>·</span> <b>{dueCount}</b> đến hạn</div></div>}
+      {studyTab && <div className="study-navigation">
+        <nav className="tabs" aria-label="Hình thức học">
+          <button className={tab === 'flashcards' ? 'active' : ''} aria-current={tab === 'flashcards' ? 'page' : undefined} onClick={() => setTab('flashcards')}>Flashcards</button>
+          <button disabled={loading || busy || Boolean(sessionActive && quizMode !== 'TEST')} className={tab === 'quiz' ? 'active' : ''} aria-current={tab === 'quiz' ? 'page' : undefined} onClick={() => openQuizSetup('TEST')}>Kiểm tra</button>
+          <button disabled={loading || busy || Boolean(sessionActive && quizMode !== 'DUE')} className={tab === 'review' ? 'active' : ''} aria-current={tab === 'review' ? 'page' : undefined} onClick={() => openQuizSetup('DUE')}>Ôn đến hạn <span>{dueCount}</span></button>
+        </nav>
+        <div className="study-context"><label htmlFor="deck-select" className="sr-only">Bộ học</label><select id="deck-select" value={selectedDeckId} disabled={busy || loading || sessionActive} onChange={event => selectDeck(event.target.value)}><option value="all">Tất cả bộ</option>{customDeck && <option value="custom">Từ tùy chỉnh · {customDeck.cardCount} từ</option>}{decks.map(deck => <option key={deck.id} value={deck.id}>{deck.title} · {deck.cardCount} từ</option>)}</select><label htmlFor="direction-select" className="sr-only">Chiều học</label><select id="direction-select" value={mode} disabled={sessionActive || busy || loading} onChange={async event => {
+          const direction = event.target.value; setMode(direction);
+          try { await loadCards(selectedDeckId, direction); await updateQuizSetupPool(selectedDeckId, includeCustom, direction); }
+          catch (error) { setError(error.message); }
+        }}><option value="jp-vi">Nhật → Việt</option><option value="vi-jp">Việt → Nhật</option></select></div>
+      </div>}
+      {notice && <div className="workspace-notice" role="status"><Icon name="check" size={17}/><span>{notice.message}</span>{notice.card && <button type="button" className="text-button" onClick={() => {
+        const reveal = () => { setTab('dictionary'); setDictionaryFilters({ search: notice.card.jp, deck: 'all', status: 'all', row: 'all', sort: 'gojuon-asc' }); };
+        if (isModalOpen) editorRequestRef.current?.(() => { setIsModalOpen(false); reveal(); }); else reveal();
+      }}>Xem từ đã lưu</button>}<button type="button" className="icon-button" aria-label="Ẩn thông báo" onClick={() => setNotice(null)}><Icon name="close" size={16}/></button></div>}
       {error && <div className="feedback bad" role="alert">{error}</div>}
-      {loading && <section className="panel"><p>Đang tải bộ từ và tiến độ…</p></section>}
+      {sessionActive && !['quiz', 'review'].includes(tab) && <div className="session-return"><span>Phiên học đang tạm dừng · thời gian trả lời được giữ lại</span><button type="button" className="text-button" onClick={() => navigate('study')}>Tiếp tục phiên học <Icon name="arrow" size={15}/></button></div>}
+      {loading && <section className="loading-workspace" aria-busy="true" aria-label="Đang tải bộ từ và tiến độ"><div className="skeleton skeleton-title"/><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/><span role="status">Đang tải bộ từ và tiến độ…</span></section>}
 
-      {!loading && tab === 'dictionary' && (
-        <section className="panel dict-page">
-          <div className="dict-header-row">
-            <div>
-              <h2>📖 Từ điển tiếng Nhật (Lexicon)</h2>
-              <p className="dict-subtext">
-                Toàn bộ từ vựng được sắp xếp theo bảng chữ cái tiếng Nhật (五十音順 Gojūon). Tra cứu tức thì bằng chữ Nhật, Romaji hoặc tiếng Việt.
-              </p>
-            </div>
-            <div className="dict-stats-summary">
-              <span className="dict-stat-pill"><b>{dictionaryCards.length}</b> từ vựng</span>
-              <span className="dict-stat-pill due"><b>{dictionaryCards.filter((c) => new Date(c.dueAt).getTime() <= Date.now()).length}</b> đến hạn</span>
-              {customDeck?.cardCount > 0 && (
-                <span className="dict-stat-pill custom"><b>{customDeck.cardCount}</b> từ tùy chỉnh</span>
-              )}
-              <button
-                type="button"
-                className="batch-kanji-btn"
-                onClick={openBatchKanjiModal}
-                title="Tự động quét và gán Chữ Hán 1-1 cho các từ trong từ điển"
-              >
-                ✨ Tự động gán Chữ Hán (1-1)
-              </button>
-            </div>
-          </div>
+      {!loading && tab === 'dictionary' && <DictionaryWorkspace cards={dictionaryCards} visibleCards={sortedDictionaryCards}
+        decks={decks} customDeck={customDeck} filters={{ search: dictSearchQuery, deck: dictDeckFilter, status: dictStatusFilter, row: dictRowSelect, sort: dictSortOrder }}
+        setFilters={setDictionaryFilters} rowCounts={rowCounts} viewMode={dictViewMode} setViewMode={setDictViewMode} showRomaji={dictShowRomaji} setShowRomaji={setDictShowRomaji}
+        editor={editor} editingId={isModalOpen ? editingCard?.id : null} onAdd={openAddModal} onEdit={openEditModal} onDelete={handleDeleteCard}
+        onSpeak={speakJapanese} onBatchKanji={openBatchKanjiModal} onFlushKana={handleRejectKanji} onImport={() => navigate('import')} blocked={otherDialogOpen || (isModalOpen && smallScreen)}/>}
 
-          <div className="dict-search-container">
-            <div className="dict-search-wrapper">
-              <span className="dict-search-icon">🔍</span>
-              <input
-                type="text"
-                className="dict-search-input"
-                placeholder="Tra cứu từ vựng bằng tiếng Nhật (Kanji/Kana), tiếng Việt (có/không dấu) hoặc Romaji…"
-                value={dictSearchQuery}
-                onChange={(e) => setDictSearchQuery(e.target.value)}
-              />
-              {dictSearchQuery && (
-                <button
-                  type="button"
-                  className="dict-search-clear"
-                  onClick={() => setDictSearchQuery('')}
-                  title="Xóa tìm kiếm"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            <div className="dict-search-info">
-              {trimmedDictSearch ? (
-                <span>Tìm thấy <b>{sortedDictionaryCards.length}</b> / {dictionaryCards.length} từ</span>
-              ) : (
-                <span>Hiển thị <b>{sortedDictionaryCards.length}</b> từ vựng</span>
-              )}
-            </div>
-          </div>
-
-          <div className="gojuon-bar-container">
-            <div className="gojuon-bar-label">Bảng âm 五十音:</div>
-            <div className="gojuon-chips-scroll">
-              {KANA_ROWS.map((row) => {
-                const count = row.id === 'all'
-                  ? dictionaryCards.length
-                  : (rowCounts[row.label] || 0);
-                const isActive = dictRowSelect === (row.id === 'all' ? 'all' : row.label);
-                return (
-                  <button
-                    key={row.id}
-                    type="button"
-                    className={`gojuon-chip ${isActive ? 'active' : ''} ${count === 0 && row.id !== 'all' ? 'empty' : ''}`}
-                    onClick={() => setDictRowSelect(row.id === 'all' ? 'all' : row.label)}
-                    title={row.desc || row.label}
-                  >
-                    <span className="gojuon-name">{row.label}</span>
-                    <span className="gojuon-count">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="dict-toolbar">
-            <div className="dict-toolbar-group">
-              <label htmlFor="dict-deck-filter">Bộ từ:</label>
-              <select
-                id="dict-deck-filter"
-                value={dictDeckFilter}
-                onChange={(e) => setDictDeckFilter(e.target.value)}
-              >
-                <option value="all">Tất cả bộ ({dictionaryCards.length})</option>
-                {customDeck && (
-                  <option value="custom">★ Từ tùy chỉnh ({customDeck.cardCount})</option>
-                )}
-                {decks.map((d) => (
-                  <option key={d.id} value={d.id}>{d.title} ({d.cardCount})</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="dict-toolbar-group">
-              <label htmlFor="dict-status-filter">Trạng thái:</label>
-              <select
-                id="dict-status-filter"
-                value={dictStatusFilter}
-                onChange={(e) => setDictStatusFilter(e.target.value)}
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="due">⌛ Cần ôn gấp (Đến hạn)</option>
-                <option value="reviewed">✅ Đã học / Đang nhớ</option>
-                <option value="new">🌱 Từ mới (Chưa học)</option>
-                <option value="leech">🔥 Từ khó / Hay quên ({dictionaryCards.filter(isCardLeech).length})</option>
-              </select>
-            </div>
-
-            <div className="dict-toolbar-group">
-              <label htmlFor="dict-sort-select">Sắp xếp:</label>
-              <select
-                id="dict-sort-select"
-                value={dictSortOrder}
-                onChange={(e) => setDictSortOrder(e.target.value)}
-              >
-                <option value="gojuon-asc">五十音順 (A → Wa chuẩn)</option>
-                <option value="gojuon-desc">五十音 đảo ngược (Wa → A)</option>
-                <option value="wrong-desc">Số lần sai nhiều nhất</option>
-                <option value="review-desc">Số lần ôn nhiều nhất</option>
-                <option value="recent">Mới thêm gần đây</option>
-              </select>
-            </div>
-
-            <div className="dict-toolbar-group dict-view-toggle">
-              <label>Chế độ:</label>
-              <div className="segmented-control">
-                <button
-                  type="button"
-                  className={dictViewMode === 'cards' ? 'active' : ''}
-                  onClick={() => setDictViewMode('cards')}
-                  title="Dạng thẻ từ"
-                >
-                  🗂️ Thẻ
-                </button>
-                <button
-                  type="button"
-                  className={dictViewMode === 'table' ? 'active' : ''}
-                  onClick={() => setDictViewMode('table')}
-                  title="Dạng bảng chi tiết"
-                >
-                  📋 Bảng
-                </button>
-              </div>
-            </div>
-
-            <div className="dict-toolbar-group dict-romaji-toggle">
-              <label className="toggle-label" htmlFor="dict-romaji-switch">
-                <span>Hiện Romaji</span>
-                <input
-                  id="dict-romaji-switch"
-                  type="checkbox"
-                  className="toggle-switch small-switch"
-                  checked={dictShowRomaji}
-                  onChange={(e) => setDictShowRomaji(e.target.checked)}
-                />
-              </label>
-            </div>
-          </div>
-
-          {sortedDictionaryCards.length === 0 ? (
-            <div className="dict-empty-state">
-              <div className="empty-icon">🔍</div>
-              <h3>Không tìm thấy từ vựng nào</h3>
-              <p>Không có kết quả nào khớp với bộ lọc hoặc từ khóa tìm kiếm “<b>{dictSearchQuery}</b>”.</p>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => {
-                  setDictSearchQuery('');
-                  setDictDeckFilter('all');
-                  setDictStatusFilter('all');
-                  setDictRowSelect('all');
-                }}
-              >
-                Đặt lại tất cả bộ lọc
-              </button>
-            </div>
-          ) : dictViewMode === 'cards' ? (
-            <div className="dict-content-container">
-              {dictSortOrder === 'gojuon-asc' && dictRowSelect === 'all' && !trimmedDictSearch ? (
-                KANA_ROWS.filter((r) => r.id !== 'all').map((row) => {
-                  const rowCards = sortedDictionaryCards.filter((c) => getKanaRow(c) === row.label);
-                  if (rowCards.length === 0) return null;
-                  return (
-                    <div key={row.id} className="dict-row-section">
-                      <div className="dict-row-header">
-                        <span className="dict-row-title">{row.label}</span>
-                        {row.desc && <span className="dict-row-desc">{row.desc}</span>}
-                        <span className="dict-row-count">{rowCards.length} từ</span>
-                      </div>
-                      <div className="dict-cards-grid">
-                        {rowCards.map((card) => renderDictCard(card))}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="dict-cards-grid">
-                  {sortedDictionaryCards.map((card) => renderDictCard(card))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="dict-table-container">
-              <table className="dict-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '45px' }}>#</th>
-                    <th>Tiếng Nhật</th>
-                    {dictShowRomaji && <th>Romaji</th>}
-                    <th>Nghĩa tiếng Việt</th>
-                    <th>Hàng âm</th>
-                    <th>Bộ từ</th>
-                    <th>Tiến độ FSRS</th>
-                    <th style={{ width: '100px' }}>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedDictionaryCards.map((card, idx) => {
-                    const isDue = new Date(card.dueAt).getTime() <= Date.now();
-                    return (
-                      <tr key={card.id}>
-                        <td className="col-idx">{idx + 1}</td>
-                        <td className="col-jp">
-                          <div className="jp-with-audio">
-                            <span className="jp-text">{renderJpDisplay(card.jp, dictSearchQuery)}</span>
-                            <button
-                              type="button"
-                              className="audio-icon-btn"
-                              onClick={() => speakJapanese(card.jp)}
-                              title="Nghe phát âm"
-                            >
-                              🔊
-                            </button>
-                          </div>
-                        </td>
-                        {dictShowRomaji && (
-                          <td className="col-romaji">
-                            {card.romaji ? highlightMatch(card.romaji, dictSearchQuery) : <span className="empty-dash">—</span>}
-                          </td>
-                        )}
-                        <td className="col-vi">{highlightMatch(card.vi, dictSearchQuery)}</td>
-                        <td>
-                          <span className="kana-row-badge">{getKanaRow(card)}</span>
-                        </td>
-                        <td className="col-deck">
-                          <span className={`deck-tag ${card.deckId === 'custom' ? 'custom' : ''}`}>
-                            {card.deckId === 'custom' ? '★ Tùy chỉnh' : (card.deckTitle || 'PDF')}
-                          </span>
-                        </td>
-                        <td className="col-srs">
-                          <div className="srs-status-box">
-                            {isDue ? (
-                              <span className="dict-badge due">⌛ Đến hạn</span>
-                            ) : card.reviewCount > 0 ? (
-                              <span className="dict-badge reviewed">✅ Đã ôn ({card.reviewCount})</span>
-                            ) : (
-                              <span className="dict-badge new">🌱 Mới</span>
-                            )}
-                            {isCardLeech(card) && (
-                              <span className="dict-badge leech" title="Từ khó: đã sai ≥3 lần hoặc tỷ lệ quên cao">🔥 Khó</span>
-                            )}
-                            {card.wrongCount > 0 && (
-                              <span className="dict-badge wrong" title={`${card.wrongCount} lần sai`}>
-                                {card.wrongCount} sai
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="col-actions">
-                          <button
-                            type="button"
-                            className="table-action-btn kanji"
-                            onClick={() => openKanjiModal(card)}
-                            title={hasKanji(card.jp) ? 'Chỉnh sửa Chữ Hán' : 'Thêm Chữ Hán 1-1'}
-                          >
-                            🈸
-                          </button>
-                          <button
-                            type="button"
-                            className="edit-btn"
-                            onClick={() => openEditModal(card)}
-                            title="Sửa từ vựng"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            type="button"
-                            className="danger-btn"
-                            onClick={() => handleDeleteCard(card)}
-                            title="Xóa từ vựng"
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
-
-      {!loading && tab === 'import' && (
-        <section className="panel">
-          <div className="custom-catalog-box">
-            <div className="custom-catalog-header">
-              <div>
-                <h3>★ Bộ từ vựng tùy chỉnh (Custom Vocab)</h3>
-                <p className="catalog-desc">Catalog lưu riêng biệt trên máy này, hoàn toàn độc lập khỏi các file PDF.</p>
-                <div className="catalog-stats">
-                  <b>{customDeck?.cardCount || 0}</b> từ · <b>{customDeck?.dueCount || 0}</b> đến hạn
-                </div>
-              </div>
-              <div className="custom-catalog-actions">
-                <button className="primary" onClick={openAddModal}>+ Thêm từ mới</button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    setDictDeckFilter('custom');
-                    setTab('dictionary');
-                  }}
-                >
-                  📖 Tra cứu trong Từ điển
-                </button>
-                <button type="button" className="secondary-button" onClick={() => toggleShowCustomCards()}>
-                  {showCustomList ? 'Ẩn danh sách' : `Xem nhanh (${customDeck?.cardCount || 0})`}
-                </button>
-              </div>
-            </div>
-
-            {showCustomList && (
-              <div className="custom-words-list">
-                <div className="custom-list-note">
-                  💡 Danh sách rút gọn các từ tùy chỉnh. Để tra cứu nhanh, nghe phát âm và sắp xếp theo bảng chữ cái tiếng Nhật, hãy mở trang <b>📖 Từ điển</b>.
-                </div>
-                {customCards.length === 0 ? (
-                  <p className="empty-hint">Chưa có từ tùy chỉnh nào. Bấm “+ Thêm từ mới” để tạo.</p>
-                ) : (
-                  <table className="custom-table">
-                    <thead>
-                      <tr>
-                        <th>Tiếng Nhật</th>
-                        <th>Nghĩa tiếng Việt</th>
-                        <th>Lượt ôn</th>
-                        <th>Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customCards.map((card) => (
-                        <tr key={card.id}>
-                          <td><b>{card.jp}</b></td>
-                          <td>{card.vi}</td>
-                          <td>{card.reviewCount} ({card.wrongCount} sai)</td>
-                          <td className="action-cell">
-                            <button className="edit-btn" onClick={() => openEditModal(card)}>Sửa</button>
-                            <button className="danger-btn" onClick={() => handleDeleteCard(card)}>Xóa</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="pdf-catalog-section">
-            <h2>Thêm bộ từ vựng từ PDF</h2>
-            <p>Mỗi PDF tạo một bộ riêng. Chọn “Tất cả bộ” để học chung; tiến độ ôn của từng bộ vẫn được lưu độc lập.</p>
-            <label className="upload">
-              <input type="file" accept="application/pdf" multiple disabled={busy} onChange={handleFiles} />
-              <span>{busy ? 'Đang nhập…' : 'Chọn PDF'}</span>
-            </label>
-            <div className="hint">PDF được lưu trong thư mục dữ liệu của backend trên máy này. File không được gửi lên dịch vụ bên ngoài.</div>
-            <div className="deck-list">
-              <h3>Các bộ PDF đã lưu</h3>
-              {!decks.length && <p>Chưa có file PDF nào. Hãy nhập PDF để bắt đầu.</p>}
-              {decks.map((deck) => (
-                <div className="deck-row" key={deck.id}>
-                  <div>
-                    <b>{deck.title}</b>
-                    <small>{deck.cardCount} từ · {deck.dueCount} đến hạn · {deck.originalFilename}</small>
-                  </div>
-                  <div className="deck-actions">
-                    <a href={`/api/decks/${deck.id}/pdf`}>Tải PDF</a>
-                    <button disabled={busy} onClick={() => deleteDeck(deck)}>Xóa</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {!loading && tab === 'import' && <DeckLibrary decks={decks} customDeck={customDeck} customCards={customCards} showCustomList={showCustomList}
+        onToggleCustom={toggleShowCustomCards} busy={busy} onAdd={openAddModal} onEdit={openEditModal} onDeleteCard={handleDeleteCard}
+        onDictionary={() => { setDictDeckFilter('custom'); setTab('dictionary'); }} onFiles={handleFiles} onDeleteDeck={deleteDeck} onBackup={openBackup}
+        onStudy={async deckId => { if (sessionActive) { setNotice({ message: 'Kết thúc phiên học hiện tại trước khi chọn bộ khác.' }); return; } await selectDeck(deckId); setTab('flashcards'); }}/>}
+      {!loading && tab === 'settings' && <SettingsPanel sessionActive={sessionActive} preferences={{ kanjiMode: testKanjiMode, romajiMode, studyMode, questionType: quizQuestionType, autoRate: autoRateByResponseTime, fontSize: flashcardFontSize }}
+        onBackup={openBackup} onImport={() => navigate('import')} onChange={(key, value) => {
+          if (key === 'kanjiMode') handleSetTestKanjiMode(value);
+          if (key === 'romajiMode') handleSetRomajiMode(value);
+          if (key === 'studyMode') handleSetStudyMode(value);
+          if (key === 'questionType') handleSetQuizQuestionType(value);
+          if (key === 'autoRate') { setAutoRateByResponseTime(value); try { localStorage.setItem('marugoto_auto_rate', String(value)); } catch {} }
+          if (key === 'fontSize') { setFlashcardFontSize(value); try { localStorage.setItem('marugoto_flashcard_font_size', String(value)); } catch {} }
+        }}/>}
 
       {!loading && tab === 'flashcards' && current && (
-        <section className="panel">
+        <section className={`panel flashcard-panel ${showFlashcardDisplay ? 'show-display' : ''}`}>
           <div className="toolbar flashcard-toolbar">
             <div className="flashcard-toolbar-left">
               <span className="card-counter-badge">{index + 1} / {entries.length}</span>
               <span className="deck-tag-label" title={current.deckTitle}>{current.deckTitle}</span>
               {isCardLeech(current) && (
-                <span className="leech-indicator-badge" title="Từ khó: đã trả lời sai ≥3 lần hoặc tỷ lệ quên cao">🔥 Từ khó</span>
+                <span className="leech-indicator-badge" title="Từ khó: đã trả lời sai ≥3 lần hoặc tỷ lệ quên cao">Từ khó</span>
               )}
               <button
                 type="button"
@@ -2233,11 +1690,12 @@ function App() {
                 }}
                 title={flashcardLeechOnly ? 'Đang lọc từ khó. Bấm để hiển thị tất cả thẻ.' : 'Bấm để chỉ luyện các từ khó / hay sai.'}
               >
-                🔥 {flashcardLeechOnly ? 'Từ khó (Bật)' : 'Lọc từ khó'}
+                {flashcardLeechOnly ? 'Từ khó (Bật)' : 'Lọc từ khó'}
               </button>
             </div>
 
-            <div className="flashcard-toolbar-center">
+            <button type="button" className="button-secondary display-preferences-toggle" aria-expanded={showFlashcardDisplay} onClick={() => setShowFlashcardDisplay(value => !value)}>Tùy chọn hiển thị</button>
+            <div className={`flashcard-toolbar-center ${showFlashcardDisplay ? 'is-open' : ''}`}>
               <div className="quiz-kanji-segmented-group" title="Chế độ hiển thị chữ Hán">
                 <button
                   type="button"
@@ -2301,7 +1759,7 @@ function App() {
                   onClick={() => handleSetStudyMode('flip')}
                   title="Thẻ lật truyền thống"
                 >
-                  🎴 Thẻ lật
+                  Thẻ lật
                 </button>
                 <button
                   type="button"
@@ -2309,7 +1767,7 @@ function App() {
                   onClick={() => handleSetStudyMode('test')}
                   title="Trắc nghiệm 1 trong 5"
                 >
-                  📝 Trắc nghiệm
+                  Trắc nghiệm
                 </button>
                 <button
                   type="button"
@@ -2317,7 +1775,7 @@ function App() {
                   onClick={() => handleSetStudyMode('typed')}
                   title="Gõ câu trả lời trực tiếp (Typed Recall)"
                 >
-                  ⌨️ Gõ từ
+                  Gõ từ
                 </button>
               </div>
 
@@ -2363,6 +1821,7 @@ function App() {
               setFlashcardMessage('');
             }}
             onKeyDown={(e) => {
+              if (e.target !== e.currentTarget) return;
               if (e.key === ' ' || e.key === 'Enter') {
                 if (flashcardStatus || cardSaving) return;
                 e.preventDefault();
@@ -2393,7 +1852,7 @@ function App() {
                 title="Phát âm từ này (Audio)"
                 aria-label="Phát âm tiếng Nhật"
               >
-                🔊
+                <Icon name="audio" size={22}/>
               </button>
             )}
 
@@ -2431,7 +1890,7 @@ function App() {
                     title="Phát âm từ này (Audio)"
                     aria-label="Phát âm tiếng Nhật"
                   >
-                    🔊
+                    <Icon name="audio" size={22}/>
                   </button>
                 )}
               </div>
@@ -2475,7 +1934,7 @@ function App() {
           {studyMode === 'typed' && (
             <div className="typed-recall-section">
               <div className="typed-recall-header">
-                <span className="typed-recall-title">⌨️ Gõ câu trả lời (Typed Recall)</span>
+                <span className="typed-recall-title">Gõ câu trả lời (Typed Recall)</span>
                 {mode === 'vi-jp' && (
                   <label className="typed-convert-toggle">
                     <input
@@ -2552,7 +2011,7 @@ function App() {
         </section>
       )}
 
-      {!loading && (tab === 'quiz' || tab === 'review') && hasFiveChoices && (
+      {!loading && (tab === 'quiz' || tab === 'review') && (
         <section className={`panel ${quizSession && !quizDone ? 'quiz-active-panel' : ''}`}>
           {!quizSession && !quizDone && (
             <>
@@ -2584,7 +2043,7 @@ function App() {
                 <div className="setup-option-card">
                   <label className="setup-option-label" htmlFor="quiz-leech-only-toggle">
                     <div className="option-text-group">
-                      <span className="option-title">🔥 Chỉ luyện các từ khó / hay sai (Leech cards)</span>
+                      <span className="option-title">Chỉ luyện các từ khó / hay sai (Leech cards)</span>
                       <span className="option-desc">Lọc riêng các từ bạn đã trả lời sai ≥ 3 lần hoặc có tỷ lệ quên cao để luyện tập chuyên sâu</span>
                     </div>
                     <input
@@ -2603,7 +2062,7 @@ function App() {
 
                 <div className="setup-option-card">
                   <div className="option-text-group" style={{ marginBottom: '10px' }}>
-                    <span className="option-title">⌨️ Hình thức trả lời</span>
+                    <span className="option-title">Hình thức trả lời</span>
                     <span className="option-desc">Chọn làm bài bằng trắc nghiệm hoặc tự gõ câu trả lời (Typed Recall)</span>
                   </div>
                   <div className="study-mode-segmented-group">
@@ -2612,21 +2071,25 @@ function App() {
                       className={`study-mode-pill ${quizQuestionType === 'multiple_choice' ? 'active' : ''}`}
                       onClick={() => handleSetQuizQuestionType('multiple_choice')}
                     >
-                      🔘 Trắc nghiệm (1 trong 5)
+                      Trắc nghiệm (1 trong 5)
                     </button>
                     <button
                       type="button"
                       className={`study-mode-pill ${quizQuestionType === 'typed' ? 'active' : ''}`}
                       onClick={() => handleSetQuizQuestionType('typed')}
                     >
-                      ⌨️ Tự gõ từ (Typed Recall)
+                      Tự gõ câu trả lời
                     </button>
                   </div>
                 </div>
 
+              </div>
+              <details className="advanced-study-settings">
+                <summary>Hiển thị, thời gian và đánh giá <span>{hasTimer ? `${timeLimit} giây / câu` : 'Không giới hạn thời gian'} · {testKanjiMode === 'ruby' ? 'Furigana' : testKanjiMode === 'kanji-only' ? 'Chỉ Kanji' : 'Chỉ Kana'}</span></summary>
+                <div className="setup-options-container">
                 <div className="setup-option-card">
                   <div className="option-text-group" style={{ marginBottom: '10px' }}>
-                    <span className="option-title">🔤 Chế độ hiển thị Romaji</span>
+                    <span className="option-title">Chế độ hiển thị Romaji</span>
                     <span className="option-desc">Tùy chọn hiển thị phiên âm Romaji trong bài kiểm tra</span>
                   </div>
                   <div className="romaji-segmented-group">
@@ -2656,7 +2119,7 @@ function App() {
 
                 <div className="setup-option-card">
                   <div className="option-text-group" style={{ marginBottom: '10px' }}>
-                    <span className="option-title">🈸 Chế độ hiển thị Chữ Hán (Kanji)</span>
+                    <span className="option-title">Chế độ hiển thị Chữ Hán (Kanji)</span>
                     <span className="option-desc">Tùy chọn hiển thị chữ Hán, Furigana hoặc chế độ thử thách Only Kanji trong bài test</span>
                   </div>
                   <div className="kanji-mode-toggle-group">
@@ -2666,7 +2129,7 @@ function App() {
                       onClick={() => handleSetTestKanjiMode('ruby')}
                       title="Hiển thị Chữ Hán kèm cách đọc Furigana phía trên"
                     >
-                      <span className="pill-title">🈸 Hán tự + Furigana</span>
+                      <span className="pill-title">Hán tự + Furigana</span>
                       <span className="pill-sub">Chữ Hán kèm phiên âm</span>
                     </button>
                     <button
@@ -2675,7 +2138,7 @@ function App() {
                       onClick={() => handleSetTestKanjiMode('kanji-only')}
                       title="Chỉ hiển thị Chữ Hán, ẩn hoàn toàn phiên âm để kiểm tra nhớ mặt chữ"
                     >
-                      <span className="pill-title">🈸 Chỉ Chữ Hán (Only Kanji)</span>
+                      <span className="pill-title">Chỉ Chữ Hán (Only Kanji)</span>
                       <span className="pill-sub">Ẩn cách đọc (Thử thách)</span>
                     </button>
                     <button
@@ -2684,7 +2147,7 @@ function App() {
                       onClick={() => handleSetTestKanjiMode('kana-only')}
                       title="Tắt chữ Hán, chỉ hiển thị cách đọc Kana thuần túy"
                     >
-                      <span className="pill-title">🔤 Tắt Chữ Hán (Chỉ Kana)</span>
+                      <span className="pill-title">Tắt Chữ Hán (Chỉ Kana)</span>
                       <span className="pill-sub">Thuần Hiragana / Katakana</span>
                     </button>
                   </div>
@@ -2729,15 +2192,15 @@ function App() {
 
                       <div className="rating-rules-grid">
                         <div className="rule-pill easy">
-                          <span className="rule-badge">⚡ Easy</span>
+                          <span className="rule-badge">Easy</span>
                           <span className="rule-text">≤ 30% (≤ 3.5s)</span>
                         </div>
                         <div className="rule-pill good">
-                          <span className="rule-badge">⏱️ Good</span>
+                          <span className="rule-badge">Good</span>
                           <span className="rule-text">30% – 75%</span>
                         </div>
                         <div className="rule-pill hard">
-                          <span className="rule-badge">🐢 Hard</span>
+                          <span className="rule-badge">Hard</span>
                           <span className="rule-text">&gt; 75%</span>
                         </div>
                         <div className="rule-pill again">
@@ -2787,6 +2250,8 @@ function App() {
                 </div>
               </div>
 
+              </details>
+              {!canStartQuiz && <div className="setup-availability" role="status">{!quizAvailablePool.length ? 'Không có từ phù hợp trong phạm vi này. Thử đổi bộ hoặc tắt lọc từ khó.' : tab === 'review' && !quizAvailableDue ? 'Không có từ đến hạn ôn trong phạm vi đã chọn.' : 'Trắc nghiệm cần 5 đáp án khác nhau. Chọn Tự gõ từ để học bộ nhỏ.'}</div>}
               <div className="setup-footer-bar">
                 <div className="count-selection-group">
                   <label htmlFor="quiz-count-input" className="count-label">Số câu hỏi:</label>
@@ -2827,7 +2292,7 @@ function App() {
 
                 <button
                   className="primary start-btn"
-                  disabled={busy}
+                  disabled={busy || !canStartQuiz}
                   onClick={() => startQuiz(tab === 'review' ? 'DUE' : 'TEST')}
                 >
                   {busy ? 'Đang chuẩn bị…' : tab === 'review' ? 'Bắt đầu ôn tập →' : 'Bắt đầu kiểm tra →'}
@@ -2853,7 +2318,7 @@ function App() {
                 <div className="quiz-progress-display">
                   <div className="quiz-badge-wrap">
                     {currentQuestion.repeat ? (
-                      <span className="quiz-repeat-badge">🔄 Ôn lại thẻ sai</span>
+                      <span className="quiz-repeat-badge">Ôn lại thẻ sai</span>
                     ) : (
                       <span className="quiz-step-badge">
                         Câu <b>{quizInitialCompleted + (Object.hasOwn(quizSession.firstAttempts, currentQuestion.entry.id) ? 0 : 1)}</b> / {quizInitialCount}
@@ -2906,7 +2371,7 @@ function App() {
                     </div>
                     <div className="quiz-timer-meta">
                       <span className="quiz-timer-readout">
-                        ⏱️ <b>{questionTimeLeft.toFixed(1)}s</b> / {timeLimit}s
+                        <b>{questionTimeLeft.toFixed(1)}s</b> / {timeLimit}s
                       </span>
                       {currentQuestion.repeat && (
                         <button
@@ -2922,7 +2387,7 @@ function App() {
                   </div>
                 ) : (
                   <div className="quiz-timer-paused-notice">
-                    <span>⏳ <b>Chế độ ôn lại:</b> Đã tắt đếm ngược thời gian để bạn suy nghĩ kỹ hơn</span>
+                    <span><b>Chế độ ôn lại:</b> Đã tắt đếm ngược thời gian để bạn suy nghĩ kỹ hơn</span>
                     <button
                       type="button"
                       className="quiz-timer-pause-btn"
@@ -2984,10 +2449,10 @@ function App() {
                       <button
                         type="button"
                         className="quiz-tool-btn"
-                        onClick={() => openKanjiModal(currentQuestion.entry)}
+                        onClick={() => openEditModal(currentQuestion.entry)}
                         title="Chỉnh sửa hoặc đổi chữ Hán khác"
                       >
-                        ✏️ {promptDetails.hasKanji ? 'Đổi Hán tự' : '+ Thêm Hán tự'}
+                        {promptDetails.hasKanji ? 'Đổi Hán tự' : '+ Thêm Hán tự'}
                       </button>
 
                       {promptDetails.homophones?.length > 0 && (
@@ -3022,7 +2487,7 @@ function App() {
               {quizQuestionType === 'typed' ? (
                 <div className="typed-recall-section" style={{ marginTop: '16px' }}>
                   <div className="typed-recall-header">
-                    <span className="typed-recall-title">⌨️ Gõ câu trả lời</span>
+                    <span className="typed-recall-title">Gõ câu trả lời</span>
                     {mode === 'vi-jp' && (
                       <label className="typed-convert-toggle">
                         <input
@@ -3045,6 +2510,7 @@ function App() {
                       placeholder={mode === 'jp-vi' ? 'Nhập nghĩa tiếng Việt...' : 'Nhập tiếng Nhật (hoặc gõ Romaji)...'}
                       value={quizTypedInput}
                       disabled={Boolean(quizStatus) || quizSaving}
+                      aria-label={mode === 'jp-vi' ? 'Nhập nghĩa tiếng Việt...' : 'Nhập tiếng Nhật (hoặc gõ Romaji)...'}
                       autoFocus
                       onChange={(e) => {
                         let val = e.target.value;
@@ -3177,7 +2643,7 @@ function App() {
 
           {quizSession && !quizDone && !currentQuestion && quizSession.waiting.length > 0 && (
             <div className="session-wait">
-              <div className="wait-icon">⏳</div>
+              <div className="wait-icon"><Icon name="book" size={36}/></div>
               <h2>Đã xong các thẻ ban đầu</h2>
               <p>{quizSession.waiting.length} thẻ Again đang chờ tới bước ôn tiếp theo.</p>
               <div className="countdown">
@@ -3199,7 +2665,7 @@ function App() {
 
           {quizDone && (
             <div className="quiz-result-card">
-              <div className="result-celebration">🎉</div>
+              <div className="result-celebration"><Icon name="check" size={40}/></div>
               <h2>{quizMode === 'DUE' ? 'Hoàn thành lượt ôn tập' : 'Kết quả kiểm tra (Test)'}</h2>
               <div className="result-score-container">
                 <span className="result-score-main">{quizScore} / {quizInitialCount}</span>
@@ -3212,12 +2678,12 @@ function App() {
               </p>
               {quizSession?.waiting.length > 0 && (
                 <div className="result-alert waiting">
-                  ⏳ {quizSession.waiting.length} thẻ cần ôn lại (Again) đã được lưu và sẽ xuất hiện trong các lượt ôn tới hạn.
+                  {quizSession.waiting.length} thẻ cần ôn lại (Again) đã được lưu và sẽ xuất hiện trong các lượt ôn tới hạn.
                 </div>
               )}
               {quizSession?.queue.length > 0 && (
                 <div className="result-alert pending">
-                  📝 {quizSession.queue.length} thẻ chưa làm vẫn giữ nguyên trạng thái cho lượt sau.
+                  {quizSession.queue.length} thẻ chưa làm vẫn giữ nguyên trạng thái cho lượt sau.
                 </div>
               )}
               <div className="result-actions-group">
@@ -3226,14 +2692,14 @@ function App() {
                   className="primary result-btn"
                   onClick={() => { setQuizSession(null); setQuizDone(false); setQuizStatus(null); }}
                 >
-                  🔄 Bắt đầu phiên mới
+                  Bắt đầu phiên mới
                 </button>
                 <button
                   type="button"
                   className="secondary-button result-btn"
                   onClick={() => { setQuizSession(null); setQuizDone(false); setQuizStatus(null); setTab('flashcards'); }}
                 >
-                  📖 Về Flashcards
+                  Về Flashcards
                 </button>
               </div>
             </div>
@@ -3241,111 +2707,15 @@ function App() {
         </section>
       )}
 
-      {!loading && !hasFiveChoices && entries.length > 0 && tab !== 'import' && (
-        <section className="panel"><p>Cần ít nhất 5 đáp án khác nhau theo chiều học này để tạo bài trắc nghiệm.</p></section>
-      )}
-
-      {!loading && !entries.length && tab !== 'import' && (
-        <section className="panel"><p>Chưa có thẻ trong phạm vi này. Hãy nhập PDF hoặc chọn bộ khác.</p></section>
-      )}
-
-      {isModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingCard ? 'Chỉnh sửa từ vựng' : 'Thêm từ vựng tùy chỉnh'}</h3>
-              <button className="close-btn" onClick={() => setIsModalOpen(false)}>×</button>
-            </div>
-            <form onSubmit={handleSaveCustomCard}>
-              <div className="form-group">
-                <label htmlFor="custom-jp">Tiếng Nhật (Kanji / Kana) *</label>
-                <div className="input-with-button">
-                  <input
-                    id="custom-jp"
-                    type="text"
-                    autoFocus
-                    placeholder="Ví dụ: さかな hoặc 魚（さかな）"
-                    value={newJp}
-                    onChange={(e) => setNewJp(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="inline-suggest-btn"
-                    onClick={handleAutoFindKanjiCustom}
-                    title="Tìm chữ Hán 1-1 cho từ này"
-                  >
-                    ✨ Tìm Hán tự
-                  </button>
-                </div>
-              </div>
-
-              {(() => {
-                const sugResult = findKanjiSuggestions({ jp: newJp, vi: newVi });
-                if (!sugResult || !sugResult.suggestions.length) return null;
-                return (
-                  <div className="kanji-suggestions-box">
-                    <div className="kanji-sug-header">💡 Gợi ý Chữ Hán 1-1:</div>
-                    <div className="kanji-sug-chips">
-                      {sugResult.suggestions.slice(0, 5).map((sug, idx) => (
-                        <button
-                          type="button"
-                          key={idx}
-                          className="kanji-sug-chip"
-                          onClick={() => applyCustomKanjiSuggestion(sug)}
-                          title={`Gán ${sug.kanji} (${sug.reading}) - ${sug.vi}`}
-                        >
-                          <span className="chip-kanji">{sug.kanji}</span>
-                          <span className="chip-reading">（{sug.reading}）</span>
-                          <span className="chip-vi">{sug.vi}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="form-group">
-                <label htmlFor="custom-vi">Nghĩa tiếng Việt *</label>
-                <input
-                  id="custom-vi"
-                  type="text"
-                  placeholder="Ví dụ: con mèo"
-                  value={newVi}
-                  onChange={(e) => setNewVi(e.target.value)}
-                  required
-                />
-              </div>
-              {!editingCard && (
-                <div className="form-checkbox">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={keepAdding}
-                      onChange={(e) => setKeepAdding(e.target.checked)}
-                    />
-                    <span>Tiếp tục thêm từ khác sau khi lưu</span>
-                  </label>
-                </div>
-              )}
-              {modalError && <div className="feedback bad" role="alert">{modalError}</div>}
-              <div className="modal-actions">
-                <button type="button" className="secondary-button" onClick={() => setIsModalOpen(false)}>Hủy</button>
-                <button type="submit" className="primary" disabled={cardSaving}>
-                  {cardSaving ? 'Đang lưu…' : (editingCard ? 'Cập nhật' : 'Lưu từ vựng')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {!loading && tab === 'flashcards' && !current && <section className="workspace-empty"><Icon name="book" size={30}/><h2>{flashcardLeechOnly ? 'Không có từ khó trong phạm vi này' : 'Chưa có từ để học'}</h2><p>Chọn bộ khác, thêm từ hoặc nhập từ giáo trình PDF để bắt đầu.</p><div className="inline-actions">{flashcardLeechOnly && <button className="button-secondary" onClick={async () => { setFlashcardLeechOnly(false); try { await loadCards(selectedDeckId, mode, false); } catch (error) { setError(error.message); } }}>Hiện tất cả từ</button>}<button className="button-secondary" onClick={() => navigate('import')}>Mở Bộ từ</button><button className="button-primary" onClick={openAddModal}>Thêm từ</button></div></section>}
+      </main>
+      {isModalOpen && tab !== 'dictionary' && <div className="floating-editor"><div className="editor-scrim" onClick={() => editorRequestRef.current?.()}/>{editor}</div>}
 
       {importValidation && (
-        <div className="modal-backdrop" onClick={() => !busy && setImportValidation(null)}>
-          <div className="modal-card import-validation-modal" onClick={(e) => e.stopPropagation()}>
+        <DialogFrame label="Kiểm tra từ vựng trước khi nhập PDF" busy={busy} onClose={() => setImportValidation(null)} className="import-validation-modal">
             <div className="modal-header">
-              <h3>🔍 Kiểm tra từ vựng trước khi nhập PDF</h3>
-              <button disabled={busy} className="close-btn" onClick={() => setImportValidation(null)}>×</button>
+              <h3>Kiểm tra từ vựng trước khi nhập PDF</h3>
+              <button aria-label="Đóng xem trước PDF" disabled={busy} className="close-btn" onClick={() => setImportValidation(null)}><Icon name="close"/></button>
             </div>
 
             <div className="validation-summary-box">
@@ -3359,19 +2729,19 @@ function App() {
                 </div>
                 <div className="val-stat-pill unique">
                   <span className="stat-num">{importValidation.parsedFiles.reduce((s, f) => s + f.dupResult.uniqueCards.length, 0)}</span>
-                  <span className="stat-label">✅ Từ mới hợp lệ</span>
+                  <span className="stat-label">Từ mới hợp lệ</span>
                 </div>
                 <div className="val-stat-pill duplicate">
                   <span className="stat-num">{importValidation.parsedFiles.reduce((s, f) => s + f.dupResult.duplicates.length, 0)}</span>
-                  <span className="stat-label">⚠️ Trùng với DB</span>
+                  <span className="stat-label">Từ đã có</span>
                 </div>
                 <div className="val-stat-pill kanji">
                   <span className="stat-num">{importValidation.parsedFiles.reduce((s, f) => s + (f.mappedCount || 0), 0)}</span>
-                  <span className="stat-label">🈸 Gán Chữ Hán 1-1</span>
+                  <span className="stat-label">Gợi ý Chữ Hán</span>
                 </div>
               </div>
 
-              <div style={{ marginTop: '12px', background: '#fdf2f8', padding: '10px 14px', borderRadius: '10px', border: '1px solid #fbcfe8' }}>
+              <div className="import-kanji-choice">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0 }}>
                   <input
                     type="checkbox"
@@ -3395,8 +2765,8 @@ function App() {
                       });
                     }}
                   />
-                  <span style={{ fontSize: '13px', color: '#831843' }}>
-                    <b>✨ Tự động gán Chữ Hán 1-1</b> cho {importValidation.parsedFiles.reduce((s, f) => s + (f.mappedCount || 0), 0)} từ phù hợp (Ví dụ: さかな → 魚（さかな）)
+                  <span>
+                    <b>Tự động gán Chữ Hán 1-1</b> cho {importValidation.parsedFiles.reduce((s, f) => s + (f.mappedCount || 0), 0)} từ phù hợp (Ví dụ: さかな → 魚（さかな）)
                   </span>
                 </label>
               </div>
@@ -3449,7 +2819,7 @@ function App() {
                   <thead>
                     <tr>
                       <th>Từ trong PDF</th>
-                      <th>Từ đã có trong DB</th>
+                      <th>Từ đã có</th>
                       <th>Thuộc bộ</th>
                       <th>Lý do phát hiện</th>
                     </tr>
@@ -3502,165 +2872,15 @@ function App() {
                       : importValidation.parsedFiles.reduce((s, f) => s + f.entries.length, 0)} từ) →`}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🈸 Kanji Quick Modal */}
-      {kanjiModalCard && (
-        <div className="modal-backdrop" onClick={() => !kanjiSaving && setKanjiModalCard(null)}>
-          <div className="modal-card kanji-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>🈸 Gán / Chỉnh sửa Chữ Hán (Kanji)</h3>
-              <button disabled={kanjiSaving} className="close-btn" onClick={() => setKanjiModalCard(null)}>×</button>
-            </div>
-
-            <div className="kanji-card-reference">
-              <div className="kanji-ref-row">
-                <span className="kanji-ref-label">Từ vựng hiện tại:</span>
-                <span className="kanji-ref-val">{kanjiModalCard.jp}</span>
-              </div>
-              <div className="kanji-ref-row">
-                <span className="kanji-ref-label">Romaji:</span>
-                <span className="kanji-ref-val">{kanjiModalCard.romaji || '—'}</span>
-              </div>
-              <div className="kanji-ref-row">
-                <span className="kanji-ref-label">Nghĩa tiếng Việt:</span>
-                <span className="kanji-ref-val">{kanjiModalCard.vi}</span>
-              </div>
-            </div>
-
-            {/* Quick Suggestions from Marugoto Dictionary */}
-            {(() => {
-              const { suggestions } = findKanjiSuggestions(kanjiModalCard);
-              if (!suggestions || suggestions.length === 0) return null;
-              return (
-                <div className="kanji-suggestions-box">
-                  <div className="kanji-sug-header">
-                    <span>💡 Gợi ý Chữ Hán 1-1 theo Marugoto:</span>
-                  </div>
-                  <div className="kanji-sug-chips">
-                    {suggestions.map((sug, i) => (
-                      <button
-                        type="button"
-                        key={i}
-                        className="kanji-sug-chip"
-                        onClick={() => {
-                          setKanjiInput(sug.kanji);
-                          setKanaInput(sug.reading);
-                          setKanjiFormat('ruby');
-                        }}
-                        title={`Chọn chữ Hán ${sug.kanji} - ${sug.vi}`}
-                      >
-                        <span className="chip-kanji">{sug.kanji}</span>
-                        <span className="chip-reading">（{sug.reading}）</span>
-                        <span className="chip-vi">{sug.vi}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="kanji-form-grid">
-              <div className="form-group">
-                <label htmlFor="kanji-input">Chữ Hán (Kanji)</label>
-                <input
-                  id="kanji-input"
-                  type="text"
-                  placeholder="Ví dụ: 魚"
-                  value={kanjiInput}
-                  onChange={(e) => setKanjiInput(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="kana-input">Cách đọc (Kana)</label>
-                <input
-                  id="kana-input"
-                  type="text"
-                  placeholder="Ví dụ: さかな"
-                  value={kanaInput}
-                  onChange={(e) => setKanaInput(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="kanji-format-selector">
-              <div className="option-title-label">Kiểu lưu vào thẻ từ:</div>
-              <label>
-                <input
-                  type="radio"
-                  name="kanji-style"
-                  checked={kanjiFormat === 'ruby'}
-                  onChange={() => setKanjiFormat('ruby')}
-                />
-                <span>
-                  <b>Chữ Hán kèm cách đọc</b> (Ví dụ: <code>{formatKanjiTerm(kanjiInput || '魚', kanaInput || 'さかな', 'ruby')}</code>) — <i>Khuyên dùng</i>
-                </span>
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="kanji-style"
-                  checked={kanjiFormat === 'kanji-only'}
-                  onChange={() => setKanjiFormat('kanji-only')}
-                />
-                <span>
-                  <b>Chỉ chữ Hán</b> (Ví dụ: <code>{formatKanjiTerm(kanjiInput || '魚', kanaInput || 'さかな', 'kanji-only')}</code>)
-                </span>
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="kanji-style"
-                  checked={kanjiFormat === 'kana-only'}
-                  onChange={() => setKanjiFormat('kana-only')}
-                />
-                <span>
-                  <b>Chỉ Kana</b> (Gỡ bỏ chữ Hán: <code>{formatKanjiTerm(kanjiInput || '魚', kanaInput || 'さかな', 'kana-only')}</code>)
-                </span>
-              </label>
-            </div>
-
-            <div className="kanji-live-preview">
-              <div className="preview-label">Xem trước hiển thị</div>
-              <div className="preview-result">
-                {renderJpDisplay(formatKanjiTerm(kanjiInput, kanaInput, kanjiFormat)) || <span className="empty-dash">Chưa nhập</span>}
-              </div>
-            </div>
-
-            {kanjiModalError && <div className="feedback bad">{kanjiModalError}</div>}
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={kanjiSaving}
-                onClick={() => setKanjiModalCard(null)}
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                className="primary"
-                disabled={kanjiSaving || (!kanjiInput.trim() && kanjiFormat !== 'kana-only')}
-                onClick={handleSaveKanji}
-              >
-                {kanjiSaving ? 'Đang lưu…' : 'Lưu Chữ Hán'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
 
       {/* ✨ Batch Auto Map Kanji Modal */}
       {batchKanjiModalOpen && (
-        <div className="modal-backdrop" onClick={() => !batchKanjiSaving && setBatchKanjiModalOpen(false)}>
-          <div className="modal-card batch-kanji-modal" onClick={(e) => e.stopPropagation()}>
+        <DialogFrame label="Tự động gán Chữ Hán" busy={batchKanjiSaving} onClose={() => setBatchKanjiModalOpen(false)} className="batch-kanji-modal">
             <div className="modal-header">
-              <h3>✨ Tự động gán Chữ Hán 1-1 cho Từ điển</h3>
-              <button disabled={batchKanjiSaving} className="close-btn" onClick={() => setBatchKanjiModalOpen(false)}>×</button>
+              <h3>Tự động gán Chữ Hán cho Từ điển</h3>
+              <button aria-label="Đóng gợi ý Chữ Hán" disabled={batchKanjiSaving} className="close-btn" onClick={() => setBatchKanjiModalOpen(false)}><Icon name="close"/></button>
             </div>
 
             <div className="batch-scope-box">
@@ -3673,7 +2893,7 @@ function App() {
                     checked={batchKanjiScope === 'all'}
                     onChange={() => switchBatchScope('all')}
                   />
-                  <span>🌐 Toàn bộ thư viện ({dictionaryCards.length} từ trong DB)</span>
+                  <span>Toàn bộ thư viện ({dictionaryCards.length} từ)</span>
                 </label>
                 <label className={`batch-scope-pill ${batchKanjiScope === 'filtered' ? 'active' : ''}`}>
                   <input
@@ -3682,7 +2902,7 @@ function App() {
                     checked={batchKanjiScope === 'filtered'}
                     onChange={() => switchBatchScope('filtered')}
                   />
-                  <span>📁 Bộ từ đang lọc ({sortedDictionaryCards.length} từ)</span>
+                  <span>Bộ từ đang lọc ({sortedDictionaryCards.length} từ)</span>
                 </label>
               </div>
             </div>
@@ -3690,7 +2910,7 @@ function App() {
             <div className="batch-kanji-summary">
               Tìm thấy <b>{batchKanjiPreview.length}</b> từ vựng có thể tự động gán Chữ Hán chuẩn 1-1 theo giáo trình Marugoto. Đã chọn <b>{batchKanjiSelected.size}</b> từ để cập nhật.
               <div className="batch-kanji-note">
-                💡 Cập nhật trực tiếp vào cơ sở dữ liệu SQLite — Giữ nguyên 100% lịch sử và tiến độ ôn tập FSRS của từng thẻ!
+                Lịch sử và tiến độ ôn tập của từng từ được giữ nguyên sau khi cập nhật.
               </div>
             </div>
 
@@ -3706,6 +2926,7 @@ function App() {
                       <th style={{ width: '40px', textAlign: 'center' }}>
                         <input
                           type="checkbox"
+                          aria-label="Chọn tất cả gợi ý Chữ Hán"
                           checked={batchKanjiSelected.size === batchKanjiPreview.length && batchKanjiPreview.length > 0}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -3727,6 +2948,7 @@ function App() {
                         <td style={{ textAlign: 'center' }}>
                           <input
                             type="checkbox"
+                            aria-label={`Chọn gợi ý cho ${item.originalJp}`}
                             checked={batchKanjiSelected.has(item.id)}
                             onChange={(e) => {
                               const next = new Set(batchKanjiSelected);
@@ -3738,7 +2960,7 @@ function App() {
                         </td>
                         <td><b>{item.originalJp}</b></td>
                         <td>
-                          <b style={{ color: '#be185d' }}>{renderJpDisplay(item.mappedJp)}</b>
+                          <b className="mapped-kanji">{renderJpDisplay(item.mappedJp)}</b>
                         </td>
                         <td>{item.vi}</td>
                       </tr>
@@ -3766,19 +2988,18 @@ function App() {
                 {batchKanjiSaving ? 'Đang cập nhật…' : `Áp dụng Chữ Hán (${batchKanjiSelected.size} từ)`}
               </button>
             </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
 
       {/* 💾 Backup & Restore Modal */}
       {isBackupModalOpen && (
-        <div className="modal-backdrop" onClick={() => !backupLoading && setIsBackupModalOpen(false)}>
-          <div className="modal-card backup-modal-card" onClick={(e) => e.stopPropagation()}>
+        <DialogFrame label="Sao lưu và khôi phục dữ liệu" busy={backupLoading} suspended={Boolean(confirmation)} onClose={() => setIsBackupModalOpen(false)} className="backup-modal-card">
             <div className="modal-header">
-              <h3>💾 Sao lưu & Khôi phục dữ liệu (Backup & Restore)</h3>
+              <h3>Sao lưu và khôi phục dữ liệu</h3>
               <button
                 type="button"
                 className="close-btn"
+                aria-label="Đóng sao lưu"
                 disabled={backupLoading}
                 onClick={() => setIsBackupModalOpen(false)}
               >
@@ -3792,8 +3013,8 @@ function App() {
 
             <div className="backup-grid">
               <div className="backup-box">
-                <h4>📥 Xuất bản sao lưu (Export)</h4>
-                <p>Tải toàn bộ cơ sở dữ liệu hiện tại về máy tính dưới định dạng file JSON.</p>
+                <h4>Xuất bản sao lưu</h4>
+                <p>Tải từ vựng và tiến độ dưới dạng JSON. PDF gốc cần sao chép riêng khi chuyển máy.</p>
                 <a
                   href={getBackupExportUrl()}
                   className="download-btn"
@@ -3802,24 +3023,26 @@ function App() {
                     setBackupStatus({ type: 'success', message: 'Đang tải file sao lưu JSON về máy...' });
                   }}
                 >
-                  📥 Tải xuống bản sao lưu (.json)
+                  Tải xuống bản sao lưu (.json)
                 </a>
               </div>
 
               <div className="backup-box">
-                <h4>📤 Khôi phục dữ liệu (Restore)</h4>
+                <h4>Khôi phục dữ liệu</h4>
                 <p>Chọn file sao lưu JSON đã tải trước đó để khôi phục lại toàn bộ dữ liệu học tập.</p>
+                {sessionActive && <p className="inline-warning">Kết thúc phiên học trước khi khôi phục dữ liệu.</p>}
                 <div className="backup-restore-zone">
                   <label className="backup-file-picker-label">
-                    <span>📁 {backupLoading ? 'Đang khôi phục dữ liệu...' : 'Chọn file sao lưu (.json)'}</span>
+                    <span>{backupLoading ? 'Đang khôi phục dữ liệu...' : 'Chọn file sao lưu (.json)'}</span>
                     <input
                       type="file"
+                      aria-label="Chọn file sao lưu (.json)"
                       accept=".json,application/json"
-                      disabled={backupLoading}
+                      disabled={backupLoading || sessionActive}
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        if (!window.confirm(`Bạn có chắc chắn muốn khôi phục dữ liệu từ file “${file.name}”?\\n\\nHệ thống sẽ tự động tạo một bản sao lưu dự phòng CSDL trước khi khôi phục để bảo vệ dữ liệu.`)) {
+                        if (!await askConfirmation(`Khôi phục dữ liệu từ “${file.name}”? Các từ và tiến độ có trong file sẽ được cập nhật; các bộ khác vẫn được giữ. App tạo bản sao dữ liệu dự phòng trước khi khôi phục.`, 'Khôi phục', 'Khôi phục dữ liệu')) {
                           e.target.value = '';
                           return;
                         }
@@ -3828,9 +3051,18 @@ function App() {
                         try {
                           const result = await importBackupFile(file);
                           setBackupStatus({ type: 'success', message: result.message || 'Khôi phục thành công!' });
-                          await refreshDecks();
-                          await loadCards();
-                          await refreshDictionary();
+                          setSelectedDeckId('all');
+                          setQuizSession(null);
+                          setQuizDone(false);
+                          try {
+                            await refreshDecks('all');
+                            await loadCards('all');
+                            await refreshDictionary();
+                            const custom = await api('/api/study/cards?deckId=custom&mode=all');
+                            setCustomCards(custom.cards || []);
+                          } catch {
+                            setBackupStatus({ type: 'success', message: 'Đã khôi phục dữ liệu. Chưa tải lại được danh sách; hãy tải lại trang.' });
+                          }
                         } catch (err) {
                           setBackupStatus({ type: 'error', message: `Lỗi khôi phục: ${err.message}` });
                         } finally {
@@ -3842,7 +3074,7 @@ function App() {
                   </label>
 
                   <div className="backup-safety-notice">
-                    <span>🛡️</span>
+                    <Icon name="check"/>
                     <div>
                       <b>Bảo vệ dữ liệu:</b> Hệ thống luôn tự động tạo một file CSDL dự phòng (<code>.bak</code>) trước mỗi lần khôi phục.
                     </div>
@@ -3868,13 +3100,18 @@ function App() {
                 Đóng
               </button>
             </div>
-          </div>
-        </div>
+        </DialogFrame>
       )}
 
-      <footer>Backend local-only · SQLite + PDF trên máy này · SRS FSRS</footer>
+      {confirmation && <DialogFrame label={confirmation.title} onClose={() => resolveConfirmation(false)} className="confirmation-dialog"><h2>{confirmation.title}</h2><p>{confirmation.description}</p><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => resolveConfirmation(false)}>Hủy</button><button type="button" className="button-primary" onClick={() => resolveConfirmation(true)}>{confirmation.confirmLabel}</button></div></DialogFrame>}
+      <footer className="app-footer"><span>Marugoto · Học từng từ, nhớ lâu hơn</span><span>Tiến độ ôn FSRS · Dữ liệu trên máy này</span></footer>
     </div>
   );
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+const reactRoot = import.meta.hot?.data.reactRoot || createRoot(document.getElementById('root'));
+reactRoot.render(<App />);
+if (import.meta.hot) {
+  import.meta.hot.data.reactRoot = reactRoot;
+  import.meta.hot.accept();
+}

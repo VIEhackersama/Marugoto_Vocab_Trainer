@@ -27,6 +27,17 @@ public class LifecycleController {
     private volatile long lastHeartbeatTime = 0;
     private ScheduledFuture<?> pendingShutdownFuture = null;
 
+    // The launcher can observe liveness without registering itself as a browser tab.
+    @GetMapping("/status")
+    public synchronized Map<String, Object> status() {
+        return Map.of(
+                "status", "ok",
+                "activeTabs", activeTabs.size(),
+                "hasConnected", hasConnected,
+                "lastHeartbeatTime", lastHeartbeatTime
+        );
+    }
+
     @RequestMapping(value = "/heartbeat", method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
     public synchronized Map<String, Object> heartbeat(@RequestParam(value = "tabId", defaultValue = "default") String tabId) {
         long now = System.currentTimeMillis();

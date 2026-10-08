@@ -135,14 +135,35 @@ class StudyService {
         if (missingVocabIds.isEmpty()) return;
         long now = System.currentTimeMillis();
         for (String vocabId : missingVocabIds) {
-            Card state = fsrs.newCard();
-            jdbc.update("""
-                    INSERT INTO study_cards(id, vocabulary_id, card_type, fsrs_card_json, due_at, created_at)
-                    VALUES(?,?,?,?,?,?)
-                    """, UUID.randomUUID().toString(), vocabId, normalizedType,
-                    fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
+            List<ExistingStudyState> existing = jdbc.query(
+                    "SELECT fsrs_card_json, due_at, review_count, wrong_count, last_reviewed_at FROM study_cards WHERE vocabulary_id = ? LIMIT 1",
+                    (rs, i) -> new ExistingStudyState(
+                            rs.getString("fsrs_card_json"),
+                            rs.getLong("due_at"),
+                            rs.getInt("review_count"),
+                            rs.getInt("wrong_count"),
+                            rs.getObject("last_reviewed_at") == null ? null : rs.getLong("last_reviewed_at")),
+                    vocabId
+            );
+            if (!existing.isEmpty()) {
+                ExistingStudyState s = existing.getFirst();
+                jdbc.update("""
+                        INSERT INTO study_cards(id, vocabulary_id, card_type, fsrs_card_json, due_at, review_count, wrong_count, last_reviewed_at, created_at)
+                        VALUES(?,?,?,?,?,?,?,?,?)
+                        """, UUID.randomUUID().toString(), vocabId, normalizedType,
+                        s.fsrsJson(), s.dueAt(), s.reviewCount(), s.wrongCount(), s.lastReviewedAt(), now);
+            } else {
+                Card state = fsrs.newCard();
+                jdbc.update("""
+                        INSERT INTO study_cards(id, vocabulary_id, card_type, fsrs_card_json, due_at, created_at)
+                        VALUES(?,?,?,?,?,?)
+                        """, UUID.randomUUID().toString(), vocabId, normalizedType,
+                        fsrs.write(state), fsrs.dueAt(state).toEpochMilli(), now);
+            }
         }
     }
+
+    private record ExistingStudyState(String fsrsJson, long dueAt, int reviewCount, int wrongCount, Long lastReviewedAt) {}
 
     private static String normalizeCardType(String cardType) {
         if (cardType == null || cardType.isBlank() || cardType.equalsIgnoreCase("jp-vi") || cardType.equalsIgnoreCase("JP_TO_VI")) {

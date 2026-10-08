@@ -156,9 +156,12 @@ class BackupService {
                     for (String deckId : v.deckIds()) {
                         if (deckId == null || deckId.isBlank()) continue;
                         jdbc.update("""
-                                INSERT OR IGNORE INTO vocabulary_sources(id, vocabulary_id, deck_id, created_at)
-                                VALUES(?,?,?,?)
-                                """, UUID.randomUUID().toString(), v.id(), deckId, v.createdAt());
+                                INSERT INTO vocabulary_sources(id, vocabulary_id, deck_id, created_at)
+                                SELECT ?,?,?,?
+                                WHERE NOT EXISTS (
+                                    SELECT 1 FROM vocabulary_sources WHERE vocabulary_id=? AND deck_id=?
+                                )
+                                """, UUID.randomUUID().toString(), v.id(), deckId, v.createdAt(), v.id(), deckId);
                     }
                 }
             }

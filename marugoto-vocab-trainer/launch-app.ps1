@@ -1,9 +1,28 @@
+param([switch]$NoBrowser)
+
 $ErrorActionPreference = 'SilentlyContinue'
 $ROOT = $PSScriptRoot
 if (!$ROOT) {
     $ROOT = (Get-Location).Path
 }
 Set-Location $ROOT
+
+# Only stop process trees started by this launcher, never arbitrary port owners.
+function Stop-OwnedProcessTree($process) {
+    if (!$process -or $process.HasExited) { return }
+    $stopInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $stopInfo.FileName = 'taskkill.exe'
+    $stopInfo.Arguments = "/PID $($process.Id) /T /F"
+    $stopInfo.CreateNoWindow = $true
+    $stopInfo.UseShellExecute = $false
+    $stopInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+    $stopProcess = [System.Diagnostics.Process]::Start($stopInfo)
+    $stopProcess.WaitForExit()
+}
+
+function Open-AppBrowser {
+    if (!$NoBrowser) { Start-Process 'http://localhost:5173' }
+}
 
 # 1. Kiểm tra môi trường (Java 24 & Node.js/npm)
 $javaCmd = Get-Command java -ErrorAction SilentlyContinue
@@ -34,7 +53,7 @@ try {
 } catch {}
 
 if ($backendUp -and $frontendUp) {
-    Start-Process "http://localhost:5173"
+    Open-AppBrowser
     exit 0
 }
 
@@ -78,6 +97,7 @@ while ((Get-Date) -lt $deadline) {
 }
 
 if (!$backendReady) {
+    Stop-OwnedProcessTree $backendProc
     Add-Type -AssemblyName PresentationFramework
     [System.Windows.MessageBox]::Show("Backend không khởi động được trong vòng 2 phút.`nVui lòng kiểm tra lại log backend.", "Marugoto Vocab Trainer", "OK", "Warning") | Out-Null
     exit 1
@@ -109,33 +129,34 @@ while ((Get-Date) -lt $deadlineVite) {
     }
 }
 
+if (!$frontendReady) {
+    Stop-OwnedProcessTree $frontendProc
+    Stop-OwnedProcessTree $backendProc
+    Add-Type -AssemblyName PresentationFramework
+    [System.Windows.MessageBox]::Show("Frontend không khởi động được trong vòng 30 giây.", "Marugoto Vocab Trainer", "OK", "Warning") | Out-Null
+    exit 1
+}
+
 # 6. Tự động bật tab trình duyệt mặc định
-Start-Process "http://localhost:5173"
+Open-AppBrowser
 
 # 7. Vòng lặp giám sát (Supervisor loop):
 # Khi người dùng đóng tab trình duyệt, backend sẽ tự động phát hiện mất heartbeat và tắt (System.exit).
 # Supervisor sẽ lập tức dọn sạch process frontend và kết thúc.
+$firstConnectionDeadline = (Get-Date).AddSeconds(60)
 while ($true) {
     Start-Sleep -Seconds 2
     try {
-        $res = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/api/lifecycle/heartbeat' -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/api/lifecycle/status' -TimeoutSec 2 -ErrorAction Stop
+        if (!$status.hasConnected -and (Get-Date) -gt $firstConnectionDeadline) { break }
     } catch {
         # Backend đã ngắt kết nối / tắt do tab trình duyệt đã đóng
         break
     }
 }
 
-# 8. Dọn dẹp tiến trình Frontend và các port còn sót
-if ($frontendProc -and !$frontendProc.HasExited) {
-    Stop-Process -Id $frontendProc.Id -Force -ErrorAction SilentlyContinue
-}
-
-Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue | ForEach-Object {
-    Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
-}
-
-Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | ForEach-Object {
-    Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
-}
+# 8. Dọn dẹp process con do launcher này tạo.
+Stop-OwnedProcessTree $frontendProc
+Stop-OwnedProcessTree $backendProc
 
 exit 0

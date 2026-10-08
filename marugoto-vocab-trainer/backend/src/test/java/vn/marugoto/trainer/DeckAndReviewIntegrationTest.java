@@ -271,5 +271,73 @@ class DeckAndReviewIntegrationTest {
 
         mvc.perform(delete("/api/decks/{deckId}", deckId)).andExpect(status().isNoContent());
     }
+
+    @Test
+    void bidirectionalReviewSyncsScheduleAndDueCount() throws Exception {
+        String deckJson = """
+                [
+                  {"jp":"ほん","romaji":"hon","vi":"quyển sách"},
+                  {"jp":"くるま","romaji":"kuruma","vi":"xe hơi"}
+                ]
+                """;
+        MockMultipartFile pdf = new MockMultipartFile("file", "sync_test.pdf", "application/pdf",
+                "%PDF-1.7\nfixtureSync".getBytes(StandardCharsets.US_ASCII));
+        String res = mvc.perform(multipart("/api/decks").file(pdf).param("cards", deckJson))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String deckId = objectMapper.readTree(res).get("id").asString();
+
+        // Initially 2 due cards in both directions
+        JsonNode jpInitial = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("cardType", "JP_TO_VI"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        JsonNode viInitial = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("cardType", "VI_TO_JP"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(2, jpInitial.get("dueCount").asInt());
+        assertEquals(2, viInitial.get("dueCount").asInt());
+
+        // Review card 1 in JP_TO_VI direction with EASY
+        String card1Id = jpInitial.get("cards").get(0).get("id").asString();
+        mvc.perform(post("/api/reviews")
+                        .contentType("application/json")
+                        .content("{\"cardId\":\"" + card1Id + "\",\"rating\":\"EASY\",\"source\":\"FLASHCARD\",\"cardType\":\"JP_TO_VI\"}"))
+                .andExpect(status().isOk());
+
+        // Both directions must now have exactly 1 due card!
+        JsonNode jpAfterReview1 = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("cardType", "JP_TO_VI"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        JsonNode viAfterReview1 = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("cardType", "VI_TO_JP"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(1, jpAfterReview1.get("dueCount").asInt());
+        assertEquals(1, viAfterReview1.get("dueCount").asInt());
+
+        // Review remaining due card 2 in VI_TO_JP direction with EASY
+        String card2ViId = viAfterReview1.get("cards").get(0).get("id").asString();
+        mvc.perform(post("/api/reviews")
+                        .contentType("application/json")
+                        .content("{\"cardId\":\"" + card2ViId + "\",\"rating\":\"EASY\",\"source\":\"TEST\",\"cardType\":\"VI_TO_JP\"}"))
+                .andExpect(status().isOk());
+
+        // Both directions must now have exactly 0 due cards!
+        JsonNode jpAfterReview2 = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("cardType", "JP_TO_VI"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        JsonNode viAfterReview2 = objectMapper.readTree(mvc.perform(get("/api/study/cards")
+                        .param("deckId", deckId)
+                        .param("cardType", "VI_TO_JP"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(0, jpAfterReview2.get("dueCount").asInt());
+        assertEquals(0, viAfterReview2.get("dueCount").asInt());
+
+        mvc.perform(delete("/api/decks/{deckId}", deckId)).andExpect(status().isNoContent());
+    }
 }
 

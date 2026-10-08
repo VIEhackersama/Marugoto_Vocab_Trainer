@@ -9,12 +9,15 @@ export function RatingToolbar({
   disabled = false,
   includeAgain = true,
   autoRating = null,
-  autoRateByResponseTime = true
+  autoRateByResponseTime = true,
 }) {
   const badgeText = autoRateByResponseTime ? 'Tự động' : 'Gợi ý';
 
   return (
-    <div className="rating-options-toolbar" aria-label="Đánh giá mức độ ghi nhớ">
+    <div
+      className="rating-options-toolbar"
+      aria-label="Đánh giá mức độ ghi nhớ"
+    >
       {includeAgain && (
         <button
           type="button"
@@ -23,10 +26,11 @@ export function RatingToolbar({
           onClick={() => onRate('AGAIN')}
           title="Quên hoàn toàn, cần học lại (Phím 1)"
         >
-          <span className="rating-emoji">🔄</span>
           <span className="rating-name">Again</span>
           <span className="rating-shortcut-tag">1</span>
-          {autoRating === 'AGAIN' && <span className="auto-pill-badge">{badgeText}</span>}
+          {autoRating === 'AGAIN' && (
+            <span className="auto-pill-badge">{badgeText}</span>
+          )}
         </button>
       )}
       <button
@@ -36,10 +40,11 @@ export function RatingToolbar({
         onClick={() => onRate('HARD')}
         title="Nhớ khó khăn, mất nhiều thời gian (Phím 2)"
       >
-        <span className="rating-emoji">🐢</span>
         <span className="rating-name">Hard</span>
         <span className="rating-shortcut-tag">2</span>
-        {autoRating === 'HARD' && <span className="auto-pill-badge">{badgeText}</span>}
+        {autoRating === 'HARD' && (
+          <span className="auto-pill-badge">{badgeText}</span>
+        )}
       </button>
       <button
         type="button"
@@ -48,10 +53,11 @@ export function RatingToolbar({
         onClick={() => onRate('GOOD')}
         title="Nhớ bình thường, phản xạ vừa phải (Phím 3)"
       >
-        <span className="rating-emoji">⏱️</span>
         <span className="rating-name">Good</span>
         <span className="rating-shortcut-tag">3</span>
-        {autoRating === 'GOOD' && <span className="auto-pill-badge">{badgeText}</span>}
+        {autoRating === 'GOOD' && (
+          <span className="auto-pill-badge">{badgeText}</span>
+        )}
       </button>
       <button
         type="button"
@@ -60,10 +66,11 @@ export function RatingToolbar({
         onClick={() => onRate('EASY')}
         title="Nhớ rất nhanh, phản xạ tức thì (Phím 4)"
       >
-        <span className="rating-emoji">⚡</span>
         <span className="rating-name">Easy</span>
         <span className="rating-shortcut-tag">4</span>
-        {autoRating === 'EASY' && <span className="auto-pill-badge">{badgeText}</span>}
+        {autoRating === 'EASY' && (
+          <span className="auto-pill-badge">{badgeText}</span>
+        )}
       </button>
     </div>
   );
