@@ -1,0 +1,102 @@
+.grammar-workspace { max-width: 1100px; margin: 0 auto; }
+.grammar-heading h1 { margin: 5px 0 8px; font-size: 28px; color: var(--ink); }
+.grammar-workspace p { line-height: 1.75; color: var(--muted); margin: 8px 0 0; }
+.grammar-groups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 24px 0 16px; }
+.grammar-groups button { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.grammar-groups button span { font-weight: 600; font-size: 15px; }
+.grammar-groups button small { color: var(--muted); font-family: var(--font-jp); }
+.grammar-groups button[aria-pressed='true'] { background: var(--tint); border-color: var(--brand); color: var(--brand); }
+.grammar-six-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grammar-surface { padding: 24px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); margin-bottom: 16px; }
+.grammar-workspace h2 { margin: 0; font-size: 19px; color: var(--ink); }
+.grammar-intro { max-width: 850px; }
+.grammar-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 24px; margin: 22px 0; }
+.grammar-controls label { display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+.grammar-example-field { display: grid; gap: 8px; }
+.grammar-controls select { min-width: 260px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); padding: 9px 12px; }
+.grammar-controls fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.grammar-controls legend { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.grammar-register { display: flex; gap: 4px; }
+.grammar-register button { border: 1px solid var(--line); background: white; color: var(--muted); padding: 9px 14px; border-radius: 6px; cursor: pointer; }
+.grammar-register button[aria-pressed='true'] { color: white; background: var(--brand); border-color: var(--brand); }
+.grammar-word { display: flex; align-items: baseline; flex-wrap: wrap; gap: 18px; padding: 8px 0 20px; }
+.grammar-word ruby { font-size: 30px; font-family: var(--font-jp); color: var(--brand); }
+.grammar-word rt { font-size: 12px; }
+.grammar-word > span { color: var(--muted); }
+.grammar-table-scroll { overflow-x: auto; }
+.grammar-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.grammar-table caption { text-align: left; font-weight: 600; padding: 0 0 12px; color: var(--muted); font-size: 13px; }
+.grammar-table th, .grammar-table td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.grammar-table thead th { background: var(--canvas); color: var(--muted); font-size: 12px; white-space: nowrap; font-weight: 600; }
+.grammar-table tbody th { font-weight: 500; color: var(--ink); }
+.grammar-table .grammar-result { font-family: var(--font-jp); font-size: 20px; color: var(--brand); white-space: nowrap; }
+.grammar-workspace ruby rt { font-size: 11px; font-weight: 400; color: var(--muted); }
+.grammar-patterns { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+.grammar-patterns article { min-width: 0; }
+.grammar-patterns h3 { font-size: 13px; margin: 0 0 14px; color: var(--muted); font-weight: 500; }
+.grammar-pattern-result { font-family: var(--font-jp); font-size: 20px; color: var(--brand); padding-top: 8px; overflow-wrap: anywhere; }
+.grammar-patterns p { font-size: 13px; }
+.grammar-next { padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--line); }
+.grammar-next p { font-size: 13px; }
+.particles-workspace { max-width: 1200px; }
+.particles-sections { margin: 24px 0 18px; }
+.particles-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); align-items: start; gap: 24px; }
+.particle-list { display: grid; gap: 4px; }
+.particle-list button { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; border: 1px solid transparent; background: transparent; color: var(--ink); padding: 12px; text-align: left; cursor: pointer; border-radius: 7px; }
+.particle-list button > span { font-family: var(--font-jp); font-size: 20px; min-width: 28px; }
+.particle-list button > small { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.particle-list button:hover { background: var(--surface); }
+.particle-list button[aria-pressed='true'] { background: var(--tint); border-color: #adbfaf; color: var(--brand); }
+.particles-content { min-width: 0; }
+.particle-lesson-title { display: flex; gap: 20px; align-items: center; margin-bottom: 16px; }
+.particle-lesson-title > span { font-size: 38px; color: var(--brand); font-family: var(--font-jp); }
+.particle-lesson-title small { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+.particle-pattern { border-left: 3px solid var(--brand); margin: 20px 0; padding: 10px 16px; background: var(--tint); }
+.particle-pattern > span { font-size: 11px; color: var(--muted); }
+.particle-pattern p { color: var(--ink); margin-top: 4px; }
+.particle-examples > section { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.particle-examples > section:first-child { padding-top: 4px; }
+.particle-examples h3 { font-size: 12px; color: var(--muted); margin: 0 0 10px; font-weight: 500; }
+.grammar-workspace .particle-jp { font-family: var(--font-jp); font-size: 21px; line-height: 1.75; color: var(--ink); overflow-wrap: anywhere; }
+.grammar-workspace .particle-reading { font-family: var(--font-jp); font-size: 12px; color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
+.grammar-workspace .particle-translation { color: var(--brand); font-size: 14px; }
+.particle-breakdown { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 16px; }
+.particle-breakdown > div { display: flex; flex-direction: column; gap: 4px; border-top: 2px solid #c5d2c7; padding-top: 7px; }
+.particle-breakdown span { font-family: var(--font-jp); font-size: 16px; color: var(--brand); }
+.particle-breakdown small { font-size: 11px; color: var(--muted); }
+.comparison-nav { flex-wrap: wrap; margin: 18px 0; }
+.comparison-title { font-size: 16px; margin: 0; color: var(--ink); }
+.grammar-comparisons { margin: 12px 0 0; }
+.grammar-comparisons > div { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.grammar-comparisons dt { font-size: 12px; color: var(--muted); font-weight: 600; }
+.grammar-comparisons dd { margin: 0; }
+.grammar-comparisons dd > p:last-child { font-size: 13px; }
+.grammar-workspace .grammar-terminology { font-size: 12px; margin: 16px 0; }
+.grammar-tense-note { font-size: 13px; padding: 10px 0; }
+.grammar-te { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; margin: 14px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+.grammar-te > span { font-size: 13px; color: var(--muted); }
+.grammar-te strong { font-family: var(--font-jp); font-size: 23px; color: var(--brand); }
+.grammar-te p { width: 100%; font-size: 13px; margin-top: 0; }
+.grammar-note { border-left: 3px solid #bcab6d; background: #faf8ee; padding: 14px 18px; margin-top: 20px; }
+.grammar-note h3 { font-size: 14px; margin: 0; color: var(--ink); }
+.grammar-note p { font-size: 13px; }
+.grammar-reference > p { margin-bottom: 18px; }
+.grammar-reference summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+@media (max-width: 760px) {
+  .grammar-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grammar-surface { padding: 16px; }
+  .grammar-controls { gap: 16px; }
+  .grammar-controls label, .grammar-controls select { width: 100%; min-width: 0; }
+  .grammar-example-field { width: 100%; }
+  .particles-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .particle-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .particle-list button { padding: 9px; flex-direction: column; gap: 2px; }
+  .particle-list button > span { font-size: 18px; overflow-wrap: anywhere; }
+  .particle-list button > small { font-size: 10px; }
+  .particle-lesson-title > span { font-size: 30px; overflow-wrap: anywhere; }
+  .grammar-patterns { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .app-header nav { overflow-x: auto; justify-content: flex-start; gap: 18px; }
+  .app-header nav button { flex-shrink: 0; }
+  .grammar-table { min-width: 620px; }
+  .grammar-table th, .grammar-table td { padding: 12px; }
+}

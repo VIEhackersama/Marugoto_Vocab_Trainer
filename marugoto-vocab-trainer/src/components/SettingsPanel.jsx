@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from './Icon.jsx';
+import { AgainDelayControl } from './AgainDelayControl.jsx';
 
 export function SettingsPanel({
   preferences,
@@ -29,6 +30,8 @@ export function SettingsPanel({
             </p>
           )}
           <fieldset disabled={sessionActive}>
+            <AgainDelayControl seconds={preferences.againDelaySeconds}
+              onChange={(value) => onChange('againDelaySeconds', value)} disabled={sessionActive} />
             <label className="settings-row">
               <span>
                 <strong>Hiển thị tiếng Nhật</strong>

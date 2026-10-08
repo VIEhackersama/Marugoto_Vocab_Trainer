@@ -74,6 +74,7 @@
   - ⌛ **Again**: Hết giờ mà chưa đưa ra câu trả lời đúng.
 - **Cấu hình tiện lợi**: Tính năng tự động lưu điểm phản xạ được **bật mặc định** để người dùng học nhanh không cần bấm phím phụ; người dùng có thể tắt trong cài đặt hoặc bấm phím `1 - 4` để chọn mức đánh giá thủ công theo ý muốn.
 - **Tùy chọn tắt timeout khi gặp từ Try Again**: Không đếm ngược khi làm lại từ vừa sai để người học có thời gian quan sát và ghi nhớ kỹ hơn.
+- **Thời gian chờ thẻ Again tự chọn**: Trong Kiểm tra và Ôn đến hạn, đặt từ 0 đến 3.600 giây (mặc định 30 giây) tại cấu hình phiên hoặc Cài đặt. Lựa chọn được ghi nhớ trên trình duyệt. Trên màn hình chờ, nhập số giây và bấm **Áp dụng** để đặt lại thời gian chờ của tất cả thẻ đang đợi từ lúc bấm; 0 giây đưa thẻ về hàng đợi ngay. Thời gian chờ trong phiên không phụ thuộc số lần sai và không thay đổi lịch ôn dài hạn FSRS.
 
 ---
 
@@ -326,6 +327,7 @@ cd backend
 ---
 
 ### 2.3. 回答時間に基づくFSRS自動評価（Auto Rating by Response Time）
+- **Againカードの待機時間を手動設定**: テスト・期限付き復習で0〜3,600秒を指定できます（初期値30秒）。セッション設定または設定画面で保存し、ブラウザに記憶します。待機画面の **Áp dụng** で、待機中の全カードの時間を現在時刻から設定し直せます。0秒なら即座に再出題します。セッション内の待機時間は誤答回数に依存せず、FSRSの長期復習スケジュールを変更しません。
 - **回答所要時間（`responseMs`）のミリ秒単位計測**: 問題表示から回答までの時間を精密に測定。
 - **制限時間スライダー（3秒 〜 30秒）**: 学習スタイルに応じた制限時間設定。
 - **速度に基づく自動判定ルール**:

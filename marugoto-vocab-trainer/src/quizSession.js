@@ -57,10 +57,19 @@ export function removeCurrentQuestion(session) {
   return { ...session, queue: session.queue.slice(1) };
 }
 
-export function scheduleAgain(session, entry, dueAt, now = Date.now()) {
-  const timestamp = typeof dueAt === 'number' ? dueAt : Date.parse(dueAt);
+export const DEFAULT_AGAIN_DELAY_SECONDS = 30;
+export const MAX_AGAIN_DELAY_SECONDS = 3600;
+
+export function normalizeAgainDelaySeconds(value) {
+  const seconds = value === null || value === '' ? NaN : Number(value);
+  return Number.isInteger(seconds) && seconds >= 0 && seconds <= MAX_AGAIN_DELAY_SECONDS
+    ? seconds : DEFAULT_AGAIN_DELAY_SECONDS;
+}
+
+export function scheduleAgain(session, entry, delaySeconds = DEFAULT_AGAIN_DELAY_SECONDS, now = Date.now()) {
+  const timestamp = now + normalizeAgainDelaySeconds(delaySeconds) * 1000;
   const waiting = session.waiting.filter((item) => item.entry.id !== entry.id);
-  if (!Number.isFinite(timestamp) || timestamp <= now) {
+  if (timestamp <= now) {
     return {
       ...session,
       queue: [...session.queue, { entry, options: entry.quizOptions || [], repeat: true }],
@@ -68,6 +77,14 @@ export function scheduleAgain(session, entry, dueAt, now = Date.now()) {
     };
   }
   return { ...session, waiting: [...waiting, { entry, dueAt: timestamp }] };
+}
+
+export function rescheduleWaitingRepeats(session, delaySeconds, now = Date.now()) {
+  const dueAt = now + normalizeAgainDelaySeconds(delaySeconds) * 1000;
+  return releaseDueRepeats({
+    ...session,
+    waiting: session.waiting.map((item) => ({ ...item, dueAt })),
+  }, now);
 }
 
 export function releaseDueRepeats(session, now = Date.now()) {

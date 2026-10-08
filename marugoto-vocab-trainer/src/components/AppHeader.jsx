@@ -23,6 +23,8 @@ export function AppHeader({ section, onNavigate, sessionActive, dueCount }) {
         {[
           ['study', 'Học tập'],
           ['dictionary', 'Từ điển'],
+          ['grammar', 'Chia từ'],
+          ['particles', 'Trợ từ & đuôi câu'],
           ['import', 'Bộ từ'],
           ['settings', 'Cài đặt'],
         ].map(([id, label]) => (

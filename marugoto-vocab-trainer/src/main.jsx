@@ -2,10 +2,12 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   createQuizSession,
+  normalizeAgainDelaySeconds,
   nextWaitingDueAt,
   recordFirstAttempt,
   releaseDueRepeats,
   removeCurrentQuestion,
+  rescheduleWaitingRepeats,
   scheduleAgain,
   secondsUntilNextRepeat,
   selectInitialCards,
@@ -33,8 +35,11 @@ import { romajiToHiragana, checkTypedAnswer } from './utils/japaneseInput.js';
 import { VocabularyEditor } from './components/VocabularyEditor.jsx';
 import { DictionaryWorkspace } from './components/DictionaryWorkspace.jsx';
 import { AppHeader } from './components/AppHeader.jsx';
+import { GrammarWorkspace } from './components/GrammarWorkspace.jsx';
+import { ParticlesWorkspace } from './components/ParticlesWorkspace.jsx';
 import { DeckLibrary } from './components/DeckLibrary.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
+import { AgainDelayControl } from './components/AgainDelayControl.jsx';
 import { DialogFrame } from './components/DialogFrame.jsx';
 import { Icon } from './components/Icon.jsx';
 import './styles.css';
@@ -443,6 +448,13 @@ function App() {
   const [hasTimer, setHasTimer] = useState(true);
   const [disableRepeatTimeout, setDisableRepeatTimeout] = useState(true);
   const [timeLimit, setTimeLimit] = useState(10); // 3 to 30 seconds
+  const [againDelaySeconds, setAgainDelaySeconds] = useState(() => {
+    try { return normalizeAgainDelaySeconds(localStorage.getItem('marugoto_again_delay_seconds')); }
+    catch { return normalizeAgainDelaySeconds(null); }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('marugoto_again_delay_seconds', String(againDelaySeconds)); } catch {}
+  }, [againDelaySeconds]);
   const [questionStartTime, setQuestionStartTime] = useState(null);
   const [questionTimeLeft, setQuestionTimeLeft] = useState(10);
   const [autoRating, setAutoRating] = useState(null);
@@ -1388,9 +1400,9 @@ function App() {
     setQuizMessage(`Hết thời gian (${timeLimit}s)! Bạn cần ôn lại từ này. Đáp án: ${answerDisplay}`);
     setQuizSaving(true);
     try {
-      const result = await recordReview(currentQuestion.entry, 'AGAIN', 'TEST', timeLimit * 1000);
+      await recordReview(currentQuestion.entry, 'AGAIN', 'TEST', timeLimit * 1000);
       setQuizSession((session) => session
-        ? scheduleAgain(session, currentQuestion.entry, result.dueAt)
+        ? scheduleAgain(session, currentQuestion.entry, againDelaySeconds)
         : session);
     } catch (saveError) {
       setError(`Không lưu được lượt ôn: ${saveError.message}`);
@@ -1416,9 +1428,9 @@ function App() {
       try {
         const elapsed = questionStartTime ? Math.max(0.1, (Date.now() - questionStartTime) / 1000) : 1;
         const responseMs = Math.round(elapsed * 1000);
-        const result = await recordReview(currentQuestion.entry, 'AGAIN', 'TEST', responseMs);
+        await recordReview(currentQuestion.entry, 'AGAIN', 'TEST', responseMs);
         setQuizSession((session) => session
-          ? scheduleAgain(session, currentQuestion.entry, result.dueAt)
+          ? scheduleAgain(session, currentQuestion.entry, againDelaySeconds)
           : session);
       } catch (saveError) {
         setError(`Không lưu được lượt ôn: ${saveError.message}`);
@@ -1479,9 +1491,9 @@ function App() {
       setQuizSaving(true);
       try {
         const source = quizMode === 'DUE' ? 'TEST' : quizMode;
-        const res = await recordReview(currentQuestion.entry, 'AGAIN', source, responseMs);
+        await recordReview(currentQuestion.entry, 'AGAIN', source, responseMs);
         setQuizSession((session) => session
-          ? scheduleAgain(session, currentQuestion.entry, res.dueAt)
+          ? scheduleAgain(session, currentQuestion.entry, againDelaySeconds)
           : session);
       } catch (saveError) {
         setError(`Không lưu được lượt ôn: ${saveError.message}`);
@@ -1536,6 +1548,10 @@ function App() {
     setQuizSelectedOptionId(null);
     setQuizMessage('');
     setAutoRating(null);
+    setQuizTypedInput('');
+    setTypedFeedback(null);
+    setQuestionStartTime(Date.now());
+    setQuestionTimeLeft(timeLimit);
   }
 
   function endQuizSession() {
@@ -1643,6 +1659,9 @@ function App() {
       {sessionActive && !['quiz', 'review'].includes(tab) && <div className="session-return"><span>Phiên học đang tạm dừng · thời gian trả lời được giữ lại</span><button type="button" className="text-button" onClick={() => navigate('study')}>Tiếp tục phiên học <Icon name="arrow" size={15}/></button></div>}
       {loading && <section className="loading-workspace" aria-busy="true" aria-label="Đang tải bộ từ và tiến độ"><div className="skeleton skeleton-title"/><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/><span role="status">Đang tải bộ từ và tiến độ…</span></section>}
 
+      {tab === 'grammar' && <GrammarWorkspace/>}
+      {tab === 'particles' && <ParticlesWorkspace/>}
+
       {!loading && tab === 'dictionary' && <DictionaryWorkspace cards={dictionaryCards} visibleCards={sortedDictionaryCards}
         decks={decks} customDeck={customDeck} filters={{ search: dictSearchQuery, deck: dictDeckFilter, status: dictStatusFilter, row: dictRowSelect, sort: dictSortOrder }}
         setFilters={setDictionaryFilters} rowCounts={rowCounts} viewMode={dictViewMode} setViewMode={setDictViewMode} showRomaji={dictShowRomaji} setShowRomaji={setDictShowRomaji}
@@ -1653,7 +1672,7 @@ function App() {
         onToggleCustom={toggleShowCustomCards} busy={busy} onAdd={openAddModal} onEdit={openEditModal} onDeleteCard={handleDeleteCard}
         onDictionary={() => { setDictDeckFilter('custom'); setTab('dictionary'); }} onFiles={handleFiles} onDeleteDeck={deleteDeck} onBackup={openBackup}
         onStudy={async deckId => { if (sessionActive) { setNotice({ message: 'Kết thúc phiên học hiện tại trước khi chọn bộ khác.' }); return; } await selectDeck(deckId); setTab('flashcards'); }}/>}
-      {!loading && tab === 'settings' && <SettingsPanel sessionActive={sessionActive} preferences={{ kanjiMode: testKanjiMode, romajiMode, studyMode, questionType: quizQuestionType, autoRate: autoRateByResponseTime, fontSize: flashcardFontSize }}
+      {!loading && tab === 'settings' && <SettingsPanel sessionActive={sessionActive} preferences={{ kanjiMode: testKanjiMode, romajiMode, studyMode, questionType: quizQuestionType, autoRate: autoRateByResponseTime, fontSize: flashcardFontSize, againDelaySeconds }}
         onBackup={openBackup} onImport={() => navigate('import')} onChange={(key, value) => {
           if (key === 'kanjiMode') handleSetTestKanjiMode(value);
           if (key === 'romajiMode') handleSetRomajiMode(value);
@@ -1661,6 +1680,7 @@ function App() {
           if (key === 'questionType') handleSetQuizQuestionType(value);
           if (key === 'autoRate') { setAutoRateByResponseTime(value); try { localStorage.setItem('marugoto_auto_rate', String(value)); } catch {} }
           if (key === 'fontSize') { setFlashcardFontSize(value); try { localStorage.setItem('marugoto_flashcard_font_size', String(value)); } catch {} }
+          if (key === 'againDelaySeconds') setAgainDelaySeconds(value);
         }}/>}
 
       {!loading && tab === 'flashcards' && current && (
@@ -2084,6 +2104,7 @@ function App() {
                 </div>
 
               </div>
+              <AgainDelayControl seconds={againDelaySeconds} onChange={setAgainDelaySeconds} />
               <details className="advanced-study-settings">
                 <summary>Hiển thị, thời gian và đánh giá <span>{hasTimer ? `${timeLimit} giây / câu` : 'Không giới hạn thời gian'} · {testKanjiMode === 'ruby' ? 'Furigana' : testKanjiMode === 'kanji-only' ? 'Chỉ Kanji' : 'Chỉ Kana'}</span></summary>
                 <div className="setup-options-container">
@@ -2650,6 +2671,12 @@ function App() {
                 {String(Math.floor(pendingRepeatSeconds / 60)).padStart(2, '0')}:{String(pendingRepeatSeconds % 60).padStart(2, '0')}
               </div>
               <p className="wait-sub">Thẻ sẽ tự quay lại hàng đợi khi bộ đếm về 00:00.</p>
+              <AgainDelayControl seconds={againDelaySeconds} onChange={setAgainDelaySeconds} disabled={quizSaving}
+                onApply={(seconds) => {
+                  const now = Date.now();
+                  setQuizClock(now);
+                  setQuizSession((session) => session ? rescheduleWaitingRepeats(session, seconds, now) : session);
+                }} />
               <div className="wait-actions">
                 <button
                   type="button"

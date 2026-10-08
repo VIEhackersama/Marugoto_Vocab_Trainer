@@ -1264,6 +1264,66 @@ kbd {
   padding: 0;
   margin: 0;
 }
+.again-delay-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 24px;
+  margin: 18px 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.again-delay-description label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.again-delay-description p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.again-delay-fields {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.again-delay-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.again-delay-input input {
+  width: 88px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface, white);
+  color: var(--ink);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.again-delay-fields button {
+  margin: 0;
+  font-size: 12px;
+}
+.again-delay-status {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--muted);
+}
+.again-delay-status:empty { display: none; }
+.session-wait .again-delay-control {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (max-width: 600px) {
+  .again-delay-control { grid-template-columns: minmax(0, 1fr); }
+}
 .settings-row {
   display: flex;
   align-items: center;
