@@ -647,16 +647,8 @@ function App() {
 
   // Lifecycle heartbeat & automatic shutdown on tab close
   useEffect(() => {
-    let tabId = '';
-    try {
-      tabId = sessionStorage.getItem('marugoto_tab_id');
-      if (!tabId) {
-        tabId = 'tab_' + Math.random().toString(36).substring(2, 10);
-        sessionStorage.setItem('marugoto_tab_id', tabId);
-      }
-    } catch {
-      tabId = 'tab_' + Math.random().toString(36).substring(2, 10);
-    }
+    // Duplicated browser tabs copy sessionStorage; each page needs its own ID.
+    const tabId = 'tab_' + crypto.randomUUID();
 
     const sendHeartbeat = () => {
       fetch(`/api/lifecycle/heartbeat?tabId=${encodeURIComponent(tabId)}`, { method: 'POST' }).catch(() => {});
@@ -665,7 +657,8 @@ function App() {
     sendHeartbeat();
     const interval = window.setInterval(sendHeartbeat, 3000);
 
-    const handleTabClose = () => {
+    const handleTabClose = (event) => {
+      if (event.persisted) return; // A page in the back/forward cache is still open.
       const url = `/api/lifecycle/close?tabId=${encodeURIComponent(tabId)}`;
       if (navigator.sendBeacon) {
         navigator.sendBeacon(url);
@@ -674,13 +667,17 @@ function App() {
       }
     };
 
-    window.addEventListener('beforeunload', handleTabClose);
     window.addEventListener('pagehide', handleTabClose);
+    window.addEventListener('pageshow', sendHeartbeat);
+    window.addEventListener('focus', sendHeartbeat);
+    document.addEventListener('visibilitychange', sendHeartbeat);
 
     return () => {
       window.clearInterval(interval);
-      window.removeEventListener('beforeunload', handleTabClose);
       window.removeEventListener('pagehide', handleTabClose);
+      window.removeEventListener('pageshow', sendHeartbeat);
+      window.removeEventListener('focus', sendHeartbeat);
+      document.removeEventListener('visibilitychange', sendHeartbeat);
     };
   }, []);
 

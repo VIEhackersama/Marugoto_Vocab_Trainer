@@ -2,7 +2,7 @@ package vn.marugoto.trainer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
+import jakarta.annotation.PreDestroy;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,10 +22,25 @@ public class LifecycleController {
     private static final Logger log = LoggerFactory.getLogger(LifecycleController.class);
 
     private final Map<String, Long> activeTabs = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler;
+    private final Runnable terminate;
     private volatile boolean hasConnected = false;
     private volatile long lastHeartbeatTime = 0;
     private ScheduledFuture<?> pendingShutdownFuture = null;
+
+    public LifecycleController() {
+        this(Executors.newSingleThreadScheduledExecutor(), () -> System.exit(0));
+    }
+
+    LifecycleController(ScheduledExecutorService scheduler, Runnable terminate) {
+        this.scheduler = scheduler;
+        this.terminate = terminate;
+    }
+
+    @PreDestroy
+    public void destroy() {
+        scheduler.shutdownNow();
+    }
 
     // The launcher can observe liveness without registering itself as a browser tab.
     @GetMapping("/status")
@@ -60,11 +75,11 @@ public class LifecycleController {
 
     @PostMapping("/close")
     public synchronized Map<String, Object> closeTab(@RequestParam(value = "tabId", defaultValue = "default") String tabId) {
-        activeTabs.remove(tabId);
+        boolean knownTab = activeTabs.remove(tabId) != null;
         log.info("Tab closed: {}. Remaining active tabs: {}", tabId, activeTabs.size());
 
-        if (activeTabs.isEmpty() && hasConnected) {
-            scheduleGracefulShutdown(4000, "Last browser tab closed");
+        if (knownTab && activeTabs.isEmpty() && hasConnected) {
+            scheduleGracefulShutdown(15000, "Last browser tab closed");
         }
 
         return Map.of(
@@ -80,22 +95,8 @@ public class LifecycleController {
         return Map.of("status", "shutting_down");
     }
 
-    @Scheduled(fixedRate = 2000)
-    public synchronized void watchdog() {
-        if (!hasConnected) {
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        // Remove stale tabs not heard from in 6 seconds
-        activeTabs.entrySet().removeIf(entry -> (now - entry.getValue()) > 6000);
-
-        if (activeTabs.isEmpty() && (now - lastHeartbeatTime) > 6000) {
-            if (pendingShutdownFuture == null || pendingShutdownFuture.isDone()) {
-                scheduleGracefulShutdown(3000, "No heartbeat from any tab for over 6 seconds");
-            }
-        }
-    }
+    // A missing heartbeat cannot distinguish a closed tab from browser throttling,
+    // a frozen page or computer sleep. Keep registered tabs until an explicit close.
 
     private synchronized void scheduleGracefulShutdown(long delayMs, String reason) {
         if (pendingShutdownFuture != null && !pendingShutdownFuture.isDone()) {
@@ -105,24 +106,8 @@ public class LifecycleController {
         log.info("Scheduling application termination in {}ms. Reason: {}", delayMs, reason);
         pendingShutdownFuture = scheduler.schedule(() -> {
             log.info("Executing application shutdown now: {}", reason);
-            killFrontendViteProcess();
-            try {
-                Thread.sleep(300);
-            } catch (InterruptedException ignored) {}
-            System.exit(0);
+            terminate.run();
         }, delayMs, TimeUnit.MILLISECONDS);
     }
 
-    private void killFrontendViteProcess() {
-        try {
-            // Terminate any process listening on Vite port 5173
-            new ProcessBuilder(
-                    "cmd.exe",
-                    "/c",
-                    "for /f \"tokens=5\" %a in ('netstat -aon ^| findstr :5173 ^| findstr LISTENING') do taskkill /F /PID %a"
-            ).start();
-        } catch (Exception e) {
-            log.warn("Could not cleanly terminate frontend process on port 5173: {}", e.getMessage());
-        }
-    }
 }

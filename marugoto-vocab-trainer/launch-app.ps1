@@ -143,17 +143,28 @@ if (!$frontendReady) {
 Open-AppBrowser
 
 # 7. Vòng lặp giám sát (Supervisor loop):
-# Khi người dùng đóng tab trình duyệt, backend sẽ tự động phát hiện mất heartbeat và tắt (System.exit).
+# Backend chỉ tắt khi tab cuối gửi close; mất heartbeat không chứng minh tab đã đóng.
 # Supervisor sẽ lập tức dọn sạch process frontend và kết thúc.
-$firstConnectionDeadline = (Get-Date).AddSeconds(60)
+$firstConnectionDeadline = (Get-Date).AddMinutes(5)
+$consecutiveStatusFailures = 0
 while ($true) {
     Start-Sleep -Seconds 2
+    if ($backendProc -and $backendProc.HasExited) { break }
+    if ($frontendProc -and $frontendProc.HasExited) {
+        Show-StartupError "Frontend đã dừng ngoài dự kiến.`nXem logs/frontend.log rồi mở lại start-app.vbs."
+        break
+    }
     try {
         $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/api/lifecycle/status' -TimeoutSec 2 -ErrorAction Stop
+        $consecutiveStatusFailures = 0
         if (!$status.hasConnected -and (Get-Date) -gt $firstConnectionDeadline) { break }
     } catch {
-        # Backend đã ngắt kết nối / tắt do tab trình duyệt đã đóng
-        break
+        $consecutiveStatusFailures++
+        # A slow API or resume from sleep must not terminate healthy processes.
+        if ($consecutiveStatusFailures -ge 5) {
+            Show-StartupError "Backend không phản hồi sau 5 lần kiểm tra.`nXem logs/backend.log rồi mở lại start-app.vbs."
+            break
+        }
     }
 }
 

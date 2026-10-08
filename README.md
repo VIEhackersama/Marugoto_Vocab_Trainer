@@ -186,7 +186,7 @@ marugoto-vocab-trainer/
 │   │   │   │   ├── BackupController.java         # API xuất và nhập file sao lưu JSON
 │   │   │   │   ├── BackupService.java            # Nghiệp vụ Backup/Restore CSDL kèm pre-restore .bak
 │   │   │   │   ├── FsrsScheduler.java            # Khởi tạo và cấu hình bộ lập lịch FSRS
-│   │   │   │   ├── LifecycleController.java      # Quản lý heartbeat, watchdog & tự động tắt
+│   │   │   │   ├── LifecycleController.java      # Quản lý heartbeat & đóng tab an toàn
 │   │   │   │   ├── ApiModels.java                # DTOs, Data Records và tính toán isLeech
 │   │   │   │   ├── ApiExceptionHandler.java      # Bắt lỗi toàn cục và chuẩn hóa thông báo API
 │   │   │   │   └── DatabaseMigrationRunner.java  # Thực thi script migration CSDL tự động
@@ -239,7 +239,7 @@ start-app.vbs
 ```
 *Script sẽ tự động kiểm tra môi trường, cài đặt thư viện cần thiết, khởi chạy ẩn backend và frontend, sau đó tự động bật trình duyệt `http://localhost:5173`. Khi bạn đóng tab trình duyệt, toàn bộ ứng dụng sẽ tự động tắt an toàn.*
 
-Đóng tab cuối sẽ tắt app sau khoảng 4–6 giây; đóng một tab khi vẫn còn tab khác thì app tiếp tục chạy. Launcher chỉ đọc trạng thái, không gửi heartbeat như một tab. Nếu chưa có tab nào kết nối trong 60 giây sau khi khởi động, launcher cũng tự dọn các tiến trình do nó tạo. Log khởi động nằm trong `marugoto-vocab-trainer/logs/` (`backend.log`, `frontend.log`, và `npm-install.log` nếu cần cài thư viện).
+Đóng tab cuối sẽ tắt app sau khoảng 15–17 giây nếu trình duyệt gửi được sự kiện đóng; đóng một tab khi vẫn còn tab khác thì app tiếp tục chạy. Mất heartbeat (tab nền, máy ngủ hoặc trang bị đóng băng) không tự tắt app. Nếu trình duyệt bị crash hoặc không gửi sự kiện đóng, app có thể tiếp tục chạy nền; mở lại start-app.vbs để kết nối lại. Launcher chỉ đọc trạng thái, không gửi heartbeat như một tab. Nếu chưa có tab nào kết nối trong 5 phút sau khi khởi động, launcher cũng tự dọn các tiến trình do nó tạo. Log khởi động nằm trong `marugoto-vocab-trainer/logs/` (`backend.log`, `frontend.log`, và `npm-install.log` nếu cần cài thư viện).
 
 ---
 
@@ -450,7 +450,7 @@ start-app.vbs
 ```
 *環境チェック、依存ライブラリの確認、バックエンドとフロントエンドの非表示起動、ブラウザ起動（`http://localhost:5173`）がすべて自動で行われます。ブラウザのタブを閉じると、関連プロセスもすべて自動的に終了します。*
 
-最後のタブを閉じると約4〜6秒で終了します。他のタブが残っていれば動作を続けます。ランチャーは状態を読み取るだけで、タブとしてheartbeatを送信しません。起動後60秒以内に一度もタブが接続しなければ、ランチャーが作成したプロセスも終了します。起動ログは `marugoto-vocab-trainer/logs/` に保存されます。
+最後のタブのclose通知を受信すると約15〜17秒で終了します。heartbeatが途切れても（バックグラウンド・スリープ等）終了しません。ブラウザがクラッシュしclose通知が届かない場合は、バックグラウンドで動作を続けます。start-app.vbsで再接続できます。他のタブが残っていれば動作を続けます。ランチャーは状態を読み取るだけで、タブとしてheartbeatを送信しません。起動後5分以内に一度もタブが接続しなければ、ランチャーが作成したプロセスも終了します。起動ログは `marugoto-vocab-trainer/logs/` に保存されます。
 
 ---
 
