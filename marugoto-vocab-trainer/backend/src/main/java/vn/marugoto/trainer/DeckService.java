@@ -119,8 +119,10 @@ class DeckService {
 
                 jdbc.update("""
                         INSERT INTO vocabulary_sources(id,vocabulary_id,deck_id,created_at)
-                        VALUES(?,?,?,?)
-                        """, UUID.randomUUID().toString(), vocabId, deckId, now);
+                        SELECT ?,?,?,? WHERE NOT EXISTS (
+                            SELECT 1 FROM vocabulary_sources WHERE vocabulary_id=? AND deck_id=?
+                        )
+                        """, UUID.randomUUID().toString(), vocabId, deckId, now, vocabId, deckId);
 
                 for (String cType : List.of("JP_TO_VI", "VI_TO_JP")) {
                     Integer cardCount = jdbc.queryForObject(
@@ -148,7 +150,7 @@ class DeckService {
         return jdbc.query("""
                 SELECT d.id, d.title, d.original_filename, d.created_at,
                        COUNT(DISTINCT vs.vocabulary_id) AS card_count,
-                       SUM(CASE WHEN s.due_at <= ? AND s.card_type = 'JP_TO_VI' THEN 1 ELSE 0 END) AS due_count
+                       COUNT(DISTINCT CASE WHEN s.due_at <= ? AND s.card_type = 'JP_TO_VI' THEN s.id END) AS due_count
                 FROM decks d
                 LEFT JOIN vocabulary_sources vs ON vs.deck_id = d.id
                 LEFT JOIN study_cards s ON s.vocabulary_id = vs.vocabulary_id
@@ -337,7 +339,7 @@ class DeckService {
         return jdbc.query("""
                 SELECT d.id, d.title, d.original_filename, d.created_at,
                        COUNT(DISTINCT vs.vocabulary_id) AS card_count,
-                       SUM(CASE WHEN s.due_at <= ? AND s.card_type = 'JP_TO_VI' THEN 1 ELSE 0 END) AS due_count
+                       COUNT(DISTINCT CASE WHEN s.due_at <= ? AND s.card_type = 'JP_TO_VI' THEN s.id END) AS due_count
                 FROM decks d
                 LEFT JOIN vocabulary_sources vs ON vs.deck_id = d.id
                 LEFT JOIN study_cards s ON s.vocabulary_id = vs.vocabulary_id

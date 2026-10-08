@@ -98,14 +98,21 @@ class StudyService {
         String leechClause = leechOnly ? " AND (s.wrong_count >= 3 OR (s.review_count >= 3 AND CAST(s.wrong_count AS FLOAT) / s.review_count >= 0.35))" : "";
 
         String sql = """
+                WITH matching_sources AS (
+                    SELECT vs.vocabulary_id, vs.deck_id,
+                           ROW_NUMBER() OVER (PARTITION BY vs.vocabulary_id ORDER BY vs.created_at, vs.deck_id, vs.id) AS source_rank
+                    FROM vocabulary_sources vs
+                    WHERE 1=1
+                """ + scopeClause + """
+                )
                 SELECT s.id, vs.deck_id, d.title AS deck_title, v.spelling AS japanese, v.romaji, v.meanings_vi AS vietnamese,
                        s.due_at, s.review_count, s.wrong_count
                 FROM study_cards s
                 JOIN vocabularies v ON v.id = s.vocabulary_id
-                JOIN vocabulary_sources vs ON vs.vocabulary_id = v.id
+                JOIN matching_sources vs ON vs.vocabulary_id = v.id AND vs.source_rank = 1
                 JOIN decks d ON d.id = vs.deck_id
                 WHERE 1=1
-                """ + scopeClause + typeClause + dueClause + leechClause + " ORDER BY s.due_at ASC, s.created_at ASC";
+                """ + typeClause + dueClause + leechClause + " ORDER BY s.due_at ASC, s.created_at ASC";
 
         List<StudyCardDto> cards = jdbc.query(sql, CARD_MAPPER, args.toArray());
 

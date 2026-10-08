@@ -31,6 +31,69 @@ class DeckAndReviewIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @Autowired DeckService decks;
+    @Autowired StudyService study;
+
+    @Test
+    void repeatedRowsInOnePdfCreateOnlyOneSourceAndStudyResult() throws Exception {
+        var pdf = new MockMultipartFile("file", "repeated.pdf", "application/pdf",
+                "%PDF-1.7\nfixture".getBytes(StandardCharsets.US_ASCII));
+        var deck = decks.create(pdf, """
+                [{"jp":"さんぽ(を) します","romaji":"sanpo (o) shimasu","vi":"đi dạo"},
+                 {"jp":"さんぽ(を) します","romaji":"sanpo (o) shimasu","vi":"Đi dạo."}]
+                """);
+        assertEquals(1, deck.cardCount());
+        assertEquals(1, deck.dueCount());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM vocabulary_sources WHERE deck_id=?", Integer.class, deck.id()));
+        assertEquals(1, study.cards(deck.id(), "all", false, "JP_TO_VI", false).cards().size());
+    }
+
+    @Test
+    void legacyDuplicateSourcesDoNotRepeatCardsOrInflateDueCounts() throws Exception {
+        var pdf = new MockMultipartFile("file", "legacy.pdf", "application/pdf",
+                "%PDF-1.7\nfixture".getBytes(StandardCharsets.US_ASCII));
+        var deck = decks.create(pdf, """
+                [{"jp":"さんぽ(を) します","romaji":"sanpo (o) shimasu","vi":"đi dạo"}]
+                """);
+        jdbc.update("""
+                INSERT INTO vocabulary_sources(id,vocabulary_id,deck_id,created_at)
+                SELECT 'legacy-duplicate', vocabulary_id, deck_id, created_at
+                FROM vocabulary_sources WHERE deck_id=?
+                """, deck.id());
+        for (String type : java.util.List.of("JP_TO_VI", "VI_TO_JP")) {
+            for (String mode : java.util.List.of("all", "due")) {
+                var result = study.cards(deck.id(), mode, false, type, false);
+                assertEquals(1, result.cards().size());
+                assertEquals(1, result.dueCount());
+                assertEquals(1, study.cards("all", mode, true, type, false).cards().size());
+            }
+        }
+        assertEquals(1, decks.findDeck(deck.id()).dueCount());
+        assertEquals(1, decks.list().getFirst().dueCount());
+    }
+
+    @Test
+    void vocabularySharedByTwoPdfsAppearsOnceAndRetainsBothDeckFilters() throws Exception {
+        var pdf = new MockMultipartFile("file", "shared.pdf", "application/pdf",
+                "%PDF-1.7\nfixture".getBytes(StandardCharsets.US_ASCII));
+        String input = """
+                [{"jp":"ねこ","romaji":"neko","vi":"mèo"},
+                 {"jp":"橋（はし）","romaji":"hashi","vi":"cây cầu"},
+                 {"jp":"箸（はし）","romaji":"hashi","vi":"đôi đũa"}]
+                """;
+        var first = decks.create(pdf, input);
+        var second = decks.create(pdf, input);
+        assertEquals(6, jdbc.queryForObject("SELECT COUNT(*) FROM vocabulary_sources", Integer.class));
+        for (String type : java.util.List.of("JP_TO_VI", "VI_TO_JP")) {
+            assertEquals(3, study.cards("all", "all", true, type, false).cards().size());
+            var firstCards = study.cards(first.id(), "all", false, type, false).cards();
+            var secondCards = study.cards(second.id(), "all", false, type, false).cards();
+            assertEquals(3, firstCards.size());
+            assertEquals(3, secondCards.size());
+            assertTrue(firstCards.stream().allMatch(c -> c.deckId().equals(first.id())));
+            assertTrue(secondCards.stream().allMatch(c -> c.deckId().equals(second.id())));
+        }
+    }
 
     @org.junit.jupiter.api.BeforeEach
     void resetDatabase() {
