@@ -131,7 +131,7 @@
 ---
 
 ### 2.10. Khởi động 1-Click & Tự động tắt ứng dụng (Auto Lifecycle)
-- **Khởi động 1-click**: File `start-app.cmd` và `launch-app.ps1` hỗ trợ nhấp đúp chuột để chạy ẩn nền hoàn toàn không bung cửa sổ đen.
+- **Khởi động 1-click**: Nhấp đúp `start-app.vbs` để chạy ẩn nền hoàn toàn, không mở cửa sổ console. `start-app.cmd` cũng gọi launcher này nhưng có thể lóe cửa sổ CMD khi nhấp đúp.
 - **Tự động mở trình duyệt**: Tự động mở trang `http://localhost:5173`.
 - **Heartbeat & Watchdog tự động dọn dẹp**: Khi người dùng đóng tất cả các tab trình duyệt, backend tự động phát hiện và tắt an toàn, tự đóng tiến trình frontend Vite và giải phóng cổng `8080` & `5173`.
 
@@ -163,7 +163,7 @@ flowchart LR
 | **Spaced Repetition** | `io.github.open-spaced-repetition:fsrs` | Lập lịch ôn tập ngắt quãng 2 chiều theo thuật toán FSRS khoa học |
 | **Database** | SQLite, `sqlite-jdbc`, HikariCP | Lưu trữ bộ từ, thẻ học 2 chiều, nhật ký ôn tập và trạng thái FSRS |
 | **Data Migration** | Flyway-style SQL Runner | Tự động khởi tạo và cập nhật cấu trúc bảng dữ liệu |
-| **Automation Scripts** | PowerShell (`launch-app.ps1`), Batch (`start-app.cmd`) | Giám sát tiến trình, quản lý vòng đời ứng dụng 1-click |
+| **Automation Scripts** | VBScript (`start-app.vbs`), PowerShell (`launch-app.ps1`), Batch (`start-app.cmd`) | Giám sát tiến trình, quản lý vòng đời ứng dụng 1-click |
 
 ---
 
@@ -215,6 +215,7 @@ marugoto-vocab-trainer/
 ├── package.json                                  # Cấu hình frontend dependencies (React 19, Vite 7)
 ├── vite.config.js                                # Cấu hình Vite dev server & proxy /api sang 8080
 ├── launch-app.ps1                                # PowerShell script chạy ứng dụng nền & giám sát vòng đời
+├── start-app.vbs                                 # Khởi động ẩn hoàn toàn, không tạo console
 ├── start-app.cmd                                 # File kích hoạt 1-click cho người dùng Windows
 ├── .gitignore                                    # Loại bỏ triệt để file CSDL *.db, *.bak, data/ khỏi Git
 └── README.md                                     # Tài liệu hướng dẫn sử dụng và giới thiệu dự án
@@ -233,9 +234,11 @@ marugoto-vocab-trainer/
 ### 5.2. Cách 1: Khởi động 1-Click (Khuyến nghị trên Windows)
 Chỉ cần nhấp đúp chuột vào file:
 ```text
-start-app.cmd
+start-app.vbs
 ```
 *Script sẽ tự động kiểm tra môi trường, cài đặt thư viện cần thiết, khởi chạy ẩn backend và frontend, sau đó tự động bật trình duyệt `http://localhost:5173`. Khi bạn đóng tab trình duyệt, toàn bộ ứng dụng sẽ tự động tắt an toàn.*
+
+Đóng tab cuối sẽ tắt app sau khoảng 4–6 giây; đóng một tab khi vẫn còn tab khác thì app tiếp tục chạy. Launcher chỉ đọc trạng thái, không gửi heartbeat như một tab. Nếu chưa có tab nào kết nối trong 60 giây sau khi khởi động, launcher cũng tự dọn các tiến trình do nó tạo. Log khởi động nằm trong `marugoto-vocab-trainer/logs/` (`backend.log`, `frontend.log`, và `npm-install.log` nếu cần cài thư viện).
 
 ---
 
@@ -381,7 +384,7 @@ cd backend
 ---
 
 ### 2.10. ワンクリック起動と完全自動ライフサイクル管理（Auto Lifecycle）
-- **CUI不要のワンクリック起動**: `start-app.cmd` または `launch-app.ps1` をダブルクリックするだけ。
+- **CUI不要のワンクリック起動**: `start-app.vbs` をダブルクリックするだけ。`start-app.cmd` も同じランチャーを呼び出しますが、CMD画面が一瞬表示される場合があります。
 - **非表示バックグラウンド起動**: 煩わしい黒いコンソール画面を出さずに静かに立ち上げ。
 - **ブラウザタブ連動の自動シャットダウン**: ブラウザを閉じるだけで、ポート `8080` と `5173` のプロセスを自動的かつ安全に完全終了。
 
@@ -398,7 +401,7 @@ cd backend
 | **Spaced Repetition** | `io.github.open-spaced-repetition:fsrs` | 最先端の科学的間隔反復スケジューラー（双方向独立） |
 | **Database** | SQLite, `sqlite-jdbc`, HikariCP | 単語、双方向学習カード、復習ログのローカル永続化 |
 | **Data Migration** | Flyway-style SQL Runner | データベーススキーマの自動構築および自動マイグレーション |
-| **Automation Scripts** | PowerShell (`launch-app.ps1`), Batch (`start-app.cmd`) | ワンクリック起動およびライフサイクル監視 |
+| **Automation Scripts** | VBScript (`start-app.vbs`), PowerShell (`launch-app.ps1`), Batch (`start-app.cmd`) | ワンクリック起動およびライフサイクル監視 |
 
 ---
 
@@ -422,6 +425,7 @@ marugoto-vocab-trainer/
 │   └── styles.css                           # UIスタイルシート
 ├── data/                                    # ローカルSQLite DBとPDF（Git管理外）
 ├── launch-app.ps1                           # 起動＆監視PowerShellスクリプト
+├── start-app.vbs                            # コンソールを作成しない非表示ランチャー
 ├── start-app.cmd                            # ワンクリック起動バッチファイル
 ├── .gitignore                               # 個人用DBファイル（*.db, *.bak等）の除外設定
 └── README.md                                # 本ドキュメント
@@ -440,9 +444,11 @@ marugoto-vocab-trainer/
 ### 5.2. 方法1: ワンクリック起動（Windows推奨）
 リポジトリ直下の以下のファイルをダブルクリックします:
 ```text
-start-app.cmd
+start-app.vbs
 ```
 *環境チェック、依存ライブラリの確認、バックエンドとフロントエンドの非表示起動、ブラウザ起動（`http://localhost:5173`）がすべて自動で行われます。ブラウザのタブを閉じると、関連プロセスもすべて自動的に終了します。*
+
+最後のタブを閉じると約4〜6秒で終了します。他のタブが残っていれば動作を続けます。ランチャーは状態を読み取るだけで、タブとしてheartbeatを送信しません。起動後60秒以内に一度もタブが接続しなければ、ランチャーが作成したプロセスも終了します。起動ログは `marugoto-vocab-trainer/logs/` に保存されます。
 
 ---
 
