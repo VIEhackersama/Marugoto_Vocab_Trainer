@@ -4,8 +4,10 @@ import { hasKanji } from '../kanji.js';
 import { JapaneseTerm, Highlight } from './JapaneseTerm.jsx';
 import { Icon } from './Icon.jsx';
 
+const sourceLabel = card => card.sources?.map(source => source.title).join(' · ') || (card.deckId === 'custom' ? 'Tùy chỉnh' : card.deckTitle);
+
 function Status({ card }) {
-  const due = new Date(card.dueAt).getTime() <= Date.now();
+  const due = Boolean(card.dueAt) && new Date(card.dueAt).getTime() <= Date.now();
   const isNew = !card.reviewCount;
   const date = new Date(card.dueAt);
   return (
@@ -23,7 +25,7 @@ function Status({ card }) {
       </div>
       <span className="vocab-meta">
         {card.reviewCount || 0} lượt · {card.wrongCount || 0} sai
-        {!due && !Number.isNaN(date.getTime())
+        {!due && card.dueAt && !Number.isNaN(date.getTime())
           ? ` · Ôn ${date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}`
           : ''}
       </span>
@@ -66,7 +68,7 @@ export function DictionaryWorkspace({
   );
   const leechCount = cards.filter(isCardLeech).length;
   const dueCount = cards.filter(
-    (card) => new Date(card.dueAt).getTime() <= Date.now(),
+    (card) => card.dueAt && new Date(card.dueAt).getTime() <= Date.now(),
   ).length;
   const activeFilters =
     filters.search.trim() ||
@@ -125,6 +127,7 @@ export function DictionaryWorkspace({
           className="icon-button"
           aria-label={`Sửa ${card.jp}`}
           title="Sửa từ vựng"
+          disabled={!card.id}
           onClick={() => onEdit(card)}
         >
           <Icon name="edit" size={17} />
@@ -133,6 +136,7 @@ export function DictionaryWorkspace({
           type="button"
           className={`icon-button ${actionId === `${card.id}-${card.deckId}` ? 'selected' : ''}`}
           aria-label={`Thao tác với ${card.jp}`}
+          disabled={!card.id}
           aria-expanded={actionId === `${card.id}-${card.deckId}`}
           onClick={() =>
             setActionId(
@@ -200,17 +204,18 @@ export function DictionaryWorkspace({
         {items.map((card) => (
           <article
             className={`vocab-tile ${editingId === card.id ? 'selected' : ''}`}
-            key={`${card.id}-${card.deckId}`}
+            key={card.vocabularyId || `${card.id}-${card.deckId}`}
           >
             <div className="tile-top">
               <span className="vocab-source">
-                {card.deckId === 'custom' ? 'Tùy chỉnh' : card.deckTitle}
+                {sourceLabel(card)}
               </span>
               <span className="vocab-kana-row">{getKanaRow(card)}</span>
             </div>
             <button
               type="button"
               className="vocab-title-button"
+              disabled={!card.id}
               onClick={() => onEdit(card)}
             >
               <JapaneseTerm text={card.jp} query={filters.search} />
@@ -486,12 +491,13 @@ export function DictionaryWorkspace({
                 </thead>
                 <tbody>
                   {pageCards.map((card) => (
-                    <React.Fragment key={`${card.id}-${card.deckId}`}>
+                    <React.Fragment key={card.vocabularyId || `${card.id}-${card.deckId}`}>
                       <tr className={editingId === card.id ? 'selected' : ''}>
                         <td>
                           <button
                             type="button"
                             className="vocab-title-button"
+                            disabled={!card.id}
                             onClick={() => onEdit(card)}
                           >
                             <JapaneseTerm
@@ -512,9 +518,7 @@ export function DictionaryWorkspace({
                           <Highlight text={card.vi} query={filters.search} />
                         </td>
                         <td className="vocab-source">
-                          {card.deckId === 'custom'
-                            ? 'Tùy chỉnh'
-                            : card.deckTitle}
+                          {sourceLabel(card)}
                         </td>
                         <td>
                           <Status card={card} />

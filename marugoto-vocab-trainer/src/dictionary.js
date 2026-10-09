@@ -211,11 +211,11 @@ export function filterAndSortDictionary(cards, options) {
 
   const filtered = cards.filter((card) => {
     // Deck filter
-    if (deckFilter === 'custom' && card.deckId !== 'custom') return false;
-    if (deckFilter !== 'all' && deckFilter !== 'custom' && card.deckId !== deckFilter) return false;
+    const sourceDecks = card.sources?.map(source => source.deckId) || [card.deckId];
+    if (deckFilter !== 'all' && !sourceDecks.includes(deckFilter)) return false;
 
     // Status filter
-    const isDue = new Date(card.dueAt).getTime() <= now;
+    const isDue = Boolean(card.dueAt) && new Date(card.dueAt).getTime() <= now;
     if (statusFilter === 'due' && !isDue) return false;
     if (statusFilter === 'reviewed' && (card.reviewCount === 0 || isDue)) return false;
     if (statusFilter === 'new' && card.reviewCount > 0) return false;

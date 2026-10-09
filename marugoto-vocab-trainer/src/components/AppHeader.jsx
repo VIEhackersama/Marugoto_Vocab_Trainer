@@ -23,7 +23,8 @@ export function AppHeader({ section, onNavigate, sessionActive, dueCount }) {
         {[
           ['study', 'Học tập'],
           ['dictionary', 'Từ điển'],
-          ['grammar', 'Chia từ'],
+          ['bunpro', 'Bunpro'],
+          ['grammar', 'Ngữ pháp'],
           ['particles', 'Trợ từ & đuôi câu'],
           ['import', 'Bộ từ'],
           ['settings', 'Cài đặt'],

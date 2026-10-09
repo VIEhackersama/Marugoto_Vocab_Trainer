@@ -33,7 +33,7 @@ export function DeckLibrary({
         <div className="library-main">
           <div className="library-section-heading">
             <h2>
-              Bộ từ từ PDF <span>{decks.length}</span>
+              Bộ từ đã chọn học <span>{decks.length}</span>
             </h2>
             <label
               className={`button-primary upload-control ${busy ? 'is-busy' : ''}`}
@@ -59,7 +59,7 @@ export function DeckLibrary({
             <div className="library-decks">
               {decks.map((deck) => (
                 <article key={deck.id} className="library-deck">
-                  <span className="deck-file-symbol">PDF</span>
+                  <span className="deck-file-symbol">{deck.originalFilename ? 'PDF' : deck.id.startsWith('bunpro_') ? deck.id.slice(7).toUpperCase() : 'TỪ'}</span>
                   <div className="library-deck-body">
                     <h3>{deck.title}</h3>
                     <p>
@@ -78,12 +78,12 @@ export function DeckLibrary({
                       Học bộ này
                       <Icon name="arrow" size={15} />
                     </button>
-                    <a
+                    {deck.originalFilename && <a
                       href={`/api/decks/${deck.id}/pdf`}
                       className="text-button"
                     >
                       Tải PDF
-                    </a>
+                    </a>}
                     <button
                       type="button"
                       className="icon-button danger-text"

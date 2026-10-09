@@ -35,7 +35,6 @@ import { romajiToHiragana, checkTypedAnswer } from './utils/japaneseInput.js';
 import { VocabularyEditor } from './components/VocabularyEditor.jsx';
 import { DictionaryWorkspace } from './components/DictionaryWorkspace.jsx';
 import { AppHeader } from './components/AppHeader.jsx';
-import { GrammarWorkspace } from './components/GrammarWorkspace.jsx';
 import { ParticlesWorkspace } from './components/ParticlesWorkspace.jsx';
 import { DeckLibrary } from './components/DeckLibrary.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
@@ -44,6 +43,8 @@ import { DialogFrame } from './components/DialogFrame.jsx';
 import { Icon } from './components/Icon.jsx';
 import './styles.css';
 import './workspace.css';
+import { BunproWorkspace } from './components/BunproWorkspace.jsx';
+import { GrammarLearningWorkspace } from './components/GrammarLearningWorkspace.jsx';
 
 function dictionaryPreference(key, fallback, allowed) {
   try {
@@ -529,9 +530,9 @@ function App() {
 
   const rowCounts = {};
   for (const card of dictionaryCards) {
-    if (dictDeckFilter === 'custom' && card.deckId !== 'custom') continue;
-    if (dictDeckFilter !== 'all' && dictDeckFilter !== 'custom' && card.deckId !== dictDeckFilter) continue;
-    const isDue = new Date(card.dueAt).getTime() <= Date.now();
+    const sourceDecks = card.sources?.map(source => source.deckId) || [card.deckId];
+    if (dictDeckFilter !== 'all' && !sourceDecks.includes(dictDeckFilter)) continue;
+    const isDue = Boolean(card.dueAt) && new Date(card.dueAt).getTime() <= Date.now();
     if (dictStatusFilter === 'due' && !isDue) continue;
     if (dictStatusFilter === 'reviewed' && (card.reviewCount === 0 || isDue)) continue;
     if (dictStatusFilter === 'new' && card.reviewCount > 0) continue;
@@ -592,12 +593,12 @@ function App() {
 
   async function refreshDictionary() {
     try {
-      const result = await api('/api/study/cards?deckId=all&mode=all&includeCustom=true');
+      const result = await api('/api/dictionary');
       if (result?.cards) {
         setDictionaryCards(result.cards);
       }
-    } catch {
-      // fallback
+    } catch (error) {
+      setError(`Không tải được từ điển: ${error.message}`);
     }
   }
 
@@ -801,9 +802,7 @@ function App() {
     setEntries((cards) => cards.map((card) => card.id === entry.id
       ? { ...card, dueAt: result.dueAt, reviewCount: result.reviewCount, wrongCount: result.wrongCount }
       : card));
-    setDictionaryCards((cards) => cards.map((card) => card.id === entry.id
-      ? { ...card, dueAt: result.dueAt, reviewCount: result.reviewCount, wrongCount: result.wrongCount }
-      : card));
+    await refreshDictionary();
     await refreshDecks();
     return result;
   }
@@ -1656,7 +1655,11 @@ function App() {
       {sessionActive && !['quiz', 'review'].includes(tab) && <div className="session-return"><span>Phiên học đang tạm dừng · thời gian trả lời được giữ lại</span><button type="button" className="text-button" onClick={() => navigate('study')}>Tiếp tục phiên học <Icon name="arrow" size={15}/></button></div>}
       {loading && <section className="loading-workspace" aria-busy="true" aria-label="Đang tải bộ từ và tiến độ"><div className="skeleton skeleton-title"/><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/><span role="status">Đang tải bộ từ và tiến độ…</span></section>}
 
-      {tab === 'grammar' && <GrammarWorkspace/>}
+      {tab === 'grammar' && <GrammarLearningWorkspace/>}
+      {tab === 'bunpro' && <BunproWorkspace onLearned={async () => {
+        await refreshDictionary(); await refreshDecks();
+        if (!sessionActive) await loadCards();
+      }}/>}
       {tab === 'particles' && <ParticlesWorkspace/>}
 
       {!loading && tab === 'dictionary' && <DictionaryWorkspace cards={dictionaryCards} visibleCards={sortedDictionaryCards}

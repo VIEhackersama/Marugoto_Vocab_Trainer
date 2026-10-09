@@ -1,5 +1,7 @@
 # Marugoto Vocab Trainer (まるごと単語トレーナー)
 
+Kho Bunpro N5 (1.100 từ vựng, 132 mẫu ngữ pháp tiếng Việt) và flashcard điền khuyết đã được tích hợp. Xem [hướng dẫn Bunpro N5, dữ liệu nhập và API](docs/bunpro-n5.md).
+
 > **Ứng dụng học và ôn tập từ vựng tiếng Nhật Marugoto chuẩn khoa học với thuật toán FSRS.**  
 > **FSRSアルゴリズムを採用した「まるごと」準拠の日本語単語学習・復習アプリケーション。**
 

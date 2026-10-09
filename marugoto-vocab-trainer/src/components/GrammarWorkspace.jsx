@@ -43,8 +43,8 @@ function connectionExamples(groupId, word, reading) {
   ];
 }
 
-export function GrammarWorkspace() {
-  const [groupId, setGroupId] = useState('noun');
+export function GrammarWorkspace({ initialGroupId = 'noun' }) {
+  const [groupId, setGroupId] = useState(() => GROUPS.some(g => g.id === initialGroupId) ? initialGroupId : 'noun');
   const [exampleIndex, setExampleIndex] = useState(0);
   const [polite, setPolite] = useState(true);
   const group = GROUPS.find(x => x.id === groupId);

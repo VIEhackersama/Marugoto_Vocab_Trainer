@@ -90,8 +90,15 @@ record BackupDataDto(
         List<BackupDeckItem> decks,
         List<BackupVocabItem> vocabularies,
         List<BackupStudyCardItem> studyCards,
-        List<BackupReviewLogItem> reviewLogs
-) {}
+        List<BackupReviewLogItem> reviewLogs,
+        LearningBackup learning
+) {
+    public BackupDataDto(int version, long exportedAt, List<BackupDeckItem> decks,
+                         List<BackupVocabItem> vocabularies, List<BackupStudyCardItem> studyCards,
+                         List<BackupReviewLogItem> reviewLogs) {
+        this(version, exportedAt, decks, vocabularies, studyCards, reviewLogs, null);
+    }
+}
 
 record BackupImportResult(
         int importedDecks,

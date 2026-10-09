@@ -91,7 +91,11 @@ class DatabaseMigrationRunner implements SmartInitializingSingleton {
         }
 
         // Post-migration data cleanup: populate reading in vocabularies if empty
-        populateMissingVocabReadings();
+        // Only legacy migrations require vocabulary cleanup. Catalog/grammar migrations
+        // must leave existing vocabulary content and schedules untouched.
+        if (pending.stream().anyMatch(migration -> migration.version() <= 3)) {
+            populateMissingVocabReadings();
+        }
     }
 
     private List<MigrationResource> discoverMigrations() {
