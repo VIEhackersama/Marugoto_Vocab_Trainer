@@ -110,12 +110,12 @@ class BackupService {
                 )
         );
 
-        return new BackupDataDto(2, exportedAt, decks, vocabularies, studyCards, reviewLogs, bunpro.exportBackup());
+        return new BackupDataDto(3, exportedAt, decks, vocabularies, studyCards, reviewLogs, bunpro.exportBackup());
     }
 
     @Transactional
     public BackupImportResult importBackup(BackupDataDto data) {
-        if (data == null || data.version() <= 0 || data.version() > 2) {
+        if (data == null || data.version() <= 0 || data.version() > 3) {
             throw new ResponseStatusException(BAD_REQUEST, "Dữ liệu sao lưu không hợp lệ.");
         }
 

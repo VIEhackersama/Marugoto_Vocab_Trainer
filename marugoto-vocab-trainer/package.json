@@ -7,7 +7,12 @@
     "dev": "vite --configLoader runner",
     "build": "vite build --configLoader runner",
     "test": "node --test",
-    "preview": "vite preview --configLoader runner"
+    "preview": "vite preview --configLoader runner",
+    "collector": "node scripts/bunpro-collector/launch.mjs",
+    "collector:serve": "node scripts/bunpro-collector/server.mjs",
+    "collector:install": "playwright install chromium",
+    "collector:test": "node --test scripts/bunpro-collector/collector.test.mjs",
+    "collector:verify": "node scripts/bunpro-collector/verify.mjs"
   },
   "dependencies": {
     "pdfjs-dist": "^6.3.289",
@@ -16,6 +21,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.2",
+    "playwright": "^1.64.0",
     "vite": "^7.1.7"
   }
 }

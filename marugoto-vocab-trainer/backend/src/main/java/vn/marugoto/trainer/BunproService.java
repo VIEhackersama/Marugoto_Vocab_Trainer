@@ -270,7 +270,11 @@ class BunproService {
 
     public LearningBackup exportBackup() {
         return new LearningBackup(jdbc.queryForList("SELECT * FROM bunpro_entries"),jdbc.queryForList("SELECT * FROM bunpro_vocab_links"),
-                jdbc.queryForList("SELECT * FROM grammar_cards"),jdbc.queryForList("SELECT * FROM grammar_review_logs"));
+                jdbc.queryForList("SELECT * FROM grammar_cards"),jdbc.queryForList("SELECT * FROM grammar_review_logs"),
+                jdbc.queryForList("SELECT * FROM bunpro_vocab_content"),jdbc.queryForList("SELECT * FROM bunpro_vocab_cards"),
+                jdbc.queryForList("SELECT * FROM bunpro_vocab_review_logs"),jdbc.queryForList("SELECT * FROM bunpro_vocab_settings"),
+                jdbc.queryForList("SELECT * FROM bunpro_grammar_cards"),jdbc.queryForList("SELECT * FROM bunpro_grammar_review_logs"),
+                jdbc.queryForList("SELECT * FROM bunpro_grammar_settings"));
     }
 
     @Transactional
@@ -280,6 +284,13 @@ class BunproService {
         restoreRows("bunpro_vocab_links",List.of("entry_id","vocabulary_id"),backup.links());
         restoreRows("grammar_cards",List.of("id","entry_id","sentence_id","fsrs_card_json","due_at","review_count","wrong_count","last_reviewed_at","created_at"),backup.grammarCards());
         restoreRows("grammar_review_logs",List.of("id","card_id","rating","reviewed_at","due_at_after","response_text"),backup.grammarReviews());
+        restoreRows("bunpro_vocab_content",List.of("entry_id","data_json","edited","capture_version"),backup.vocabContent());
+        restoreRows("bunpro_vocab_cards",List.of("entry_id","tier","fsrs_card_json","due_at","review_count","wrong_count","last_reviewed_at","revision","created_at"),backup.vocabCards());
+        restoreRows("bunpro_vocab_review_logs",List.of("id","entry_id","rating","direction","reviewed_at","due_at_after","tier_before","tier_after"),backup.vocabReviews());
+        restoreRows("bunpro_vocab_settings",List.of("id","days_json"),backup.vocabSettings());
+        restoreRows("bunpro_grammar_cards",List.of("entry_id","tier","fsrs_card_json","due_at","review_count","wrong_count","last_reviewed_at","revision","created_at"),backup.grammarProgress());
+        restoreRows("bunpro_grammar_review_logs",List.of("id","entry_id","rating","direction","reviewed_at","due_at_after","tier_before","tier_after"),backup.grammarProgressReviews());
+        restoreRows("bunpro_grammar_settings",List.of("id","days_json"),backup.grammarSettings());
     }
     private void restoreRows(String table,List<String> columns,List<Map<String,Object>> rows) {
         if(rows==null) return;
@@ -289,6 +300,22 @@ class BunproService {
         for(var row:rows) {
             if(row==null || row.get(pk)==null) throw new ResponseStatusException(BAD_REQUEST,"Bản sao lưu thiếu mã dữ liệu.");
             if(table.equals("bunpro_entries")) validateContent(read((String)row.get("content_json")));
+            if(table.equals("bunpro_vocab_content")) BunproVocabService.validateData(json.readValue((String)row.get("data_json"),VocabData.class));
+            if(table.equals("bunpro_vocab_cards") || table.equals("bunpro_grammar_cards")) {
+                try {
+                    var card=fsrs.read((String)row.get("fsrs_card_json"));
+                    if(!BunproVocabService.TIERS.contains(row.get("tier")) ||
+                            card.getDue().toEpochMilli()!=((Number)row.get("due_at")).longValue() ||
+                            ((Number)row.get("revision")).longValue()<0)
+                        throw new IllegalArgumentException();
+                } catch(Exception ex) { throw new ResponseStatusException(BAD_REQUEST,"Lịch Bunpro trong bản sao lưu không hợp lệ."); }
+            }
+            if(table.equals("bunpro_vocab_settings") || table.equals("bunpro_grammar_settings")) {
+                var nodes=json.readTree((String)row.get("days_json")); List<Integer> days=new ArrayList<>();
+                if(!nodes.isArray()) throw new ResponseStatusException(BAD_REQUEST,"Chu kỳ Bunpro không hợp lệ.");
+                for(var node:nodes) { if(!node.isIntegralNumber()) throw new ResponseStatusException(BAD_REQUEST,"Chu kỳ phải là số nguyên."); days.add(node.asInt()); }
+                BunproVocabService.validateIntervals(new VocabIntervals(days));
+            }
             jdbc.update(sql,columns.stream().map(row::get).toArray());
         }
     }

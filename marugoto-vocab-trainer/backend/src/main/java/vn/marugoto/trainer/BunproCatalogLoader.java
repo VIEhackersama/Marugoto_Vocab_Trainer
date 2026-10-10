@@ -10,11 +10,16 @@ import tools.jackson.databind.ObjectMapper;
 class BunproCatalogLoader implements ApplicationRunner {
     private final BunproService service;
     private final ObjectMapper json;
-    BunproCatalogLoader(BunproService service,ObjectMapper json) { this.service=service; this.json=json; }
+    private final BunproVocabService vocab;
+    BunproCatalogLoader(BunproService service,ObjectMapper json,BunproVocabService vocab) { this.service=service; this.json=json; this.vocab=vocab; }
     @Override public void run(ApplicationArguments args) throws Exception {
         var resource=new ClassPathResource("bunpro/n5.json");
         if(resource.exists()) try(var stream=resource.getInputStream()) {
             service.importSnapshot(json.readValue(stream,CatalogSnapshot.class));
+        }
+        var capture=new ClassPathResource("bunpro/n5-vocab-capture.json");
+        if(capture.exists()) try(var stream=capture.getInputStream()) {
+            vocab.importCapture(json.readTree(stream));
         }
     }
 }
