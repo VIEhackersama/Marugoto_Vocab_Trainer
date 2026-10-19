@@ -6,9 +6,12 @@ import { extractLesson, EXTRACTOR_VERSION } from './extractor.mjs';
 export class UserActionRequired extends Error {
   constructor(message, { recoverable = false } = {}) { super(message); this.blocking = true; this.recoverable = recoverable; }
 }
-export function pageBlock({ url = '', text = '', status = 200, hasPassword = false }) {
+export function pageBlock({ url = '', text = '', title = '', status = 200, hasPassword = false, hasLessonContent = false, hasChallenge = false }) {
   if (status === 429 || /too many requests|rate limit|access denied|temporarily blocked/i.test(text)) return 'Bunpro đang giới hạn truy cập. Chờ rồi bấm Tiếp tục.';
-  if (/captcha|verify you are human|checking your browser|just a moment/i.test(text)) return 'Trình duyệt đang yêu cầu xác minh. Xử lý trong trình duyệt Bunpro rồi bấm Tiếp tục.';
+  // Example translations can contain "just a moment". A rendered lesson is
+  // not a challenge page unless its title or visible challenge controls say so.
+  if (hasChallenge || /^(just a moment|checking your browser|verify you are human)[\s.!…]*$/i.test(title.trim())
+    || !hasLessonContent && /captcha|verify you are human|checking your browser|just a moment/i.test(text)) return 'Trình duyệt đang yêu cầu xác minh. Xử lý trong trình duyệt Bunpro rồi bấm Tiếp tục.';
   if (/\/(login|signin|sign_in)(\/|\?|$)/i.test(url) || hasPassword) return 'Cần đăng nhập Bunpro trong trình duyệt riêng, rồi bấm Tiếp tục.';
   if (status === 401 || status === 403) return 'Phiên truy cập không còn hợp lệ. Kiểm tra đăng nhập/quyền truy cập trong trình duyệt Bunpro.';
   return null;
@@ -63,13 +66,23 @@ export class BrowserCollector {
       const response = await page.goto(item.sourceUrl, { waitUntil: 'domcontentloaded', timeout: 35_000 });
       await page.waitForTimeout(500);
       const checkBlock = async () => {
-        const info = await page.evaluate(() => ({ url: location.href, text: document.body.innerText.slice(0, 30_000), hasPassword: Boolean(document.querySelector('input[type=password]')) }));
+        const info = await page.evaluate(() => {
+          const visible = selector => [...document.querySelectorAll(selector)].some(e => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden');
+          return { url: location.href, title: document.title, text: document.body.innerText.slice(0, 30_000), hasPassword: visible('input[type=password]'),
+            hasLessonContent: visible('#js-rev-header h1') && visible('article.bp-reviewable-root [id^="study-question-"]'),
+            hasChallenge: visible('#challenge-form, #cf-challenge-running, iframe[src*="challenges.cloudflare.com"]') };
+        });
         const reason = pageBlock({ ...info, status: response?.status() });
         if (reason) throw new UserActionRequired(reason, {recoverable: /Cần đăng nhập|Phiên truy cập không còn hợp lệ/.test(reason)});
       };
       await checkBlock();
       if (response?.status() >= 400) throw new Error(`Bunpro trả HTTP ${response.status()}.`);
       await page.locator('#js-rev-header h1').waitFor({ state: 'visible', timeout: 12_000 });
+      // A lesson heading can render before the fullscreen loading layer leaves.
+      // Wait for it to stop intercepting content-tab clicks.
+      await page.waitForFunction(() => [...document.querySelectorAll('[class*="LoadingSpinnerFullscreen"]')]
+        .every(e => !e.getClientRects().length || getComputedStyle(e).visibility === 'hidden' || getComputedStyle(e).pointerEvents === 'none'),
+        null, { timeout: 15_000 });
       const openTabs = [];
       for (const name of ['Details', 'Examples']) {
         const tab = page.getByRole('tab', { name, exact: true });

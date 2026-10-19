@@ -6,6 +6,19 @@ export function GrammarExamples({ sentences = [] }) {
   return <section className="vocab-examples"><h3>Câu luyện tập · {sentences.length}</h3>{!sentences.length && <p className="catalog-coverage">Chưa có câu luyện tập. Có thể thêm trong Chỉnh sửa.</p>}{sentences.map((s, i) => <article className="vocab-example" key={s.id}><span className="eyebrow">Câu {i + 1} · {s.status === 'VERIFIED' ? 'Đã kiểm tra' : 'Cần kiểm tra'}</span><p lang="ja" className="vocab-sentence">{s.sentence}</p><p lang="ja" className="catalog-reading">{s.reading}</p><p>{s.translationVi}</p><p className="catalog-coverage">{s.explanationVi}</p></article>)}</section>;
 }
 
+export function GrammarSourceExamples({ source }) {
+  if (!source?.examples?.length) return null;
+  return <section className="vocab-examples"><h3>Ví dụ gốc Bunpro · {source.examples.length}</h3>
+    <p className="catalog-coverage">Bản dịch tiếng Anh từ nguồn · cần đối chiếu độ đầy đủ.</p>
+    {source.examples.map((s, i) => <article className="vocab-example" key={s.id}>
+      <span className="eyebrow">Ví dụ {i + 1}{s.type === 'explanation' ? ' · trong giải thích' : ''}</span>
+      <p lang="ja" className="vocab-sentence">{s.tokens?.length ? s.tokens.map((t,j) => t.reading ? <ruby key={j}>{t.text}<rt>{t.reading}</rt></ruby> : <React.Fragment key={j}>{t.text}</React.Fragment>) : s.sentence}</p>
+      <p lang="ja" className="catalog-reading">{s.reading}</p><p lang="en">{s.translationEn}</p>
+      {s.notes && <p className="catalog-coverage">{s.notes}</p>}
+    </article>)}
+  </section>;
+}
+
 export function BunproGrammarDetail({ entry, busy, onClose, onAssign, onLearn, onSave }) {
   const [editing, setEditing] = useState(false), [tier, setTier] = useState(entry.tier || 'BEGINNER');
   const c=entry.content;
@@ -15,10 +28,11 @@ export function BunproGrammarDetail({ entry, busy, onClose, onAssign, onLearn, o
     <h2 lang="ja">{c.title}</h2><p className="catalog-reading" lang="ja">{c.reading}</p>
     {editing ? <ContentEditor entry={entry} busy={busy} onCancel={() => setEditing(false)} onSave={async content => { if(await onSave(entry.id,content)) setEditing(false); }} /> : <>
       <p className="vocab-meaning">{c.meaningVi || 'Chưa có nghĩa Việt'}</p><p lang="en">{c.meaningEn}</p>
-      <h3>Cấu trúc</h3><p className="grammar-structure" lang="ja">{c.structure || 'Chưa có cấu trúc'}</p><h3>Cách dùng</h3><p className="grammar-explanation">{c.explanationVi || 'Chưa có giải thích'}</p>
+      <h3>Cấu trúc</h3><p className="grammar-structure" lang="ja">{c.structure || 'Chưa có cấu trúc'}</p><h3>Cách dùng{!c.explanationVi && c.grammarSource?.explanationEn ? ' · bản gốc tiếng Anh' : ''}</h3><p className="grammar-explanation" lang={c.explanationVi ? 'vi' : 'en'}>{c.explanationVi || c.grammarSource?.explanationEn || 'Chưa có giải thích'}</p>
       <p className="catalog-coverage">{c.status === 'VERIFIED' ? 'Nội dung đã kiểm tra' : 'Cần kiểm tra nội dung trước khi học'}{entry.dueAt && ` · Hạn ôn: ${new Date(entry.dueAt).toLocaleString('vi-VN')}`}</p>
       <div className="inline-actions"><button className="button-secondary" disabled={busy} onClick={() => setEditing(true)}>Chỉnh sửa</button>{!entry.tier && <button className="button-primary" disabled={busy || !ready} onClick={() => onLearn(entry.id)}>Chọn học mẫu này</button>}</div>
       <div className="vocab-tier-control"><label>Mức học<select value={tier} disabled={busy} onChange={e => setTier(e.target.value)}>{TIERS.map(t => <option key={t} value={t}>{TIER_LABELS[t]}</option>)}</select></label><button className="button-secondary" disabled={busy || !ready} onClick={() => onAssign([entry.id],tier)}>Gán mức</button></div>
+      <GrammarSourceExamples source={c.grammarSource} />
       <GrammarExamples sentences={c.sentences} /><a href={entry.sourceUrl} target="_blank" rel="noreferrer">Xem nguồn Bunpro</a>
     </>}
   </aside>;

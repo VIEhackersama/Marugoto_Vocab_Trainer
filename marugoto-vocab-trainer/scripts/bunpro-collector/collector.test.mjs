@@ -9,6 +9,18 @@ import { extractLesson, EXTRACTOR_VERSION } from './extractor.mjs';
 import { BrowserCollector, pageBlock, UserActionRequired } from './browser.mjs';
 import { startServer } from './server.mjs';
 
+test('collector waits for the loading layer before clicking content tabs', async t => {
+  const browser=await chromium.launch({headless:true}); t.after(()=>browser.close());
+  const context=await browser.newContext();
+  await context.route('https://bunpro.jp/**',route=>route.fulfill({contentType:'text/html',body:
+    `<button role="tab">Details</button><button role="tab">Examples</button>${fixture}`+
+    '<div class="LoadingSpinnerFullscreen" style="position:fixed;inset:0;z-index:99999;background:white">Loading</div><script>setTimeout(()=>document.querySelector(".LoadingSpinnerFullscreen").remove(),6000)</script>'}));
+  const collector=new BrowserCollector('unused'); collector.ensureBrowser=async()=>context;
+  const result=await collector.capture(samples()[0],await directory(t),new AbortController().signal);
+  assert.equal(result.exampleCount,3);
+  assert.deepEqual(result.openedTabs,['Details','Examples']);
+});
+
 const exampleHtml = (id, sentence = '本', translation = 'A book.') => `<li id="study-question-${id}"><p class="bp-ddw"><ruby>${sentence}<rt>ほん</rt><rp>(</rp></ruby>です。</p><p class="bp-sdw">${translation}</p><button title="Play audio">Play</button><audio src="https://audio.example.test/${id}.mp3"></audio></li>`;
 const fixture = `<nav>PRIVATE ACCOUNT EMAIL</nav><article class="bp-reviewable-root"><header id="js-rev-header"><h1><span class="bp-ddw">です</span><span>To be</span></h1></header><div id="js-struct-details"><section><header id="structure"><h2>Structure</h2></header><p>Noun + です</p></section></div><section><header id="about"><h2>About です</h2></header><p>Explanation</p><h4>Caution</h4><ul>${exampleHtml(1)}</ul></section><section><div><header id="examples"><h2>Examples</h2></header></div><ul>${exampleHtml(1)}${exampleHtml(2,'猫','A cat.')}${exampleHtml(3,'犬','A dog.')}</ul><ul style="display:none">${exampleHtml(99,'秘密','HIDDEN PREMIUM')}</ul><header id="self-study"><h2>Self-Study Sentences</h2></header><ul>${exampleHtml(100,'個人','PRIVATE PERSONAL SENTENCE')}</ul></section></article><section id="discussion">PRIVATE DISCUSSION</section>`;
 
@@ -53,36 +65,36 @@ test('browser disconnect is recoverable but intentional timeout remains a normal
   await assert.rejects(collector.capture({},'unused',controller.signal),e=>!e.blocking);
 });
 
-test('parallel lanes overlap, reserve retries, and finish all captures before export', async t => {
-  const folder = await directory(t); const store = await new RunStore(folder,samples().slice(0,5)).init();
+for (const concurrency of [2,4]) test(`${concurrency} parallel lanes overlap, reserve retries, and finish all captures before export`, async t => {
+  const folder = await directory(t); const store = await new RunStore(folder,samples().slice(0,9)).init();
   let active = 0, peak = 0; const calls = new Map(); const starts = [];
   const worker = new Worker(store,{capture:async item => {
     starts.push(Date.now()); const attempt = (calls.get(item.id) || 0) + 1; calls.set(item.id,attempt);
     active++; peak = Math.max(peak,active);
-    await new Promise(resolve => setTimeout(resolve,40)); active--;
+    await new Promise(resolve => setTimeout(resolve,100)); active--;
     if (item.id === store.run.items[0].id && attempt === 1) throw new Error('temporary');
     assert.equal(store.run.status,'RUNNING'); return resultFor(item);
-  }},{concurrency:2,spacingMs:10,retryMs:25});
-  await worker.setConcurrency(2); await worker.start();
+  }},{concurrency,spacingMs:10,retryMs:25});
+  await worker.setConcurrency(concurrency); await worker.start();
   await assert.rejects(worker.setConcurrency(1),/Tạm dừng/);
-  await worker.task; assert.equal(peak,2); assert.equal(active,0);
+  await worker.task; assert.equal(peak,concurrency); assert.equal(active,0);
   assert.equal(calls.get(store.run.items[0].id),2); assert.ok([...calls.values()].slice(1).every(n=>n===1));
   assert.ok(starts.slice(1).every((time,index)=>time-starts[index]>=8));
   assert.equal(store.run.status,'COMPLETED'); assert.ok(store.run.items.every(e=>e.status==='CAPTURED'));
-  assert.equal(JSON.parse(await readFile(path.join(store.folder,'export.json'),'utf8')).counts.captured,5);
-  const recovered=await new RunStore(folder,samples()).init(); assert.equal(new Worker(recovered,{}).concurrency,2);
+  assert.equal(JSON.parse(await readFile(path.join(store.folder,'export.json'),'utf8')).counts.captured,9);
+  const recovered=await new RunStore(folder,samples()).init(); assert.equal(new Worker(recovered,{}).concurrency,concurrency);
 });
 
-test('parallel pause commits both active pages and blocking access stops new work', async t => {
-  const store=await new RunStore(await directory(t),samples().slice(0,4)).init();
+test('four-worker pause commits all active pages and blocking access stops new work', async t => {
+  const store=await new RunStore(await directory(t),samples().slice(0,6)).init();
   const finishes=[];
-  const worker=new Worker(store,{capture:item=>new Promise(resolve=>finishes.push(()=>resolve(resultFor(item))))},{concurrency:2,spacingMs:0});
-  await worker.start(); while(finishes.length<2) await new Promise(resolve=>setTimeout(resolve,5));
+  const worker=new Worker(store,{capture:item=>new Promise(resolve=>finishes.push(()=>resolve(resultFor(item))))},{concurrency:4,spacingMs:0});
+  await worker.start(); while(finishes.length<4) await new Promise(resolve=>setTimeout(resolve,5));
   await worker.pause(); finishes.forEach(f=>f()); await worker.task;
-  assert.equal(store.run.items.filter(e=>e.status==='CAPTURED').length,2);
+  assert.equal(store.run.items.filter(e=>e.status==='CAPTURED').length,4);
   assert.equal(store.run.items.filter(e=>e.status==='QUEUED').length,2);
   let calls=0;
-  const blocked=new Worker(store,{capture:async()=>{calls++;throw new UserActionRequired('CAPTCHA');}},{concurrency:2,spacingMs:30});
+  const blocked=new Worker(store,{capture:async()=>{calls++;throw new UserActionRequired('CAPTCHA');}},{concurrency:4,spacingMs:30});
   await blocked.start(); await blocked.task;
   assert.equal(calls,1); assert.equal(store.run.status,'AWAITING_USER');
   assert.equal(store.run.items.filter(e=>e.status==='RUNNING').length,0);
@@ -96,6 +108,40 @@ test('full N5 inventory is complete, unique, and preserves deck URLs', async () 
   assert.ok(items.every(e => e.kind === 'VOCAB' && e.sourceUrl.includes('deck_id=5')));
   assert.throws(() => selectAllVocab({...source, entries:source.entries.slice(1)}),/chưa đủ/);
   assert.throws(() => selectAllVocab({entries:[source.entries[0],source.entries[0]]}),/trùng/);
+});
+
+test('N4 inventory has 1095 unique vocab URLs across 22 lessons', async () => {
+  const source = JSON.parse(await readFile(new URL('../../backend/src/main/resources/bunpro/n4-vocab-source.json', import.meta.url),'utf8'));
+  const items = selectAllVocab(source);
+  assert.equal(items.length,1095); assert.equal(new Set(items.map(e=>e.lesson)).size,22);
+  assert.ok(items.every(e=>e.kind==='VOCAB' && e.level==='N4' && e.sourceUrl.endsWith('?deck_id=19')));
+  assert.deepEqual(Array.from({length:22},(_,i)=>items.filter(e=>e.lesson===i+1).length),[49,50,50,50,50,50,50,50,50,50,50,50,50,49,49,50,50,50,50,48,49,51]);
+  assert.throws(()=>selectAllVocab({...source,entries:source.entries.slice(1)}),/N4 chưa đủ/);
+});
+
+test('switching to N4 preserves N5 export, four workers, scope and verification through new runs and restart', async t => {
+  const folder=await directory(t), all=samples().filter(e=>e.kind==='VOCAB').slice(0,4);
+  const n4=all.map(e=>({...e,level:'N4',sourceUrl:e.sourceUrl.replace('deck_id=5','deck_id=19')}));
+  const service=await startServer({port:0,dataDirectory:folder,sample:samples(),allVocab:all,vocabCatalogs:{N4:n4},collector:{capture:async item=>resultFor(item)},workerOptions:{spacingMs:0}});
+  t.after(()=>service.close());
+  const post=url=>fetch(service.url+url,{method:'POST'});
+  assert.equal((await post('/api/full-vocab')).status,201);
+  await service.worker.setConcurrency(4); await service.worker.start(); await service.worker.task;
+  const oldFolder=service.store.folder, oldId=service.store.run.id;
+  assert.equal((await post('/api/full-vocab/N4')).status,201);
+  assert.notEqual(service.store.run.id,oldId); assert.equal(service.store.run.scope,'N4_VOCAB_ALL');
+  assert.equal(service.worker.concurrency,4); assert.equal(service.store.run.workerConcurrency,4);
+  assert.equal(JSON.parse(await readFile(path.join(oldFolder,'export.json'),'utf8')).counts.captured,4);
+  await service.worker.start();
+  assert.equal((await post('/api/new')).status,409);
+  await service.worker.task; service.worker.delay=async()=>{};
+  assert.equal((await (await post('/api/verify')).json()).passed,true);
+  assert.equal((await service.store.export()).scope,'N4_VOCAB_ALL');
+  assert.match(await service.store.report(),/# Bunpro N4/);
+  const recovered=await new RunStore(path.join(folder,'runs'),samples()).init();
+  assert.equal(recovered.run.scope,'N4_VOCAB_ALL'); assert.equal(new Worker(recovered,{}).concurrency,4);
+  assert.equal((await post('/api/new')).status,201); assert.equal(service.store.run.scope,'N4_VOCAB_ALL');
+  assert.ok(service.store.run.items.every(e=>e.level==='N4' && e.status==='QUEUED'));
 });
 
 test('full vocab scope and results survive restart', async t => {
@@ -213,6 +259,23 @@ test('access block classification distinguishes normal lesson from login, CAPTCH
   assert.match(pageBlock({url:'https://bunpro.jp/login'}),/đăng nhập/);
   assert.match(pageBlock({text:'Verify you are human'}),/xác minh/);
   assert.match(pageBlock({status:429}),/giới hạn/);
+  assert.equal(pageBlock({text:'She was laughing her head off just a moment ago.',hasLessonContent:true}),null);
+  assert.match(pageBlock({title:'Just a moment...',hasLessonContent:true}),/xác minh/);
+  assert.match(pageBlock({hasChallenge:true,hasLessonContent:true}),/xác minh/);
+  assert.match(pageBlock({status:429,hasLessonContent:true}),/giới hạn/);
+});
+
+test('example translation containing just a moment does not stop browser capture, but a real challenge does', async t => {
+  const folder=await directory(t), browser=await chromium.launch({headless:true}); t.after(()=>browser.close());
+  const context=await browser.newContext(); let challenge=false;
+  await context.route('https://bunpro.jp/**',route=>route.fulfill({contentType:'text/html',body:challenge
+    ? '<title>Just a moment...</title><form id="challenge-form">Verify you are human</form>'
+    : fixture.replace('A book.','She was laughing her head off just a moment ago.')}));
+  const collector=new BrowserCollector(path.join(folder,'profile')); collector.context=context;
+  const result=await collector.capture(samples()[0],path.join(folder,'captured'),new AbortController().signal);
+  assert.ok(result.examples.some(e=>e.translation.includes('just a moment ago')));
+  challenge=true;
+  await assert.rejects(collector.capture(samples()[0],path.join(folder,'blocked'),new AbortController().signal),e=>e.blocking && /xác minh/.test(e.message));
 });
 
 test('source recheck compares two entries of each kind without marking them reviewed', async t => {
@@ -239,8 +302,9 @@ test('local API exports data, rejects foreign Origin, and dashboard detects disc
   await page.getByText('Worker kết nối',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Bắt đầu',exact:true}).click();
   await page.getByText('Đã kết thúc lượt · 1 worker',{exact:true}).waitFor();
-  await page.getByRole('button',{name:'2 worker',exact:true}).click();
-  await page.getByText('Đã kết thúc lượt · 2 worker',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'4 worker',exact:true}).click();
+  await page.getByText('Đã kết thúc lượt · 4 worker',{exact:true}).waitFor();
+  assert.equal((await fetch(`${service.url}/api/workers/5`,{method:'POST'})).status,404);
   const snapshot = await (await fetch(`${service.url}/api/export`)).json(); assert.equal(snapshot.counts.captured,2);
   assert.equal(snapshot.entries.length,2);
   await page.locator('[data-id]').first().click(); await page.getByRole('heading',{name:'Ví dụ · 1',exact:true}).waitFor();
@@ -253,6 +317,6 @@ test('local API exports data, rejects foreign Origin, and dashboard detects disc
   const restarted = await startServer({port:0,dataDirectory:service.store.directory.replace(/[\\/]runs$/,''),sample:samples().slice(0,2),collector:{close:async()=>{}}});
   try {
     assert.equal((await (await fetch(`${restarted.url}/api/export`)).json()).counts.captured,2);
-    assert.equal((await (await fetch(`${restarted.url}/api/status`)).json()).workerConcurrency,2);
+    assert.equal((await (await fetch(`${restarted.url}/api/status`)).json()).workerConcurrency,4);
   } finally { await restarted.close(); }
 });

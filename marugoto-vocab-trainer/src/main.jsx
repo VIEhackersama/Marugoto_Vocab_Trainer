@@ -35,7 +35,6 @@ import { romajiToHiragana, checkTypedAnswer } from './utils/japaneseInput.js';
 import { VocabularyEditor } from './components/VocabularyEditor.jsx';
 import { DictionaryWorkspace } from './components/DictionaryWorkspace.jsx';
 import { AppHeader } from './components/AppHeader.jsx';
-import { ParticlesWorkspace } from './components/ParticlesWorkspace.jsx';
 import { DeckLibrary } from './components/DeckLibrary.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
 import { AgainDelayControl } from './components/AgainDelayControl.jsx';
@@ -1660,7 +1659,6 @@ function App() {
         await refreshDictionary(); await refreshDecks();
         if (!sessionActive) await loadCards();
       }}/>}
-      {tab === 'particles' && <ParticlesWorkspace/>}
 
       {!loading && tab === 'dictionary' && <DictionaryWorkspace cards={dictionaryCards} visibleCards={sortedDictionaryCards}
         decks={decks} customDeck={customDeck} filters={{ search: dictSearchQuery, deck: dictDeckFilter, status: dictStatusFilter, row: dictRowSelect, sort: dictSortOrder }}

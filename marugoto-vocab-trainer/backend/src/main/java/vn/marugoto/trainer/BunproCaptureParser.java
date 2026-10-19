@@ -15,6 +15,13 @@ class BunproCaptureParser {
     record Parsed(String url, int lesson, int position, String title, String reading, String meaning, VocabData data) {}
     record Result(List<Parsed> entries, CapturePreview preview) {}
 
+    static String level(JsonNode root) {
+        String scope=str(root,"scope");
+        if(scope.isBlank() || "N5_VOCAB_ALL".equals(scope)) return "N5";
+        if("N4_VOCAB_ALL".equals(scope)) return "N4";
+        throw new IllegalArgumentException("Phạm vi capture từ vựng không hợp lệ.");
+    }
+
     static String tag(String source) {
         String s=source.strip();
         if(s.startsWith("う-verb")) return "GODAN";
@@ -47,6 +54,10 @@ class BunproCaptureParser {
         List<String> errors=new ArrayList<>(); List<Parsed> parsed=new ArrayList<>();
         Set<String> urls=new HashSet<>(); Map<Integer,Integer> positions=new HashMap<>();
         int examples=0, matched=0, unclassified=0, unknown=0;
+        String level;
+        try { level=level(root); } catch(IllegalArgumentException ex) {
+            return new Result(List.of(),new CapturePreview(0,0,0,0,0,0,0,0,List.of(ex.getMessage())));
+        }
         if(root.path("version").asInt()!=1 || !root.path("entries").isArray() ||
                 !str(root,"purpose").startsWith("bunpro-source-capture"))
             errors.add("Tệp không phải JSON capture Bunpro phiên bản 1.");
@@ -55,6 +66,8 @@ class BunproCaptureParser {
             try {
                 if(!"VOCAB".equals(str(entry,"kind")) || !"CAPTURED".equals(str(entry,"status")))
                     throw new IllegalArgumentException("Mục chưa thu thập thành công hoặc không phải từ vựng.");
+                if(!str(entry,"level").isBlank() && !level.equals(str(entry,"level")))
+                    throw new IllegalArgumentException("Cấp độ mục không khớp phạm vi capture.");
                 String url=BunproService.sourceUrl(str(entry,"sourceUrl"));
                 if(!url.contains("/vocabs/")) throw new IllegalArgumentException("URL không phải từ vựng.");
                 if(!urls.add(url)) throw new IllegalArgumentException("URL trùng.");
@@ -78,8 +91,17 @@ class BunproCaptureParser {
         int declaredExamples=root.path("counts").path("examples").asInt(-1);
         if(declared!=parsed.size()) errors.add("Kiểm kê từ: khai báo "+declared+", hợp lệ "+parsed.size()+".");
         if(declaredExamples!=examples) errors.add("Kiểm kê ví dụ: khai báo "+declaredExamples+", hợp lệ "+examples+".");
-        if(parsed.size()!=1100 || examples!=11205)
-            errors.add("Bản N5 yêu cầu 1.100 từ / 11.205 ví dụ; tệp có "+parsed.size()+" / "+examples+".");
+        int expectedWords=level.equals("N4")?1095:1100, expectedExamples=level.equals("N4")?8800:11205;
+        if(parsed.size()!=expectedWords || examples!=expectedExamples)
+            errors.add("Bản "+level+" yêu cầu "+expectedWords+" từ / "+expectedExamples+" ví dụ; tệp có "+parsed.size()+" / "+examples+".");
+        if(level.equals("N4")) {
+            try(var stream=new org.springframework.core.io.ClassPathResource("bunpro/n4-vocab-source.json").getInputStream()) {
+                var source=new tools.jackson.databind.ObjectMapper().readTree(stream);
+                Set<String> expectedUrls=new HashSet<>();
+                for(var entry:source.path("entries")) expectedUrls.add(BunproService.sourceUrl(str(entry,"url")));
+                if(!expectedUrls.equals(urls)) errors.add("URL capture không khớp danh mục N4.");
+            } catch(java.io.IOException ex) { throw new IllegalStateException("Không đọc được danh mục N4.",ex); }
+        }
         return new Result(parsed,new CapturePreview(parsed.size(),examples,matched,parsed.size()-matched,unclassified,unknown,declared,declaredExamples,errors));
     }
 

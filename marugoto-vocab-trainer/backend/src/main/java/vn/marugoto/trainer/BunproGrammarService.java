@@ -31,6 +31,7 @@ class BunproGrammarService {
     private VocabCatalogEntry map(java.sql.ResultSet rs,boolean full) throws java.sql.SQLException {
         var content=json.readValue(rs.getString("content_json"),CatalogContent.class);
         int count=content.sentences()==null?0:content.sentences().size();
+        if(content.grammarSource()!=null && content.grammarSource().examples()!=null) count+=content.grammarSource().examples().size();
         if(!full) content=new CatalogContent(content.title(),content.reading(),content.romaji(),content.meaningEn(),
             content.meaningVi(),content.status(),content.structure(),content.explanationVi(),content.conjugationGroup(),List.of());
         String tier=rs.getString("tier"); Long due=rs.getObject("due_at")==null?null:rs.getLong("due_at");

@@ -57,7 +57,7 @@ export function ParticlesWorkspace() {
           </div>)}</dl>
           <aside className="grammar-note"><h3>Cách nhớ</h3><p>{comparison.note}</p></aside>
         </section>
-        <p className="grammar-terminology">Trong tab này, “đuôi câu” gồm です / ます, mẫu lời mời và trợ từ cuối câu か / ね / よ. Chúng thuộc các loại ngữ pháp khác nhau nhưng cùng giúp bạn đọc hiểu phần kết thúc câu.</p>
+        <p className="grammar-terminology">Trong mục này, “đuôi câu” gồm です / ます, mẫu lời mời, trợ từ cuối câu か / ね / よ / よね và dạng phỏng đoán でしょう / だろう. ごろ là hậu tố thời gian. Chúng thuộc các loại ngữ pháp khác nhau, được nhóm theo cách dùng để dễ đối chiếu.</p>
       </div>
     </div>
   </section>;

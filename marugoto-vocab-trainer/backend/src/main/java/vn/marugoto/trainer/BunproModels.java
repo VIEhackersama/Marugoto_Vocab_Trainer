@@ -6,16 +6,25 @@ import java.util.Map;
 
 record GrammarSentence(String id, String prompt, List<String> answers, String sentence,
                        String reading, String translationVi, String explanationVi, String status) {}
+record GrammarSourceExample(String id, String sentence, String reading, List<RubyToken> tokens,
+                            String translationEn, String notes, String type) {}
+record GrammarSource(String explanationEn, List<GrammarSourceExample> examples,
+                     String capturedAt, String completeness) {}
 record CatalogContent(String title, String reading, String romaji, String meaningEn,
                       String meaningVi, String status, String structure, String explanationVi,
-                      String conjugationGroup, List<GrammarSentence> sentences, VocabData vocab) {
+                      String conjugationGroup, List<GrammarSentence> sentences, VocabData vocab, GrammarSource grammarSource) {
+    CatalogContent(String title, String reading, String romaji, String meaningEn, String meaningVi,
+                   String status, String structure, String explanationVi, String conjugationGroup,
+                   List<GrammarSentence> sentences, VocabData vocab) {
+        this(title,reading,romaji,meaningEn,meaningVi,status,structure,explanationVi,conjugationGroup,sentences,vocab,null);
+    }
     CatalogContent(String title, String reading, String romaji, String meaningEn, String meaningVi,
                    String status, String structure, String explanationVi, String conjugationGroup,
                    List<GrammarSentence> sentences) {
         this(title,reading,romaji,meaningEn,meaningVi,status,structure,explanationVi,conjugationGroup,sentences,null);
     }
     CatalogContent withVocab(VocabData data) {
-        return new CatalogContent(title,reading,romaji,meaningEn,meaningVi,status,structure,explanationVi,conjugationGroup,sentences,data);
+        return new CatalogContent(title,reading,romaji,meaningEn,meaningVi,status,structure,explanationVi,conjugationGroup,sentences,data,grammarSource);
     }
 }
 record CatalogEntry(String id, String kind, String level, int lesson, int position,

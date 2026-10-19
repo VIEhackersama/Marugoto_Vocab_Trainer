@@ -7,7 +7,7 @@ import { BrowserCollector } from './browser.mjs';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
-export async function startServer({ port = 4319, dataDirectory = path.join(project, 'data/bunpro-collector'), sample, allVocab, collector, workerOptions } = {}) {
+export async function startServer({ port = 4319, dataDirectory = path.join(project, 'data/bunpro-collector'), sample, allVocab, vocabCatalogs = {}, collector, workerOptions } = {}) {
   let store, worker, ready = false, verifying = false, actionBusy = false;
   const server = http.createServer(async (req, res) => {
     const send = (status, value, type = 'application/json; charset=utf-8') => {
@@ -50,7 +50,7 @@ export async function startServer({ port = 4319, dataDirectory = path.join(proje
         if (verifying) return send(409, { error: 'Đang đối chiếu mẫu; hãy đợi.' });
         if (url.pathname === '/api/verify') {
           if (worker.task) return send(409, { error: 'Đợi lượt thu thập hoàn thành hoặc tạm dừng trước khi đối chiếu.' });
-          const vocabOnly = store.run.scope === 'N5_VOCAB_ALL';
+          const vocabOnly = /^N[45]_VOCAB_ALL$/.test(store.run.scope);
           const captured = store.run.items.filter(e => e.kind === 'VOCAB' && e.status === 'CAPTURED');
           const ordered = [...captured].sort((a,b) => a.exampleCount - b.exampleCount);
           const items = vocabOnly ? [...new Map([ordered[0], ordered[1], ordered.at(-1), captured.at(-1), ...captured].filter(Boolean).map(e=>[e.id,e])).values()].slice(0,4)
@@ -85,18 +85,21 @@ export async function startServer({ port = 4319, dataDirectory = path.join(proje
           await worker.start(); return send(202, { message: 'Worker đang chạy.' });
         }
         if (url.pathname === '/api/pause') { await worker.pause(); return send(200, { message: 'Đã yêu cầu tạm dừng.' }); }
-        const workers = url.pathname.match(/^\/api\/workers\/([12])$/);
+        const workers = url.pathname.match(/^\/api\/workers\/([1-4])$/);
         if (workers) {
           if (worker.task) return send(409, {error:'Tạm dừng và đợi các mục hiện tại kết thúc trước khi đổi số worker.'});
           await worker.setConcurrency(Number(workers[1]));
           return send(200,{message:`Đã đặt ${worker.concurrency} worker. Bấm Tiếp tục để chạy.`});
         }
         if (url.pathname === '/api/retry') { await worker.retry(); return send(202, { message: 'Đang thử lại các mục lỗi.' }); }
-        if (url.pathname === '/api/new' || url.pathname === '/api/full-vocab') {
+        const fullVocab = url.pathname.match(/^\/api\/full-vocab(?:\/(N[45]))?$/);
+        if (url.pathname === '/api/new' || fullVocab) {
           if (worker.task) return send(409, { error: 'Đợi worker dừng trước khi tạo lượt mới.' });
-          const full = url.pathname === '/api/full-vocab' || store.run.scope === 'N5_VOCAB_ALL';
-          if (full && !allVocab) return send(409, { error: 'Chưa có danh mục toàn bộ N5.' });
-          await store.create(full ? allVocab : sample, full ? 'N5_VOCAB_ALL' : 'N5_SAMPLE');
+          const currentLevel = store.run.scope?.match(/^(N[45])_VOCAB_ALL$/)?.[1];
+          const level = fullVocab ? fullVocab[1] || 'N5' : currentLevel;
+          if (level && !vocabCatalogs[level]) return send(409, { error: `Chưa có danh mục toàn bộ ${level}.` });
+          await store.report();
+          await store.create(level ? vocabCatalogs[level] : sample, level ? `${level}_VOCAB_ALL` : 'N5_SAMPLE');
           await worker.setConcurrency(worker.concurrency);
           return send(201, { message: `Đã tạo lượt ${store.run.items.length} mục; bấm Bắt đầu. Lượt cũ vẫn được giữ.` });
         }
@@ -126,7 +129,11 @@ export async function startServer({ port = 4319, dataDirectory = path.join(proje
       const vocab = JSON.parse(await readFile(path.join(root, 'n5-vocab-source.json'), 'utf8'));
       sample = selectSample(grammar, vocab);
       allVocab = selectAllVocab(vocab);
+      try {
+        vocabCatalogs.N4 = selectAllVocab(JSON.parse(await readFile(path.join(root, 'n4-vocab-source.json'), 'utf8')));
+      } catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
+    if (allVocab) vocabCatalogs.N5 = allVocab;
     collector ||= new BrowserCollector(path.join(dataDirectory, 'profile'));
     store = await new RunStore(path.join(dataDirectory, 'runs'), sample).init();
     worker = new Worker(store, collector, workerOptions); ready = true;

@@ -22,7 +22,7 @@ class BunproController {
         if(!Set.of("VOCAB","GRAMMAR").contains(kind)) throw new ResponseStatusException(BAD_REQUEST,"Loại nội dung không hợp lệ.");
         return service.entries(kind,level);
     }
-    @GetMapping("/inventory") CatalogImportResult inventory() { return service.inventory(); }
+    @GetMapping("/inventory") CatalogImportResult inventory(@RequestParam(defaultValue="N5") String level) { level(level); return service.inventory(level); }
     @PostMapping("/import") CatalogImportResult importSnapshot(@RequestBody CatalogSnapshot snapshot) { return service.importSnapshot(snapshot); }
     @PutMapping("/entries/{id}") @ResponseStatus(NO_CONTENT)
     void edit(@PathVariable String id,@RequestBody CatalogContent content) { service.edit(id,content); }

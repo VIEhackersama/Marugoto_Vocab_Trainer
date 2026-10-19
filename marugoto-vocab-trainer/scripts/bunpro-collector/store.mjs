@@ -24,11 +24,13 @@ export function selectSample(grammar, vocab) {
   });
 }
 export function selectAllVocab(source) {
-  if (!source.entries?.length || source.expectedCount && source.expectedCount !== source.entries.length) throw new Error('Danh mục N5 chưa đủ số mục dự kiến.');
+  const level = source.level || 'N5';
+  if (!/^N[1-5]$/.test(level)) throw new Error('Cấp độ danh mục không hợp lệ.');
+  if (!source.entries?.length || source.expectedCount && source.expectedCount !== source.entries.length) throw new Error(`Danh mục ${level} chưa đủ số mục dự kiến.`);
   const items = source.entries.map(entry => {
     const url = new URL(entry.url);
     if (url.origin !== 'https://bunpro.jp' || !url.pathname.startsWith('/vocabs/')) throw new Error('URL từ vựng không hợp lệ.');
-    return { id: createHash('sha256').update(`VOCAB:${url.origin}${url.pathname}`).digest('hex').slice(0, 24), kind:'VOCAB', lesson:entry.lesson,
+    return { id: createHash('sha256').update(`VOCAB:${url.origin}${url.pathname}`).digest('hex').slice(0, 24), kind:'VOCAB', level, lesson:entry.lesson,
       title:entry.spelling || entry.title, sourceUrl:entry.url, status:'QUEUED', completeness:'NOT_CHECKED', attempts:0, error:null, exampleCount:0 };
   });
   if (new Set(items.map(e => e.id)).size !== items.length) throw new Error('Danh mục có URL từ vựng trùng.');
@@ -100,7 +102,7 @@ export class RunStore {
     const entries = [];
     for (const item of this.run.items) entries.push({ ...item, result: item.status === 'CAPTURED' ? await this.result(item.id) : null });
     return { version: 1, purpose: 'bunpro-source-capture (không phải snapshot import kho học)', runId: this.run.id,
-      createdAt: this.run.createdAt, updatedAt: this.run.updatedAt, status: this.run.status, counts: counts(this.run), entries };
+      scope: this.run.scope, createdAt: this.run.createdAt, updatedAt: this.run.updatedAt, status: this.run.status, counts: counts(this.run), entries };
   }
   async report({ includeExport = true } = {}) {
     this.reporting = (this.reporting || Promise.resolve()).catch(() => {}).then(() => this.writeReport(includeExport));
@@ -109,7 +111,8 @@ export class RunStore {
   async writeReport(includeExport) {
     if (includeExport) await writeJson(path.join(this.folder, 'export.json'), await this.export());
     const totals = counts(this.run);
-    const report = [`# Bunpro N5 — ${this.run.id}`, `Trạng thái: ${this.run.status}`, `Đã lấy: ${totals.captured}/${totals.total} · Lỗi: ${totals.failed} · Cần kiểm tra: ${totals.needsReview} · Ví dụ: ${totals.examples}`, '',
+    const level = this.run.scope?.split('_')[0] || 'N5';
+    const report = [`# Bunpro ${level} — ${this.run.id}`, `Trạng thái: ${this.run.status}`, `Đã lấy: ${totals.captured}/${totals.total} · Lỗi: ${totals.failed} · Cần kiểm tra: ${totals.needsReview} · Ví dụ: ${totals.examples}`, '',
       ...this.run.items.map(e => `- ${e.kind} lesson ${e.lesson}: ${e.title} — ${e.status}, ${e.exampleCount} ví dụ${e.error ? ` — ${e.error}` : ''}`)].join('\n');
     await writeFile(path.join(this.folder, 'report.md'), report + '\n', 'utf8');
     return report;
@@ -121,12 +124,12 @@ export class Worker {
     this.store = store; this.collector = collector; this.timeoutMs = timeoutMs;
     this.spacingMs = spacingMs; this.retryMs = retryMs; this.task = null;
     this.recoveryRetryMs = recoveryRetryMs;
-    if (![1,2].includes(concurrency)) throw new Error('Chỉ hỗ trợ 1 hoặc 2 worker.');
+    if (![1,2,3,4].includes(concurrency)) throw new Error('Chỉ hỗ trợ từ 1 đến 4 worker.');
     this.concurrency = concurrency; this.admission = Promise.resolve(); this.nextStartAt = 0;
   }
   async setConcurrency(count) {
     if (this.task) throw new Error('Tạm dừng và đợi các mục đang lấy kết thúc trước khi đổi số worker.');
-    if (![1,2].includes(count)) throw new Error('Chỉ hỗ trợ 1 hoặc 2 worker.');
+    if (![1,2,3,4].includes(count)) throw new Error('Chỉ hỗ trợ từ 1 đến 4 worker.');
     this.concurrency = count; this.store.run.workerConcurrency = count; await this.store.save();
   }
   async start() {

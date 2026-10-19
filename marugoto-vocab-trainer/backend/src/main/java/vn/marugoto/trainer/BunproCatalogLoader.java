@@ -13,13 +13,15 @@ class BunproCatalogLoader implements ApplicationRunner {
     private final BunproVocabService vocab;
     BunproCatalogLoader(BunproService service,ObjectMapper json,BunproVocabService vocab) { this.service=service; this.json=json; this.vocab=vocab; }
     @Override public void run(ApplicationArguments args) throws Exception {
-        var resource=new ClassPathResource("bunpro/n5.json");
-        if(resource.exists()) try(var stream=resource.getInputStream()) {
-            service.importSnapshot(json.readValue(stream,CatalogSnapshot.class));
-        }
-        var capture=new ClassPathResource("bunpro/n5-vocab-capture.json");
-        if(capture.exists()) try(var stream=capture.getInputStream()) {
-            vocab.importCapture(json.readTree(stream));
+        for(String level:java.util.List.of("n5","n4")) {
+            var resource=new ClassPathResource("bunpro/"+level+".json");
+            if(resource.exists()) try(var stream=resource.getInputStream()) {
+                service.importSnapshot(json.readValue(stream,CatalogSnapshot.class));
+            }
+            var capture=new ClassPathResource("bunpro/"+level+"-vocab-capture.json");
+            if(capture.exists()) try(var stream=capture.getInputStream()) {
+                vocab.importCapture(json.readTree(stream));
+            }
         }
     }
 }

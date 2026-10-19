@@ -32,24 +32,25 @@ class BunproVocabService {
     }
     private String write(Object value) { return json.writeValueAsString(value); }
     private Instant now() { return clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MILLIS); }
-    private Set<String> urls() { return new HashSet<>(jdbc.queryForList("SELECT source_url FROM bunpro_entries WHERE kind='VOCAB' AND level='N5'",String.class)); }
+    private Set<String> urls() { return new HashSet<>(jdbc.queryForList("SELECT source_url FROM bunpro_entries WHERE kind='VOCAB'",String.class)); }
     CapturePreview preview(JsonNode capture) { return parser.parse(capture,urls()).preview(); }
 
     @Transactional
     public CapturePreview importCapture(JsonNode capture) {
         var parsed=parser.parse(capture,urls());
         if(!parsed.preview().errors().isEmpty()) throw new ResponseStatusException(BAD_REQUEST,String.join("\n",parsed.preview().errors()));
+        String level=BunproCaptureParser.level(capture);
         for(var item:parsed.entries()) {
             var matches=jdbc.queryForList("SELECT id,kind,level FROM bunpro_entries WHERE source_url=?",item.url());
             String id;
             if(matches.isEmpty()) {
                 id=sourceId(item.url());
                 var c=new CatalogContent(item.title(),item.reading(),"",item.meaning(),"","MISSING","","",null,List.of());
-                jdbc.update("INSERT INTO bunpro_entries(id,kind,level,lesson,position,source_url,content_json,snapshot_version) VALUES(?,'VOCAB','N5',?,?,?,?,?)",
-                        id,item.lesson(),item.position(),item.url(),write(c),BunproCaptureParser.str(capture,"runId"));
+                jdbc.update("INSERT INTO bunpro_entries(id,kind,level,lesson,position,source_url,content_json,snapshot_version) VALUES(?,'VOCAB',?,?,?,?,?,?)",
+                        id,level,item.lesson(),item.position(),item.url(),write(c),BunproCaptureParser.str(capture,"runId"));
             } else {
                 var match=matches.getFirst(); id=(String)match.get("id");
-                if(!"VOCAB".equals(match.get("kind")) || !"N5".equals(match.get("level")))
+                if(!"VOCAB".equals(match.get("kind")) || !level.equals(match.get("level")))
                     throw new ResponseStatusException(CONFLICT,"Nguồn đã được dùng bởi kho khác: "+item.url());
             }
             jdbc.update("""

@@ -60,6 +60,16 @@ class BunproService {
     private static void validateContent(CatalogContent c) {
         if (c == null || key(c.title()).isEmpty() || !Set.of("MISSING", "DRAFT", "VERIFIED").contains(c.status() == null ? "" : c.status()))
             throw new ResponseStatusException(BAD_REQUEST, "Nội dung hoặc trạng thái kiểm tra không hợp lệ.");
+        if(c.grammarSource()!=null) {
+            var source=c.grammarSource(); Set<String> sourceIds=new HashSet<>();
+            if(source.examples()==null || !Set.of("NEEDS_REVIEW","REVIEWED").contains(source.completeness()==null?"":source.completeness()))
+                throw new ResponseStatusException(BAD_REQUEST,"Nguồn ngữ pháp không hợp lệ.");
+            for(var ex:source.examples()) {
+                if(ex==null || key(ex.id()).isEmpty() || !sourceIds.add(ex.id()) || key(ex.sentence()).isEmpty() || key(ex.translationEn()).isEmpty() || ex.tokens()==null ||
+                    ex.tokens().stream().anyMatch(t->t==null || t.text()==null) || !ex.sentence().equals(ex.tokens().stream().map(RubyToken::text).reduce("",String::concat)))
+                    throw new ResponseStatusException(BAD_REQUEST,"Ví dụ nguồn ngữ pháp không hợp lệ.");
+            }
+        }
         Set<String> ids = new HashSet<>();
         for (GrammarSentence s : sentences(c)) {
             if (s == null || key(s.id()).isEmpty() || !ids.add(s.id()) ||
@@ -107,7 +117,8 @@ class BunproService {
                 snapshot_version=excluded.snapshot_version
                 """, item.id(),item.kind(),item.level(),item.lesson(),item.position(),sourceUrl(item.sourceUrl()),write(item.content()),snapshot.snapshotVersion());
         }
-        return inventory();
+        var levels=snapshot.entries().stream().map(CatalogItem::level).distinct().toList();
+        return inventory(levels.size()==1?levels.getFirst():"N5");
     }
 
     @Transactional(readOnly = true)
@@ -262,7 +273,10 @@ class BunproService {
     }
 
     public CatalogImportResult inventory() {
-        var vocab=entries("VOCAB","N5"); var grammar=entries("GRAMMAR","N5");
+        return inventory("N5");
+    }
+    public CatalogImportResult inventory(String level) {
+        var vocab=entries("VOCAB",level); var grammar=entries("GRAMMAR",level);
         int missing=(int)java.util.stream.Stream.concat(vocab.stream(),grammar.stream()).filter(e -> !ready(e.content())).count();
         int exercises=(int)grammar.stream().filter(e -> sentences(e.content()).stream().noneMatch(BunproService::exerciseReady)).count();
         return new CatalogImportResult(vocab.size(),grammar.size(),missing,exercises);

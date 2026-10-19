@@ -45,6 +45,8 @@ async function poll() {
   if (polling) return; polling = true;
   try {
     state = await request('/api/status'); lastReceived = Date.now();
+    const level = state.scope?.split('_')[0] || 'N5';
+    $('#collector-title').textContent = `Thu thập ${level}`; document.title = `Bunpro · Thu thập ${level}`;
     $('#connection').textContent = 'Worker kết nối'; $('#connection').classList.remove('offline');
     $('#heartbeat').textContent = `Nhận tiến độ: ${new Date(lastReceived).toLocaleTimeString('vi-VN')}`;
     $('#run-status').textContent = state.verificationBusy ? 'Đang đối chiếu 4 trang nguồn' : `${labels[state.status]} · ${state.workerConcurrency || 1} worker`;
@@ -55,7 +57,7 @@ async function poll() {
     $('#reason').textContent = state.reason || ''; $('#run-id').textContent = state.id;
     for (const button of document.querySelectorAll('[data-action]')) {
       const action = button.dataset.action;
-      button.disabled = pendingAction || state.verificationBusy || (action === 'pause' ? !state.workerBusy : ['login','new','full-vocab','retry','resume','workers/1','workers/2'].includes(action) ? state.workerBusy : action === 'start' ? state.workerBusy || state.status === 'COMPLETED' : false);
+      button.disabled = pendingAction || state.verificationBusy || (action === 'pause' ? !state.workerBusy : (action.startsWith('workers/') || action.startsWith('full-vocab') || ['login','new','retry','resume'].includes(action)) ? state.workerBusy : action === 'start' ? state.workerBusy || state.status === 'COMPLETED' : false);
     }
     renderItems(); await renderDetail();
   } catch (error) {
@@ -67,7 +69,7 @@ async function poll() {
 $('.toolbar').addEventListener('click', async event => {
   const button = event.target.closest('[data-action]'); if (!button) return;
   button.disabled = true; pendingAction = true;
-  try { const result = await request(`/api/${button.dataset.action}`, { method: 'POST' }); message(result.message); if (['new','full-vocab'].includes(button.dataset.action)) { selected = null; detailKey = ''; queuePage = 0; $('#detail').innerHTML = '<p class="empty">Chọn một mục để xem nội dung.</p>'; } }
+  try { const result = await request(`/api/${button.dataset.action}`, { method: 'POST' }); message(result.message); if (button.dataset.action === 'new' || button.dataset.action.startsWith('full-vocab')) { selected = null; detailKey = ''; queuePage = 0; $('#detail').innerHTML = '<p class="empty">Chọn một mục để xem nội dung.</p>'; } }
   catch (error) { message(error.message, true); } finally { pendingAction = false; await poll(); }
 });
 $('#items').addEventListener('click', async event => { const button = event.target.closest('[data-id]'); if (!button) return; selected = button.dataset.id; renderItems(); try { await renderDetail(true); } catch (error) { message(error.message, true); } });

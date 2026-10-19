@@ -78,14 +78,24 @@ Bộ trích xuất `bunpro-dom-2-no-audio` lưu nghĩa ở tiêu đề, toàn b�
 
 Đóng chat/dashboard không dừng tiến trình nền. Sau khi tắt máy hoặc worker bị ngắt, chạy `npm run collector` rồi bấm **Tiếp tục**; các mục đã lưu được dùng lại. Lượt 1.100 mục không gọi mô hình AI và không thay đổi API import/kho học.
 
-## Hai worker song song
+## Từ 1 đến 4 worker song song
 
-Dashboard cho chọn **1 worker** hoặc **2 worker** sau khi tạm dừng và đợi các mục đang lấy lưu xong. Sau đó bấm **Tiếp tục**. Số worker được lưu trong state.json và khôi phục sau khi khởi động lại. API: `POST /api/workers/1` hoặc `/api/workers/2`; từ chối đổi khi còn đang chạy.
+Dashboard cho chọn **1**, **2**, **3** hoặc **4 worker** sau khi tạm dừng và đợi các mục đang lấy lưu xong. Sau đó bấm **Tiếp tục**. Số worker được lưu trong state.json và khôi phục sau khi khởi động lại. API: `POST /api/workers/1` đến `/api/workers/4`; từ chối đổi khi còn đang chạy.
 
-Hai worker dùng hai tab trong cùng một browser context/profile, không mở hai tiến trình tranh chấp profile. Mỗi mục được giữ riêng trong suốt quá trình thử lại. Bộ điều phối chỉ báo kết thúc và xuất JSON sau khi cả hai worker đã dừng. Giữ tối thiểu 2 giây giữa các lần bắt đầu tải trang trên toàn bộ worker; lỗi đăng nhập/CAPTCHA/giới hạn truy cập dừng giao thêm mục, các mục đang lấy được lưu xong.
+Các worker dùng tối đa bốn tab trong cùng một browser context/profile, không mở hai tiến trình tranh chấp profile. Mỗi mục được giữ riêng trong suốt quá trình thử lại. Bộ điều phối chỉ báo kết thúc và xuất JSON sau khi tất cả worker đã dừng. Giữ tối thiểu 2 giây giữa các lần bắt đầu tải trang trên toàn bộ worker; lỗi đăng nhập/CAPTCHA/giới hạn truy cập dừng giao thêm mục, các mục đang lấy được lưu xong.
 
 ## Tự phục hồi lỗi phiên/trình duyệt
 
 Khi trình duyệt bị đóng/mất kết nối, không mở được trình duyệt, hoặc Bunpro tạm hiển thị thiếu quyền gói học/phiên đăng nhập, worker tự thử tối đa **3 lần tổng cộng**, chờ **10 giây rồi 20 giây** giữa các lần. Nếu trình duyệt đã đóng, lần sau mở lại profile đang lưu. Không lấy lại các mục đã hoàn thành. Dashboard hiển thị “Chờ tự thử lại” và thời điểm thử tiếp theo.
 
 Sau 3 lần vẫn lỗi, mục được đánh dấu cần can thiệp và cả lượt chuyển `AWAITING_USER`; xử lý phiên rồi bấm **Tiếp tục** hoặc **Thử lại mục lỗi** để cấp lại số lần thử. CAPTCHA và giới hạn truy cập vẫn dừng ngay. Lỗi tải/nội dung riêng lẻ giữ chính sách 3 lần tổng cộng với khoảng chờ 3/6 giây. Cơ chế này chạy trong tiến trình Node; nếu cả tiến trình bị tắt, vẫn cần khởi động lại dịch vụ.
+
+## Vocab N4
+
+Danh mục lấy ngày 12/10/2026 từ https://bunpro.jp/decks/lh0vxb/bunpro-n4-vocab có 1.095 URL duy nhất trên 22 lesson, giữ query deck_id=19. Các lesson không đều 50 mục; collector kiểm tra tổng và URL duy nhất theo danh mục nguồn.
+
+Bấm **Toàn bộ từ vựng N4**, rồi **Bắt đầu**. API `POST /api/full-vocab/N4` tạo lượt `N4_VOCAB_ALL`; `/api/new` tạo lại đúng cấp độ của lượt hiện tại. Tạo lượt mới lưu báo cáo/JSON của lượt trước và chuyển dashboard sang hàng đợi mới, giữ thư mục cũ. Cấu hình 4 worker được giữ qua các lượt và sau khi khởi động lại. Export bổ sung `scope`; các mục N4 có `level: N4`. Báo cáo, tiêu đề dashboard và kiểm tra lại bốn từ theo cấp độ đang chạy. Đây là dữ liệu nguồn chưa dịch/nhập vào kho học; vẫn cần đối chiếu độ đầy đủ.
+
+### Sửa nhận diện trang xác minh (12/10/2026)
+
+Worker từng dừng nhầm ở 突然 vì bản dịch ví dụ chứa “just a moment ago”. Bộ nhận diện nay xét sự hiện diện của nội dung lesson, tiêu đề trang xác minh và các điều khiển challenge đang hiển thị; không nhận cụm từ trong câu ví dụ là CAPTCHA. Trang xác minh thật và HTTP 429 vẫn dừng lượt. Kiểm thử trình duyệt bao phủ cả câu ví dụ này và trang challenge thật.
