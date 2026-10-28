@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "documentPath": "public/exams/de-01-phan-tich-2026-10-28.json",
+  "questions": 55,
+  "automaticQuestions": 50,
+  "essays": 5,
+  "maxScore": 100,
+  "fullKeyScore": 100,
+  "emptyScore": 0,
+  "additionalAcceptedVariantsChecked": 18,
+  "checks": [
+    "backend contract",
+    "read-only preview",
+    "idempotent import",
+    "hidden keys before submit",
+    "all correct answers",
+    "all declared fill variants",
+    "empty submission",
+    "essay exclusion from score",
+    "actual file upload",
+    "55-question navigation",
+    "furigana",
+    "mobile overflow",
+    "reference/checklist reveal after submission"
+  ],
+  "limitation": "Technical verification and author self-review; no independent teacher review."
+}

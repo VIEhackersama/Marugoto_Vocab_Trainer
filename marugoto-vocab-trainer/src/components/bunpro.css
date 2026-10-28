@@ -84,3 +84,14 @@
 @media(max-width:850px) { .vocab-workspace .catalog-layout.has-detail { grid-template-columns: 1fr; }.vocab-detail-host { position: fixed; inset: 0; z-index: 100; background: var(--surface); overflow: auto; }.vocab-detail-host .vocab-detail { min-height: 100dvh; max-height: none; border: 0; border-radius: 0; padding: 1.3rem; }.vocab-detail .catalog-detail-top { position: sticky; top: -1.3rem; background: var(--surface); padding: .8rem 0; z-index: 1; }.vocab-interval-settings > div:first-of-type { grid-template-columns: repeat(2,minmax(0,1fr)); }.vocab-batch { gap: .65rem; }.vocab-progress-cell { padding: .9rem; }.vocab-progress-cell span { font-size: .75rem; } }
 @media(prefers-reduced-motion:reduce) { .vocab-progress-cell,.catalog-row { transition: none; }.vocab-progress-cell:hover { transform: none; } }
 @media(max-width:850px) { .catalog-layout.has-detail { grid-template-columns: 1fr; }.catalog-detail { position: static; max-height: none; grid-row: 1; }.catalog-summary { text-align: left; }.catalog-row { grid-template-columns: minmax(5rem, .8fr) minmax(0, 2fr); }.catalog-state { grid-column: 2; }.grammar-review-card { padding: 1.2rem; }.grammar-ratings { grid-template-columns: repeat(2, 1fr); } }
+
+.progress-import { display: grid; gap: 16px; min-width: 0; }
+.progress-import > label { display: grid; gap: 8px; }
+.progress-import textarea { width: 100%; box-sizing: border-box; font: 14px/1.6 monospace; resize: vertical; }
+.progress-import .catalog-notice { overflow-wrap: anywhere; }
+.progress-table-scroll { overflow-x: auto; max-width: 100%; }
+.progress-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.progress-table th, .progress-table td { padding: 12px; border-bottom: 1px solid var(--border, #ddd); vertical-align: top; min-width: 140px; }
+.progress-table th:first-child, .progress-table td:first-child { min-width: 50px; }
+.progress-table small { display: block; margin-top: 6px; opacity: .75; }
+.progress-table input[type="checkbox"] { width: 20px; height: 20px; }

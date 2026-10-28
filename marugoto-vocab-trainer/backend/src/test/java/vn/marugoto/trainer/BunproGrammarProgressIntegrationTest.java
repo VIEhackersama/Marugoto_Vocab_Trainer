@@ -46,7 +46,7 @@ class BunproGrammarProgressIntegrationTest {
         assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM bunpro_grammar_review_logs",Integer.class));
     }
     @Test void reviewUsesSharedTierRulesAndConsistentFsrsDueDates() {
-        var e=pattern(); at(now).learn(e.id());
+        var e=pattern(); at(now).learn(e.id()); jdbc.update("UPDATE bunpro_grammar_cards SET stage=NULL WHERE entry_id=?",e.id());
         assertEquals(1,at(now).queue("N5").size());
         assertTrue(grammar.entries("N5").getFirst().content().sentences().isEmpty());
         assertFalse(grammar.detail(e.id()).content().sentences().isEmpty());
@@ -67,7 +67,7 @@ class BunproGrammarProgressIntegrationTest {
         assertEquals(4,master.reviewCount());
     }
     @Test void settingsAreIndependentAndBackupRestoresProgressAndMemory() {
-        var e=pattern(); at(now).learn(e.id());
+        var e=pattern(); at(now).learn(e.id()); jdbc.update("UPDATE bunpro_grammar_cards SET stage=NULL WHERE entry_id=?",e.id());
         var result=at(now).review(e.id(),rating("GOOD",0,"grammar-backup"));
         var vocabSettings=vocab.intervals();
         grammar.setIntervals(new VocabIntervals(List.of(2,4,8,16,32)));

@@ -1,0 +1,59 @@
+Hãy tạo một đề kiểm tra tiếng Nhật để import trực tiếp vào Marugoto Vocab Trainer.
+
+Yêu cầu của tôi: [ĐIỀN trình độ, nội dung đã học, số câu, độ khó, thời lượng và mục tiêu].
+
+Chỉ trả về nội dung một file JSON UTF-8 hợp lệ, không dùng code fence, không thêm văn bản ngoài JSON. Chọn ID mới có ý nghĩa cho mỗi đề. Tuân thủ Marugoto Exam JSON schemaVersion 1 dưới đây. Không tạo DOCX/PDF. Không gọi API.
+
+CẤU TRÚC
+{
+  "schemaVersion": 1,
+  "id": "n5-test-001",
+  "title": "Tên đề",
+  "description": "Mô tả ngắn",
+  "instructions": "Hướng dẫn làm bài",
+  "timeLimitMinutes": 30,
+  "sections": [{
+    "id": "grammar",
+    "title": "Ngữ pháp",
+    "instructions": "Hướng dẫn phần thi",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "single_choice",
+        "prompt": "学校（　）日本語を勉強します。",
+        "options": [{"id":"a","text":"で"},{"id":"b","text":"に"},{"id":"c","text":"を"}],
+        "correctOptionId": "a",
+        "points": 1,
+        "explanation": "で chỉ nơi diễn ra hoạt động."
+      },
+      {
+        "id": "q2",
+        "type": "fill_blank",
+        "prompt": "バス{{b1}}学校{{b2}}行きます。",
+        "blanks": [{"id":"b1","acceptedAnswers":["で"],"points":1},{"id":"b2","acceptedAnswers":["に","へ"],"points":1}],
+        "explanation": "で chỉ phương tiện; に hoặc へ chỉ đích đến."
+      },
+      {
+        "id": "q3",
+        "type": "essay",
+        "prompt": "Viết ba câu giới thiệu bản thân.",
+        "modelAnswer": "私はアンです。学生です。ベトナム人です。",
+        "explanation": "Mẫu tham khảo, không phải đáp án duy nhất. Dùng ～は～です; không tự cho điểm câu này."
+      }
+    ]
+  }]
+}
+
+QUY TẮC BẮT BUỘC
+1. Không thêm trường ngoài các trường trong mẫu. description, instructions, timeLimitMinutes là tùy chọn. Mỗi phần có thể thêm passage cho đoạn đọc dùng chung; tách thành phần khác nếu dùng đoạn đọc khác.
+2. ID có 1–120 ký tự, bắt đầu bằng chữ/số, chỉ chứa A-Z a-z 0-9 _ . : -. Không dùng constructor, prototype. ID phần không trùng nhau; ID câu duy nhất trong toàn đề; ID lựa chọn/chỗ trống duy nhất trong câu.
+3. Mỗi single_choice có 2–20 lựa chọn, đúng một đáp án. correctOptionId phải có trong options. Không ghi đáp án đúng vào prompt hoặc nội dung lựa chọn dưới dạng gợi ý.
+4. Mỗi fill_blank có 1–100 chỗ trống; mỗi {{id}} xuất hiện đúng một lần trong prompt và khớp một phần tử blanks. Mỗi acceptedAnswers có ít nhất một chuỗi đúng. Chỉ yêu cầu nhập phần đang thiếu, không lặp lại phần đã in sẵn. Liệt kê đầy đủ các biến thể hợp lệ.
+5. Điền từ chỉ so khớp toàn chuỗi sau NFC và bỏ khoảng trắng đầu/cuối. Không tự coi hiragana = katakana, không bỏ trường âm, dấu tiếng Việt, dấu câu hoặc sai dạng chia. Muốn chấp nhận cách viết khác phải khai báo rõ trong acceptedAnswers.
+6. points là số nguyên 1–100000, mặc định 1 cho mỗi single_choice hoặc mỗi blank. Không đặt points ở fill_blank hay essay. Câu essay luôn có modelAnswer và explanation, không tính điểm tự động.
+7. timeLimitMinutes nếu có phải là số nguyên 1–1440; bỏ trường để không giới hạn. Mỗi đề có 1–100 phần, tổng tối đa 1000 câu. Giữ thứ tự câu và lựa chọn dự định hiển thị.
+8. explanation bắt buộc cho mọi câu, viết tiếng Việt: giải thích lý do đáp án đúng và điểm ngữ pháp/dạng từ quan trọng, nêu bẫy khi hữu ích. Đáp án và giải thích chỉ đặt trong các trường tương ứng, không lộ trong nội dung đề.
+9. Nội dung hiển thị (description, instructions, passage, prompt, option.text, explanation, modelAnswer) nhận chuỗi hoặc mảng token, ví dụ [{"text":"学校","reading":"がっこう"},{"text":"へ行きます。"}]. title và id vẫn là chuỗi thường. Không nhập HTML/Markdown; xuống dòng bằng \n.
+10. Với đề tiếng Nhật, dùng token reading cho từ có kanji cần hỗ trợ. Trang có thể tắt furigana; không thêm cách đọc vào text nếu chỉ muốn nó hiện khi bật furigana. Không đặt reading lên token chứa {{id}}, không chia placeholder qua nhiều token.
+11. Chuỗi và token.text không được trống/chỉ có khoảng trắng. Có thể ghép khoảng trắng hoặc xuống dòng vào token chứa nội dung. Mỗi chuỗi tối đa 200000 ký tự, mỗi nội dung token tối đa 10000 token.
+12. Kiểm tra lại tất cả đáp án, độ tự nhiên, kiến thức đúng phạm vi đã học và tính duy nhất của đáp án trắc nghiệm trước khi trả JSON. Đoạn đọc phải đủ thông tin để trả lời các câu hỏi phụ thuộc nó.

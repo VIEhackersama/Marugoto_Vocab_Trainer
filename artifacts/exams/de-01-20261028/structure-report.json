@@ -1,0 +1,293 @@
+{
+  "filename": "de-01-phan-tich-2026-10-28.json",
+  "questions": 55,
+  "score": 100,
+  "types": {
+    "single_choice": 31,
+    "fill_blank": 19,
+    "essay": 5
+  },
+  "answerPositions": {
+    "a": 7,
+    "b": 8,
+    "c": 8,
+    "d": 8
+  },
+  "coverage": [
+    {
+      "question": 1,
+      "type": "single_choice",
+      "topic": "が trong câu phủ định"
+    },
+    {
+      "question": 2,
+      "type": "single_choice",
+      "topic": "は đối chiếu"
+    },
+    {
+      "question": 3,
+      "type": "single_choice",
+      "topic": "に tồn tại và で hoạt động"
+    },
+    {
+      "question": 4,
+      "type": "single_choice",
+      "topic": "hai chức năng của で"
+    },
+    {
+      "question": 5,
+      "type": "single_choice",
+      "topic": "に và へ với 行く"
+    },
+    {
+      "question": 6,
+      "type": "single_choice",
+      "topic": "から điểm bắt đầu và lý do"
+    },
+    {
+      "question": 7,
+      "type": "single_choice",
+      "topic": "と liệt kê và か lựa chọn"
+    },
+    {
+      "question": 8,
+      "type": "single_choice",
+      "topic": "の bổ nghĩa và の hỏi"
+    },
+    {
+      "question": 9,
+      "type": "single_choice",
+      "topic": "ある và いる"
+    },
+    {
+      "question": 10,
+      "type": "single_choice",
+      "topic": "する nhận nghĩa từ ngữ cảnh"
+    },
+    {
+      "question": 11,
+      "type": "fill_blank",
+      "topic": "godan う → わない"
+    },
+    {
+      "question": 12,
+      "type": "fill_blank",
+      "topic": "会う và 合う: chọn kanji theo nghĩa"
+    },
+    {
+      "question": 13,
+      "type": "fill_blank",
+      "topic": "ngoại lệ て của 行く"
+    },
+    {
+      "question": 14,
+      "type": "fill_blank",
+      "topic": "godan む → んで"
+    },
+    {
+      "question": 15,
+      "type": "fill_blank",
+      "topic": "không phân loại mọi động từ る giống nhau"
+    },
+    {
+      "question": 16,
+      "type": "fill_blank",
+      "topic": "い-adjective phủ định quá khứ"
+    },
+    {
+      "question": 17,
+      "type": "fill_blank",
+      "topic": "な-adjective quá khứ lịch sự"
+    },
+    {
+      "question": 18,
+      "type": "fill_blank",
+      "topic": "な trước danh từ và の nối danh từ"
+    },
+    {
+      "question": 19,
+      "type": "fill_blank",
+      "topic": "細い và ngoại lệ いい"
+    },
+    {
+      "question": 20,
+      "type": "fill_blank",
+      "topic": "する và 来る ở thể て"
+    },
+    {
+      "question": 21,
+      "type": "single_choice",
+      "topic": "chủ thể trong mệnh đề bổ nghĩa"
+    },
+    {
+      "question": 22,
+      "type": "single_choice",
+      "topic": "người nói, người nghe và người trong nội dung nói"
+    },
+    {
+      "question": 23,
+      "type": "fill_blank",
+      "topic": "だ trong nội dung dẫn và と đánh dấu trích dẫn"
+    },
+    {
+      "question": 24,
+      "type": "single_choice",
+      "topic": "thể thường trong mệnh đề bổ nghĩa, lịch sự ở cuối"
+    },
+    {
+      "question": 25,
+      "type": "single_choice",
+      "topic": "んだ của 住んだ không phải hệ từ だ"
+    },
+    {
+      "question": 26,
+      "type": "fill_blank",
+      "topic": "の hỏi sau động từ và なの sau danh từ"
+    },
+    {
+      "question": 27,
+      "type": "single_choice",
+      "topic": "よ cung cấp thông tin và ね hướng đến chia sẻ"
+    },
+    {
+      "question": 28,
+      "type": "fill_blank",
+      "topic": "これ độc lập và この trước danh từ"
+    },
+    {
+      "question": 29,
+      "type": "single_choice",
+      "topic": "って trích dẫn trong lời nói thân mật"
+    },
+    {
+      "question": 30,
+      "type": "single_choice",
+      "topic": "cụm danh từ không đồng nghĩa một câu hoàn chỉnh"
+    },
+    {
+      "question": 31,
+      "type": "single_choice",
+      "topic": "phạm vi chia của cụm ている"
+    },
+    {
+      "question": 32,
+      "type": "single_choice",
+      "topic": "ている diễn tiến"
+    },
+    {
+      "question": 33,
+      "type": "single_choice",
+      "topic": "ている trạng thái sau biến đổi"
+    },
+    {
+      "question": 34,
+      "type": "single_choice",
+      "topic": "thói quen có thể diễn đạt bằng hai hình thức"
+    },
+    {
+      "question": 35,
+      "type": "fill_blank",
+      "topic": "chia phần いる sang quá khứ lịch sự"
+    },
+    {
+      "question": 36,
+      "type": "single_choice",
+      "topic": "もう + hoàn tất"
+    },
+    {
+      "question": 37,
+      "type": "single_choice",
+      "topic": "まだ + trạng thái/hoạt động vẫn tiếp tục"
+    },
+    {
+      "question": 38,
+      "type": "single_choice",
+      "topic": "もう + phủ định: không còn/nữa"
+    },
+    {
+      "question": 39,
+      "type": "fill_blank",
+      "topic": "てから nhấn hoàn tất A trước B"
+    },
+    {
+      "question": 40,
+      "type": "single_choice",
+      "topic": "て không tự mang thì"
+    },
+    {
+      "question": 41,
+      "type": "single_choice",
+      "topic": "đọc trình tự てから"
+    },
+    {
+      "question": 42,
+      "type": "single_choice",
+      "topic": "đọc もう và まだ trong lời dẫn"
+    },
+    {
+      "question": 43,
+      "type": "single_choice",
+      "topic": "tham chiếu その本"
+    },
+    {
+      "question": 44,
+      "type": "fill_blank",
+      "topic": "đọc phương tiện và địa điểm"
+    },
+    {
+      "question": 45,
+      "type": "fill_blank",
+      "topic": "đọc chủ thể ở cuối đoạn"
+    },
+    {
+      "question": 46,
+      "type": "single_choice",
+      "topic": "đọc tách thời gian và địa điểm"
+    },
+    {
+      "question": 47,
+      "type": "single_choice",
+      "topic": "nguồn phát biểu trong lời dẫn lồng"
+    },
+    {
+      "question": 48,
+      "type": "single_choice",
+      "topic": "đọc そこで và lý do"
+    },
+    {
+      "question": 49,
+      "type": "fill_blank",
+      "topic": "đọc mốc kết thúc với まで"
+    },
+    {
+      "question": 50,
+      "type": "fill_blank",
+      "topic": "đọc và tái tạo trình tự bằng てから"
+    },
+    {
+      "question": 51,
+      "type": "essay",
+      "topic": "phản biện quy tắc phủ định → は"
+    },
+    {
+      "question": 52,
+      "type": "essay",
+      "topic": "trích dẫn và thay đổi người thuật lại"
+    },
+    {
+      "question": 53,
+      "type": "essay",
+      "topic": "diễn tiến, thói quen, trạng thái và chia phần いる"
+    },
+    {
+      "question": 54,
+      "type": "essay",
+      "topic": "phân tích câu nhiều thành phần"
+    },
+    {
+      "question": 55,
+      "type": "essay",
+      "topic": "tự viết kết hợp các phần đã học"
+    }
+  ]
+}

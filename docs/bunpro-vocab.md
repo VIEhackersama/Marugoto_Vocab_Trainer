@@ -1,3 +1,5 @@
+> Cập nhật: giao diện hiện dùng cấp SRS 0–12 và nhập tiến độ hàng loạt. Xem [hướng dẫn hiện tại](bunpro-progress-import.md). Các quy tắc năm mức/FSRS dưới đây mô tả API và dữ liệu cũ.
+
 # Kho từ Bunpro N5 và lịch ôn riêng
 
 Kho N5 được bổ sung từ capture `run-2026-10-10T05-18-18-420Z-f9bde8b2`: **1.100 từ, 11.205 ví dụ**. Dữ liệu đóng gói tự nhập khi backend khởi động. Nghĩa Việt, ID và chỉnh sửa cá nhân hiện có được giữ lại. Nguồn vẫn ở trạng thái `NEEDS_REVIEW`; số ví dụ khớp JSON không chứng minh đầy đủ so với trang Bunpro.

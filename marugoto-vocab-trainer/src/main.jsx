@@ -44,6 +44,7 @@ import './styles.css';
 import './workspace.css';
 import { BunproWorkspace } from './components/BunproWorkspace.jsx';
 import { GrammarLearningWorkspace } from './components/GrammarLearningWorkspace.jsx';
+import { ExamWorkspace } from './components/ExamWorkspace.jsx';
 
 function dictionaryPreference(key, fallback, allowed) {
   try {
@@ -1654,6 +1655,7 @@ function App() {
       {sessionActive && !['quiz', 'review'].includes(tab) && <div className="session-return"><span>Phiên học đang tạm dừng · thời gian trả lời được giữ lại</span><button type="button" className="text-button" onClick={() => navigate('study')}>Tiếp tục phiên học <Icon name="arrow" size={15}/></button></div>}
       {loading && <section className="loading-workspace" aria-busy="true" aria-label="Đang tải bộ từ và tiến độ"><div className="skeleton skeleton-title"/><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/><span role="status">Đang tải bộ từ và tiến độ…</span></section>}
 
+      <ExamWorkspace active={tab === 'exams'}/>
       {tab === 'grammar' && <GrammarLearningWorkspace/>}
       {tab === 'bunpro' && <BunproWorkspace onLearned={async () => {
         await refreshDictionary(); await refreshDecks();

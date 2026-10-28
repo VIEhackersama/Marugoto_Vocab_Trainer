@@ -72,7 +72,7 @@ class BunproVocabService {
         json_array_length(d.data_json,'$.examples') AS example_count,
         json_extract(d.data_json,'$.partsOfSpeech') AS parts,
         json_extract(d.data_json,'$.completeness') AS completeness,
-        c.tier,c.due_at,c.review_count,c.wrong_count,c.revision
+        c.stage,c.tier,c.due_at,c.review_count,c.wrong_count,c.revision
         FROM bunpro_entries e LEFT JOIN bunpro_vocab_content d ON d.entry_id=e.id
         LEFT JOIN bunpro_vocab_cards c ON c.entry_id=e.id
         """;
@@ -82,9 +82,9 @@ class BunproVocabService {
         List<String> tags=new ArrayList<>(); if(parts!=null) for(var tag:json.readTree(parts)) tags.add(tag.asText());
         return new VocabCatalogEntry(rs.getString("id"),rs.getString("kind"),rs.getString("level"),rs.getInt("lesson"),rs.getInt("position"),
                 rs.getString("source_url"),json.readValue(rs.getString("content_json"),CatalogContent.class).withVocab(null),
-                tier==null?"NEW":due<=clock.millis()?"DUE":"LEARNING",rs.getInt("edited")!=0 || rs.getInt("detail_edited")!=0,
-                tier,due==null?null:Instant.ofEpochMilli(due),rs.getInt("review_count"),rs.getInt("wrong_count"),rs.getLong("revision"),
-                rs.getInt("example_count"),tags,rs.getString("completeness"));
+                tier==null?"NEW":Integer.valueOf(12).equals(BunproStages.readStage(rs))?"MASTERED":due<=clock.millis()?"DUE":"LEARNING",rs.getInt("edited")!=0 || rs.getInt("detail_edited")!=0,
+                tier,due==null || Integer.valueOf(12).equals(BunproStages.readStage(rs))?null:Instant.ofEpochMilli(due),rs.getInt("review_count"),rs.getInt("wrong_count"),rs.getLong("revision"),
+                rs.getInt("example_count"),tags,rs.getString("completeness"),BunproStages.readStage(rs));
     }
     List<VocabCatalogEntry> entries(String level) {
         return jdbc.query(SELECT+" WHERE e.kind='VOCAB' AND e.level=? ORDER BY e.lesson,e.position,e.id",(rs,i)->map(rs),level);
@@ -96,7 +96,7 @@ class BunproVocabService {
         var data=jdbc.queryForList("SELECT data_json FROM bunpro_vocab_content WHERE entry_id=?",String.class,id);
         return new VocabCatalogEntry(e.id(),e.kind(),e.level(),e.lesson(),e.position(),e.sourceUrl(),
                 e.content().withVocab(data.isEmpty()?null:json.readValue(data.getFirst(),VocabData.class)),
-                e.learningStatus(),e.edited(),e.tier(),e.dueAt(),e.reviewCount(),e.wrongCount(),e.revision(),e.exampleCount(),e.partsOfSpeech(),e.completeness());
+                e.learningStatus(),e.edited(),e.tier(),e.dueAt(),e.reviewCount(),e.wrongCount(),e.revision(),e.exampleCount(),e.partsOfSpeech(),e.completeness(),e.stage());
     }
     @Transactional
     public void edit(String id,CatalogContent content) {
@@ -137,7 +137,7 @@ class BunproVocabService {
     @Transactional public void assign(VocabTierRequest request) { progress.assign(request); }
     @Transactional public void learn(String id) { progress.learn(id); }
     List<VocabCatalogEntry> queue(String level) {
-        return jdbc.query(SELECT+" WHERE e.kind='VOCAB' AND e.level=? AND c.due_at<=? ORDER BY c.due_at,e.id",(rs,i)->map(rs),level,clock.millis())
+        return jdbc.query(SELECT+" WHERE e.kind='VOCAB' AND e.level=? AND (c.stage IS NULL OR c.stage<>12) AND c.due_at<=? ORDER BY c.due_at,e.id",(rs,i)->map(rs),level,clock.millis())
                 .stream().filter(e->"VERIFIED".equals(e.content().status()) && e.content().meaningVi()!=null && !e.content().meaningVi().isBlank()).toList();
     }
     @Transactional public VocabReviewResult review(String id,VocabReviewRequest request) { return progress.review(id,request); }

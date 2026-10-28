@@ -25,7 +25,7 @@ class BunproGrammarService {
         progress=new BunproProgress(jdbc,json,clock,"GRAMMAR",this::requireReady);
     }
     private static final String SELECT="""
-        SELECT e.*,c.tier,c.due_at,c.review_count,c.wrong_count,c.revision
+        SELECT e.*,c.stage,c.tier,c.due_at,c.review_count,c.wrong_count,c.revision
         FROM bunpro_entries e LEFT JOIN bunpro_grammar_cards c ON c.entry_id=e.id
         """;
     private VocabCatalogEntry map(java.sql.ResultSet rs,boolean full) throws java.sql.SQLException {
@@ -36,9 +36,9 @@ class BunproGrammarService {
             content.meaningVi(),content.status(),content.structure(),content.explanationVi(),content.conjugationGroup(),List.of());
         String tier=rs.getString("tier"); Long due=rs.getObject("due_at")==null?null:rs.getLong("due_at");
         return new VocabCatalogEntry(rs.getString("id"),"GRAMMAR",rs.getString("level"),rs.getInt("lesson"),rs.getInt("position"),
-            rs.getString("source_url"),content,tier==null?"NEW":due<=clock.millis()?"DUE":"LEARNING",rs.getInt("edited")!=0,
-            tier,due==null?null:Instant.ofEpochMilli(due),rs.getInt("review_count"),rs.getInt("wrong_count"),rs.getLong("revision"),
-            count,List.of(),"VERIFIED".equals(content.status())?"REVIEWED":"NEEDS_REVIEW");
+            rs.getString("source_url"),content,tier==null?"NEW":Integer.valueOf(12).equals(BunproStages.readStage(rs))?"MASTERED":due<=clock.millis()?"DUE":"LEARNING",rs.getInt("edited")!=0,
+            tier,due==null || Integer.valueOf(12).equals(BunproStages.readStage(rs))?null:Instant.ofEpochMilli(due),rs.getInt("review_count"),rs.getInt("wrong_count"),rs.getLong("revision"),
+            count,List.of(),"VERIFIED".equals(content.status())?"REVIEWED":"NEEDS_REVIEW",BunproStages.readStage(rs));
     }
     List<VocabCatalogEntry> entries(String level) {
         return jdbc.query(SELECT+" WHERE e.kind='GRAMMAR' AND e.level=? ORDER BY e.lesson,e.position,e.id",(rs,i)->map(rs,false),level);
@@ -62,7 +62,7 @@ class BunproGrammarService {
     VocabIntervals intervals() { return progress.intervals(); }
     @Transactional public VocabIntervals setIntervals(VocabIntervals input) { return progress.setIntervals(input); }
     List<VocabCatalogEntry> queue(String level) {
-        return jdbc.query(SELECT+" WHERE e.kind='GRAMMAR' AND e.level=? AND c.due_at<=? ORDER BY c.due_at,e.id",(rs,i)->map(rs,false),level,clock.millis())
+        return jdbc.query(SELECT+" WHERE e.kind='GRAMMAR' AND e.level=? AND (c.stage IS NULL OR c.stage<>12) AND c.due_at<=? ORDER BY c.due_at,e.id",(rs,i)->map(rs,false),level,clock.millis())
             .stream().filter(e->ready(e.content())).toList();
     }
     @Transactional public VocabReviewResult review(String id,VocabReviewRequest request) { return progress.review(id,request); }

@@ -51,7 +51,16 @@ record LearningBackup(List<Map<String,Object>> entries, List<Map<String,Object>>
                       List<Map<String,Object>> vocabContent, List<Map<String,Object>> vocabCards,
                       List<Map<String,Object>> vocabReviews, List<Map<String,Object>> vocabSettings,
                       List<Map<String,Object>> grammarProgress, List<Map<String,Object>> grammarProgressReviews,
-                      List<Map<String,Object>> grammarSettings) {
+                      List<Map<String,Object>> grammarSettings,
+                      List<Map<String,Object>> stageSettings, List<Map<String,Object>> progressImports) {
+    LearningBackup(List<Map<String,Object>> entries, List<Map<String,Object>> links,
+                   List<Map<String,Object>> grammarCards, List<Map<String,Object>> grammarReviews,
+                   List<Map<String,Object>> vocabContent, List<Map<String,Object>> vocabCards,
+                   List<Map<String,Object>> vocabReviews, List<Map<String,Object>> vocabSettings,
+                   List<Map<String,Object>> grammarProgress, List<Map<String,Object>> grammarProgressReviews,
+                   List<Map<String,Object>> grammarSettings) {
+        this(entries,links,grammarCards,grammarReviews,vocabContent,vocabCards,vocabReviews,vocabSettings,grammarProgress,grammarProgressReviews,grammarSettings,null,null);
+    }
     LearningBackup(List<Map<String,Object>> entries, List<Map<String,Object>> links,
                    List<Map<String,Object>> grammarCards, List<Map<String,Object>> grammarReviews,
                    List<Map<String,Object>> vocabContent, List<Map<String,Object>> vocabCards,

@@ -1,5 +1,6 @@
+import { SRS_STAGES, stageLabel, progressLabel } from '../bunproProgress.js';
 import React, { useState } from 'react';
-import { POS_LABELS, TIERS, TIER_LABELS, sourceLabel } from '../bunproVocab.js';
+import { POS_LABELS, sourceLabel } from '../bunproVocab.js';
 
 export function VocabTags({ tags = [] }) {
   return <span className="vocab-tags">{tags.map(tag => <span key={tag}>{POS_LABELS[tag] || tag}</span>)}</span>;
@@ -62,18 +63,18 @@ export function VocabEditor({ entry, busy, onSave, onCancel }) {
 
 export function BunproVocabDetail({ entry, busy, onClose, onAssign, onLearn, onSave, onConjugation }) {
   const [editing, setEditing] = useState(false);
-  const [tier, setTier] = useState(entry.tier || 'BEGINNER');
+  const [tier, setTier] = useState(String(entry.stage ?? 1));
   const c = entry.content, data = c.vocab;
   const group = (entry.partsOfSpeech || []).find(t => ['ICHIDAN', 'GODAN', 'SURU', 'KURU', 'I_ADJECTIVE', 'NA_ADJECTIVE'].includes(t));
   return <aside className="catalog-detail vocab-detail" aria-label="Chi tiết từ đã chọn">
-    <div className="catalog-detail-top"><span>Lesson {entry.lesson} · {TIER_LABELS[entry.tier || 'NEW']}</span><button disabled={busy} className="text-button" onClick={onClose}>Đóng</button></div>
+    <div className="catalog-detail-top"><span>Lesson {entry.lesson} · {progressLabel(entry)}</span><button disabled={busy} className="text-button" onClick={onClose}>Đóng</button></div>
     <h2 lang="ja">{c.title}</h2><p lang="ja" className="catalog-reading">{c.reading}</p>
     <VocabTags tags={entry.partsOfSpeech} />
     <h3>Nghĩa tiếng Việt</h3><p>{c.meaningVi || 'Chưa có bản dịch.'}</p><h3>Nghĩa tiếng Anh</h3><p lang="en">{c.meaningEn}</p>
     <p className="catalog-coverage">{sourceLabel(entry.completeness)} · {entry.exampleCount} ví dụ</p>
     {entry.dueAt && <p className="catalog-coverage">Ôn tiếp: {new Date(entry.dueAt).toLocaleString('vi-VN')} · {entry.reviewCount} lượt ôn</p>}
     {!editing && <>
-      <div className="vocab-tier-control"><label>Mức học<select value={tier} onChange={e => setTier(e.target.value)}>{TIERS.map(t => <option key={t} value={t}>{TIER_LABELS[t]}</option>)}</select></label><button className="button-secondary" disabled={busy || c.status !== 'VERIFIED'} onClick={() => onAssign([entry.id], tier)}>Gán mức</button></div>
+      <div className="vocab-tier-control"><label>Mức học<select value={tier} onChange={e => setTier(e.target.value)}>{SRS_STAGES.map(t => <option key={t} value={t}>{stageLabel(t)}</option>)}</select></label><button className="button-secondary" disabled={busy} onClick={() => onAssign([entry.id], tier)}>Gán mức</button></div>
       <div className="inline-actions catalog-detail-actions"><button className="button-primary" disabled={busy || c.status !== 'VERIFIED' || Boolean(entry.tier)} onClick={() => onLearn(entry.id)}>{entry.tier ? 'Đã kích hoạt lịch Bunpro' : 'Chọn học từ này'}</button><button disabled={busy} className="button-secondary" onClick={() => setEditing(true)}>Chỉnh sửa</button></div>
       {group && onConjugation && <button className="text-button" onClick={() => onConjugation(({ ICHIDAN: 'ichidan', GODAN: 'godan', SURU: 'irregular', KURU: 'irregular', I_ADJECTIVE: 'i-adj', NA_ADJECTIVE: 'na-adj' })[group])}>Tra bảng chia từ</button>}
       {!!data?.unknownLabels?.length && <p className="catalog-coverage">Nhãn cần phân loại: {data.unknownLabels.join(', ')}</p>}

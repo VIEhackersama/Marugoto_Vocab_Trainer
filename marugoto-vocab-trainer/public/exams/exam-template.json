@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "n5-json-sample-001",
+  "title": "Đề mẫu N5 · Ngữ pháp, đọc hiểu và viết",
+  "description": "Đề minh họa đủ ba loại câu, nhiều chỗ trống, đoạn đọc và furigana.",
+  "instructions": "Chọn một đáp án cho trắc nghiệm. Điền đúng dạng từ/trợ từ vào từng ô. Câu viết dài chỉ có đáp án tham khảo, không tính vào điểm tự động.",
+  "timeLimitMinutes": 30,
+  "sections": [
+    {
+      "id": "grammar",
+      "title": "Phần 1 · Ngữ pháp",
+      "instructions": "Chọn đáp án phù hợp hoặc điền vào chỗ trống.",
+      "questions": [
+        {
+          "id": "q1",
+          "type": "single_choice",
+          "prompt": [{"text": "学校", "reading": "がっこう"}, {"text": "（　）"}, {"text": "日本語", "reading": "にほんご"}, {"text": "を"}, {"text": "勉強", "reading": "べんきょう"}, {"text": "します。"}],
+          "options": [{"id": "a", "text": "で"}, {"id": "b", "text": "に"}, {"id": "c", "text": "を"}, {"id": "d", "text": "へ"}],
+          "correctOptionId": "a",
+          "points": 2,
+          "explanation": "で đánh dấu nơi diễn ra hoạt động: học tiếng Nhật ở trường. に và へ thường chỉ đích đến khi dùng với động từ di chuyển."
+        },
+        {
+          "id": "q2",
+          "type": "fill_blank",
+          "prompt": [{"text": "毎朝", "reading": "まいあさ"}, {"text": "、バス{{b1}}"}, {"text": "学校", "reading": "がっこう"}, {"text": "{{b2}}"}, {"text": "行", "reading": "い"}, {"text": "きます。"}],
+          "blanks": [{"id": "b1", "acceptedAnswers": ["で"], "points": 1}, {"id": "b2", "acceptedAnswers": ["に", "へ"], "points": 1}],
+          "explanation": "バスで: bằng xe buýt, で chỉ phương tiện. 学校に／へ行きます: đi đến trường; cả に và へ đều hợp lệ."
+        }
+      ]
+    },
+    {
+      "id": "reading",
+      "title": "Phần 2 · Đọc hiểu",
+      "instructions": "Đọc đoạn văn rồi trả lời hai câu sau.",
+      "passage": [{"text": "私", "reading": "わたし"}, {"text": "はアンです。ベトナム"}, {"text": "人", "reading": "じん"}, {"text": "です。\n"}, {"text": "毎朝", "reading": "まいあさ"}, {"text": "、"}, {"text": "七時", "reading": "しちじ"}, {"text": "に"}, {"text": "起", "reading": "お"}, {"text": "きます。"}, {"text": "八時", "reading": "はちじ"}, {"text": "にバスで"}, {"text": "学校", "reading": "がっこう"}, {"text": "へ"}, {"text": "行", "reading": "い"}, {"text": "きます。"}],
+      "questions": [
+        {
+          "id": "q3",
+          "type": "single_choice",
+          "prompt": "アンさんは何時に起きますか。",
+          "options": [{"id": "a", "text": "六時です。"}, {"id": "b", "text": "七時です。"}, {"id": "c", "text": "八時です。"}],
+          "correctOptionId": "b",
+          "explanation": "Đoạn văn viết 七時に起きます: thức dậy lúc 7 giờ. 8 giờ là lúc đi đến trường."
+        },
+        {
+          "id": "q4",
+          "type": "fill_blank",
+          "prompt": "アンさんは何で学校へ行きますか。\n{{transport}}で行きます。",
+          "blanks": [{"id": "transport", "acceptedAnswers": ["バス"]}],
+          "explanation": "Đoạn văn viết バスで学校へ行きます: đến trường bằng xe buýt. Chỉ điền バス vì で行きます đã có sẵn."
+        }
+      ]
+    },
+    {
+      "id": "writing",
+      "title": "Phần 3 · Viết",
+      "questions": [
+        {
+          "id": "q5",
+          "type": "essay",
+          "prompt": "Viết 3–5 câu tiếng Nhật giới thiệu bản thân và sinh hoạt buổi sáng. Nêu tên, nghề nghiệp hoặc quốc tịch, một mốc giờ và phương tiện đi học/đi làm.",
+          "modelAnswer": [{"text": "私", "reading": "わたし"}, {"text": "はアンです。ベトナム"}, {"text": "人", "reading": "じん"}, {"text": "です。"}, {"text": "学生", "reading": "がくせい"}, {"text": "です。\n"}, {"text": "毎朝", "reading": "まいあさ"}, {"text": "、"}, {"text": "七時", "reading": "しちじ"}, {"text": "に"}, {"text": "起", "reading": "お"}, {"text": "きます。バスで"}, {"text": "学校", "reading": "がっこう"}, {"text": "へ"}, {"text": "行", "reading": "い"}, {"text": "きます。"}],
+          "explanation": "Đây là một cách trả lời tham khảo, không phải đáp án duy nhất. Đối chiếu mẫu ～は～です, thời gian cụ thể + に, phương tiện + で và đích đến + に／へ. Câu dài không được tự chấm điểm."
+        }
+      ]
+    }
+  ]
+}

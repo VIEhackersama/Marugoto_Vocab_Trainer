@@ -27,15 +27,18 @@ class BackupService {
     private final JdbcTemplate jdbc;
     private final String datasourceUrl;
     private final BunproService bunpro;
+    private final ExamService exams;
 
     BackupService(
             JdbcTemplate jdbc,
             @Value("${spring.datasource.url:}") String datasourceUrl,
-            BunproService bunpro
+            BunproService bunpro,
+            ExamService exams
     ) {
         this.jdbc = jdbc;
         this.datasourceUrl = datasourceUrl;
         this.bunpro = bunpro;
+        this.exams = exams;
     }
 
     public BackupDataDto exportBackup() {
@@ -110,13 +113,16 @@ class BackupService {
                 )
         );
 
-        return new BackupDataDto(3, exportedAt, decks, vocabularies, studyCards, reviewLogs, bunpro.exportBackup());
+        return new BackupDataDto(6, exportedAt, decks, vocabularies, studyCards, reviewLogs, bunpro.exportBackup(), exams.backup());
     }
 
     @Transactional
     public BackupImportResult importBackup(BackupDataDto data) {
-        if (data == null || data.version() <= 0 || data.version() > 3) {
+        if (data == null || data.version() <= 0 || data.version() > 6) {
             throw new ResponseStatusException(BAD_REQUEST, "Dữ liệu sao lưu không hợp lệ.");
+        }
+        if (data.version() >= 5 && data.exams() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Backup v5/v6 thiếu dữ liệu bài kiểm tra.");
         }
 
         createDatabaseBackupBeforeRestore();
@@ -201,6 +207,7 @@ class BackupService {
         }
 
         bunpro.restore(data.learning());
+        exams.restore(data.exams());
         return new BackupImportResult(
                 importedDecks,
                 importedVocabs,

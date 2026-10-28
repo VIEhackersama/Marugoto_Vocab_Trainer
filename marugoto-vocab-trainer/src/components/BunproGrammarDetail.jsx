@@ -1,5 +1,5 @@
+import { SRS_STAGES, stageLabel, progressLabel } from '../bunproProgress.js';
 import React, { useState } from 'react';
-import { TIERS, TIER_LABELS } from '../bunproVocab.js';
 import { ContentEditor } from './BunproContentEditor.jsx';
 
 export function GrammarExamples({ sentences = [] }) {
@@ -20,18 +20,18 @@ export function GrammarSourceExamples({ source }) {
 }
 
 export function BunproGrammarDetail({ entry, busy, onClose, onAssign, onLearn, onSave }) {
-  const [editing, setEditing] = useState(false), [tier, setTier] = useState(entry.tier || 'BEGINNER');
+  const [editing, setEditing] = useState(false), [tier, setTier] = useState(String(entry.stage ?? 1));
   const c=entry.content;
   const ready=c.status === 'VERIFIED' && c.meaningVi?.trim() && c.structure?.trim() && c.explanationVi?.trim();
   return <aside className="catalog-detail vocab-detail" aria-label={`Chi tiết ${c.title}`}>
-    <div className="catalog-detail-top"><span className="eyebrow">Lesson {entry.lesson} · {TIER_LABELS[entry.tier || 'NEW']}</span><button className="text-button" disabled={busy} onClick={onClose}>Đóng</button></div>
+    <div className="catalog-detail-top"><span className="eyebrow">Lesson {entry.lesson} · {progressLabel(entry)}</span><button className="text-button" disabled={busy} onClick={onClose}>Đóng</button></div>
     <h2 lang="ja">{c.title}</h2><p className="catalog-reading" lang="ja">{c.reading}</p>
     {editing ? <ContentEditor entry={entry} busy={busy} onCancel={() => setEditing(false)} onSave={async content => { if(await onSave(entry.id,content)) setEditing(false); }} /> : <>
       <p className="vocab-meaning">{c.meaningVi || 'Chưa có nghĩa Việt'}</p><p lang="en">{c.meaningEn}</p>
       <h3>Cấu trúc</h3><p className="grammar-structure" lang="ja">{c.structure || 'Chưa có cấu trúc'}</p><h3>Cách dùng{!c.explanationVi && c.grammarSource?.explanationEn ? ' · bản gốc tiếng Anh' : ''}</h3><p className="grammar-explanation" lang={c.explanationVi ? 'vi' : 'en'}>{c.explanationVi || c.grammarSource?.explanationEn || 'Chưa có giải thích'}</p>
       <p className="catalog-coverage">{c.status === 'VERIFIED' ? 'Nội dung đã kiểm tra' : 'Cần kiểm tra nội dung trước khi học'}{entry.dueAt && ` · Hạn ôn: ${new Date(entry.dueAt).toLocaleString('vi-VN')}`}</p>
       <div className="inline-actions"><button className="button-secondary" disabled={busy} onClick={() => setEditing(true)}>Chỉnh sửa</button>{!entry.tier && <button className="button-primary" disabled={busy || !ready} onClick={() => onLearn(entry.id)}>Chọn học mẫu này</button>}</div>
-      <div className="vocab-tier-control"><label>Mức học<select value={tier} disabled={busy} onChange={e => setTier(e.target.value)}>{TIERS.map(t => <option key={t} value={t}>{TIER_LABELS[t]}</option>)}</select></label><button className="button-secondary" disabled={busy || !ready} onClick={() => onAssign([entry.id],tier)}>Gán mức</button></div>
+      <div className="vocab-tier-control"><label>Mức học<select value={tier} disabled={busy} onChange={e => setTier(e.target.value)}>{SRS_STAGES.map(t => <option key={t} value={t}>{stageLabel(t)}</option>)}</select></label><button className="button-secondary" disabled={busy} onClick={() => onAssign([entry.id],tier)}>Gán mức</button></div>
       <GrammarSourceExamples source={c.grammarSource} />
       <GrammarExamples sentences={c.sentences} /><a href={entry.sourceUrl} target="_blank" rel="noreferrer">Xem nguồn Bunpro</a>
     </>}

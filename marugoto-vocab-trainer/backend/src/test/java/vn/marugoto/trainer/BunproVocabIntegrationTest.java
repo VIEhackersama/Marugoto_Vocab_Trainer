@@ -78,7 +78,7 @@ class BunproVocabIntegrationTest {
     @Test void reviewsPromoteDemoteCapIntervalsRejectDuplicatesAndLeaveLegacyFsrsUntouched() {
         var id=word("私").id(); var service=at(now);
         var legacy=jdbc.queryForList("SELECT * FROM study_cards ORDER BY id"); var legacyLogs=jdbc.queryForList("SELECT * FROM review_logs ORDER BY id");
-        service.learn(id); assertDue(id,now); assertEquals(1,service.queue("N5").size());
+        service.learn(id); jdbc.update("UPDATE bunpro_vocab_cards SET stage=NULL WHERE entry_id=?",id); assertDue(id,now); assertEquals(1,service.queue("N5").size());
         var first=service.review(id,new VocabReviewRequest("good-1","GOOD","JP_TO_VI",0));
         assertEquals("ADEPT",first.tier()); assertTrue(!first.dueAt().isAfter(now.plus(Duration.ofDays(3)))); assertDue(id,first.dueAt());
         assertThrows(ResponseStatusException.class,()->service.review(id,new VocabReviewRequest("good-1","GOOD","JP_TO_VI",1)));
@@ -102,7 +102,7 @@ class BunproVocabIntegrationTest {
     @Test void newBackupRestoresSchedulesDefinitionsAndSettingsAndAcceptsV2() {
         var id=word("私").id(); at(now).learn(id); at(now).review(id,new VocabReviewRequest("backup-review","AGAIN","JP_TO_VI",0));
         vocab.setIntervals(new VocabIntervals(List.of(2,4,8,16,32)));
-        var before=backups.exportBackup(); assertEquals(3,before.version());
+        var before=backups.exportBackup(); assertEquals(6,before.version());
         var serialized=json.readValue(json.writeValueAsString(before),BackupDataDto.class);
         jdbc.update("DELETE FROM bunpro_vocab_cards"); jdbc.update("DELETE FROM bunpro_vocab_content");
         backups.importBackup(serialized); backups.importBackup(serialized);

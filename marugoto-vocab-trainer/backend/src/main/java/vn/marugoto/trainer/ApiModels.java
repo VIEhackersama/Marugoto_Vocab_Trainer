@@ -91,12 +91,18 @@ record BackupDataDto(
         List<BackupVocabItem> vocabularies,
         List<BackupStudyCardItem> studyCards,
         List<BackupReviewLogItem> reviewLogs,
-        LearningBackup learning
+        LearningBackup learning,
+        ExamBackup exams
 ) {
     public BackupDataDto(int version, long exportedAt, List<BackupDeckItem> decks,
                          List<BackupVocabItem> vocabularies, List<BackupStudyCardItem> studyCards,
+                         List<BackupReviewLogItem> reviewLogs, LearningBackup learning) {
+        this(version, exportedAt, decks, vocabularies, studyCards, reviewLogs, learning, null);
+    }
+    public BackupDataDto(int version, long exportedAt, List<BackupDeckItem> decks,
+                         List<BackupVocabItem> vocabularies, List<BackupStudyCardItem> studyCards,
                          List<BackupReviewLogItem> reviewLogs) {
-        this(version, exportedAt, decks, vocabularies, studyCards, reviewLogs, null);
+        this(version, exportedAt, decks, vocabularies, studyCards, reviewLogs, null, null);
     }
 }
 

@@ -25,6 +25,7 @@ export function AppHeader({ section, onNavigate, sessionActive, dueCount }) {
           ['dictionary', 'Từ điển'],
           ['bunpro', 'Bunpro'],
           ['grammar', 'Ngữ pháp'],
+          ['exams', 'Bài kiểm tra'],
           ['import', 'Bộ từ'],
           ['settings', 'Cài đặt'],
         ].map(([id, label]) => (

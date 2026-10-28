@@ -1,3 +1,5 @@
+> Cập nhật: giao diện hiện dùng cấp SRS 0–12 và nhập tiến độ hàng loạt. Xem [hướng dẫn hiện tại](bunpro-progress-import.md). Các quy tắc năm mức/FSRS dưới đây mô tả API và dữ liệu cũ.
+
 # Mức học và lịch ôn ngữ pháp Bunpro N5
 
 Mở **Ngữ pháp → Mẫu câu** để xem 132 mẫu N5. Gán Beginner, Adept, Seasoned, Expert hoặc Master từng mẫu trong panel chi tiết, hoặc chọn nhiều checkbox rồi **Gán mức**. Dải thống kê và bộ lọc lesson/mức/trạng thái giúp chọn phạm vi học. Tìm kiếm bao gồm nghĩa, cấu trúc và cách dùng.

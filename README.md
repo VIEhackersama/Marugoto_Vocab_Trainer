@@ -1,5 +1,7 @@
 # Marugoto Vocab Trainer (まるごと単語トレーナー)
 
+Trang **Bài kiểm tra** hỗ trợ nhập đề JSON, trắc nghiệm, điền từ, tự luận, furigana và font bài thi riêng. Xem [định dạng JSON, cách sinh đề và API](docs/exam-json-format.md).
+
 Kho Bunpro N5 (1.100 từ vựng, 132 mẫu ngữ pháp tiếng Việt) và flashcard điền khuyết đã được tích hợp. Xem [hướng dẫn Bunpro N5, dữ liệu nhập và API](docs/bunpro-n5.md).
 
 Kho từ Bunpro hiện có 11.205 ví dụ, phân loại từ theo nghĩa và xếp mức Beginner → Master với lịch FSRS riêng. Xem [hướng dẫn kho từ và lịch ôn Bunpro mới](docs/bunpro-vocab.md).
