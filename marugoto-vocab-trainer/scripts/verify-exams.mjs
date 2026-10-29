@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { EXAM_FONTS } from '../src/exams/examSession.js';
 import { createExamHarness, delay } from './exams/verificationHarness.mjs';
 
 const webPort = Number(process.env.EXAM_VERIFY_WEB_PORT || 15173);
@@ -39,18 +40,27 @@ try {
   const expectEventually = async fn => { for (let i = 0; i < 60; i++) { try { await fn(); return; } catch (error) { if (i === 59) throw error; await delay(100); } } };
   const question = async n => { await scope.locator('.exam-question-map button').nth(n - 1).click(); };
   const saved = async () => expectEventually(async () => assert.equal(await scope.locator('.exam-save').innerText(), 'Đã lưu'));
+  const normalizeFamily = family => family.replace(/["'\s]/g, '').toLowerCase();
+  const assertExamFonts = async (...selectors) => {
+    const font = await scope.getByLabel('Font chữ tiếng Nhật').inputValue();
+    for (const selector of selectors) {
+      const families = await scope.locator(selector).evaluateAll(elements => elements.map(el => getComputedStyle(el).fontFamily));
+      assert.ok(families.length, 'Missing font target: ' + selector);
+      for (const family of families) assert.equal(normalizeFamily(family), normalizeFamily(EXAM_FONTS[font]), selector + ' must use ' + font);
+    }
+  };
   const postmanAttempt = (attemptId, name) => postman(['GET', apiBase + '/api/exam-attempts/' + attemptId], name);
   await enter(page);
   const navFont = await page.locator('.app-header').evaluate(el => getComputedStyle(el).fontFamily);
   await scope.getByRole('button', { name: 'Nhập JSON', exact: true }).click();
-  await scope.getByRole('button', { name: 'Nạp đề mẫu vào ô nhập' }).click();
   await scope.getByLabel('Chọn file đề JSON').setInputFiles(path.join(root, 'public/exams/exam-template.json'));
+  await expectEventually(async () => assert.equal(await scope.getByLabel('Nội dung đề JSON').inputValue(), await readFile(path.join(root, 'public/exams/exam-template.json'), 'utf8')));
   await scope.getByRole('button', { name: 'Kiểm tra JSON', exact: true }).click();
   await scope.getByText('JSON hợp lệ', { exact: true }).waitFor();
   await scope.getByRole('button', { name: 'Lưu đề vào thư viện' }).click();
   await scope.getByRole('button', { name: 'Bắt đầu làm bài' }).waitFor();
   await scope.locator('.exam-display summary').click();
-  await scope.getByLabel('Font bài thi').selectOption('Noto Serif JP');
+  await scope.getByLabel('Font chữ tiếng Nhật').selectOption('Noto Serif JP');
   await scope.getByLabel('Cỡ chữ bài thi').focus(); await page.keyboard.press('End');
   await scope.getByLabel('Hiện furigana').check();
   assert.equal(await scope.locator('.exam-font-preview').evaluate(el => getComputedStyle(el).fontSize), '32px');
@@ -62,13 +72,56 @@ try {
   const first = await (await startResponse).json();
   assert.ok(!/correctOptionId|acceptedAnswers|modelAnswer|explanation/.test(JSON.stringify(first.document)));
   assert.ok(await scope.locator('.exam-question ruby rt').count() > 0);
+  assert.equal(await scope.locator('.exam-section-heading p').count(), 0, 'Hide section coaching from existing exams too');
+  assert.equal(await scope.getByText('Chọn đáp án phù hợp hoặc điền vào chỗ trống.', { exact: true }).count(), 0);
+  for (const font of Object.keys(EXAM_FONTS)) {
+    await scope.getByLabel('Font chữ tiếng Nhật').selectOption(font);
+    await assertExamFonts('.exam-font-preview', '.exam-font-preview ruby', '.exam-prompt', '.exam-prompt ruby', '.exam-prompt rt', '.exam-options label > span:last-child');
+    assert.equal(await page.locator('.app-header').evaluate(el => getComputedStyle(el).fontFamily), navFont);
+  }
+  await scope.getByLabel('Font chữ tiếng Nhật').selectOption('Noto Serif JP');
   await scope.getByRole('radio').nth(0).check();
-  await question(2); await scope.getByLabel('Câu 2, ô 1').fill('で'); await scope.getByLabel('Câu 2, ô 2').fill('へ');
+  await question(2);
+  const growingBlank = scope.getByLabel('Câu 2, ô 1');
+  const emptyWidth = (await growingBlank.boundingBox()).width;
+  await growingBlank.dispatchEvent('compositionstart');
+  await growingBlank.fill('静かではありませんでした');
+  await growingBlank.dispatchEvent('compositionend');
+  assert.ok((await growingBlank.boundingBox()).width > emptyWidth + 50, 'Japanese answers must expand beyond the initial blank width');
+  const fitsBlank = () => growingBlank.evaluate(el => ({ horizontal: el.scrollWidth <= el.clientWidth + 2, vertical: el.scrollHeight <= el.clientHeight + 2, height: el.clientHeight }));
+  const singleLine = await fitsBlank(); assert.ok(singleLine.horizontal && singleLine.vertical);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await scope.getByLabel('Cỡ chữ bài thi').focus(); await page.keyboard.press('End');
+  await growingBlank.fill('静かではありませんでした。'.repeat(5));
+  for (const font of ['MS Mincho', 'Yu Mincho', 'Noto Serif JP', 'Yu Gothic', 'Mặc định']) {
+    await scope.getByLabel('Font chữ tiếng Nhật').selectOption(font);
+    await assertExamFonts('.exam-prompt', '.exam-blank textarea', '.exam-blank-mirror');
+    const wrapped = await fitsBlank();
+    assert.ok(wrapped.horizontal && wrapped.vertical, `Long answers must remain fully visible with ${font}`);
+    assert.ok(wrapped.height > singleLine.height * 2, 'Long mobile answers must wrap and grow vertically');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
+  await page.screenshot({ path: path.join(output, 'mobile-growing-blank.png'), fullPage: true });
+  await scope.getByLabel('Font chữ tiếng Nhật').selectOption('Noto Serif JP');
+  await scope.getByLabel('Cỡ chữ bài thi').focus(); await page.keyboard.press('Home');
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await growingBlank.fill('で');
+  assert.ok((await growingBlank.boundingBox()).width < emptyWidth + 20, 'Blank must shrink again after deleting text');
+  await scope.getByLabel('Câu 2, ô 2').fill('へ');
+  assert.equal(await scope.locator('.exam-review').count(), 0);
   await scope.getByRole('button', { name: 'Đánh dấu xem lại', exact: true }).click();
   await saved(); await page.screenshot({ path: path.join(output, 'desktop-fill.png'), fullPage: true });
-  await question(3); assert.ok(await scope.locator('.exam-passage').isVisible()); await scope.getByRole('radio').nth(1).check();
+  await question(3); assert.ok(await scope.locator('.exam-passage').isVisible());
+  for (const font of Object.keys(EXAM_FONTS)) {
+    await scope.getByLabel('Font chữ tiếng Nhật').selectOption(font);
+    await assertExamFonts('.exam-passage .exam-paper', '.exam-passage ruby', '.exam-passage rt', '.exam-prompt', '.exam-options label > span:last-child');
+  }
+  await page.screenshot({ path: path.join(output, 'japanese-font-reading.png'), fullPage: true });
+  await scope.getByLabel('Font chữ tiếng Nhật').selectOption('Noto Serif JP');
+  await scope.getByRole('radio').nth(1).check();
   await question(4); await scope.getByLabel('Câu 4, ô 1').fill('バス');
-  await question(5); const essay = scope.getByRole('textbox', { name: 'Bài viết câu 5' });
+  await question(5); await assertExamFonts('.exam-essay-label textarea'); const essay = scope.getByRole('textbox', { name: 'Bài viết câu 5' });
   await essay.dispatchEvent('compositionstart'); await essay.fill('私はアンです。学生です。ベトナム人です。'); await essay.dispatchEvent('compositionend');
   await page.route('**/api/exam-attempts/*/pause', route => route.fulfill({ status: 503, json: { error: 'Mất kết nối thử nghiệm' } }));
   await scope.getByRole('button', { name: 'Tạm dừng', exact: true }).click();
@@ -96,10 +149,13 @@ try {
   await scope.getByRole('textbox', { name: 'Bài viết câu 5' }).waitFor(); assert.equal(await scope.getByRole('textbox', { name: 'Bài viết câu 5' }).inputValue(), stored.answers.q5);
   assert.equal(await scope.locator('.exam-question-map button').nth(4).getAttribute('aria-current'), 'step');
   await postmanAttempt(first.id, 'resume');
-  await scope.locator('.exam-display summary').click(); assert.equal(await scope.getByLabel('Font bài thi').inputValue(), 'Noto Serif JP');
+  await scope.locator('.exam-display summary').click(); assert.equal(await scope.getByLabel('Font chữ tiếng Nhật').inputValue(), 'Noto Serif JP');
   assert.equal(await scope.locator('.exam-feedback').count(), 0);
   await scope.getByRole('button', { name: 'Nộp bài', exact: true }).click(); await scope.getByRole('button', { name: 'Xác nhận nộp bài' }).click();
   await scope.getByLabel('Kết quả bài kiểm tra').waitFor(); assert.ok((await scope.getByLabel('Kết quả bài kiểm tra').innerText()).includes('6 / 6'));
+  assert.equal(await scope.locator('.exam-review').count(), 0);
+  assert.equal(await scope.locator('.exam-question-map button.graded-correct').count(), 4);
+  assert.equal(await scope.locator('.exam-question-map button.graded-reference').count(), 1);
   await scope.locator('.exam-feedback.reference').waitFor();
   await page.screenshot({ path: path.join(output, 'desktop-result.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 }); await question(3);
@@ -111,9 +167,12 @@ try {
   await scope.getByRole('button', { name: 'Bắt đầu làm bài' }).click(); await scope.getByRole('radio').nth(1).check();
   await scope.getByRole('button', { name: 'Kiểm tra câu', exact: true }).click(); await scope.getByText('Câu đã khóa.', { exact: true }).waitFor();
   assert.equal(await scope.getByRole('radio').nth(0).isDisabled(), true); assert.ok((await scope.locator('.exam-feedback').innerText()).includes('0/2'));
-  await question(2); await scope.getByLabel('Câu 2, ô 1').fill('で'); await scope.getByLabel('Câu 2, ô 2').fill('に');
+  assert.equal(await scope.locator('.exam-question-map button.graded-incorrect').count(), 1);
+  assert.equal(await scope.locator('.exam-review').count(), 0, 'Do not expose results for unchecked questions');
+  await question(2); await scope.getByLabel('Câu 2, ô 1').fill('で'); await scope.getByLabel('Câu 2, ô 2').fill('を');
   await scope.getByRole('button', { name: 'Kiểm tra câu', exact: true }).click(); await scope.getByText('Câu đã khóa.', { exact: true }).waitFor();
-  assert.ok((await scope.locator('.exam-feedback').innerText()).includes('2/2'));
+  assert.ok((await scope.locator('.exam-feedback').innerText()).includes('1/2'));
+  assert.equal(await scope.locator('.exam-question-map button.graded-partial').count(), 1);
   const second = (await api('/api/exam-attempts')).find(a => a.status === 'IN_PROGRESS');
 
   // Two actual tabs load the same revision. The second must preserve its stale edit.
@@ -140,14 +199,29 @@ try {
   await ready(apiBase + '/api/exams', javaProcess); context.__restarting = false;
   const restored = await api(`/api/exam-attempts/${second.id}`); assert.equal(restored.answers.q5, 'Bản nháp khi mất kết nối'); assert.ok(restored.results.q1); assert.ok(restored.results.q5);
   await scope.getByRole('button', { name: 'Nộp bài', exact: true }).click(); await scope.getByRole('button', { name: 'Xác nhận nộp bài' }).click(); await scope.getByLabel('Kết quả bài kiểm tra').waitFor();
-  const finished = await api(`/api/exam-attempts/${second.id}`); assert.equal(finished.metrics.score, 2);
+  const finished = await api(`/api/exam-attempts/${second.id}`); assert.equal(finished.metrics.score, 1);
+  const review = scope.getByRole('region', { name: 'Câu trả lời chưa đúng', exact: true });
+  assert.equal(await review.getByRole('button').count(), 4, 'Review includes wrong, partially correct, and unanswered automatic questions');
+  assert.equal(await review.getByRole('button', { name: /Câu 5/ }).count(), 0, 'Essays must not be classified as wrong');
+  await review.getByRole('button', { name: /Câu 2 · Đúng một phần/ }).click();
+  assert.equal(await scope.locator('.exam-question-map button').nth(1).getAttribute('aria-current'), 'step');
+  assert.equal(await scope.locator('.exam-question').evaluate(el => el === document.activeElement), true);
+  assert.equal(await scope.getByLabel('Câu 2, ô 1').inputValue(), 'で');
+  assert.equal(await scope.getByLabel('Câu 2, ô 2').inputValue(), 'を');
+  await scope.locator('.exam-feedback.incorrect').waitFor();
+  await page.screenshot({ path: path.join(output, 'desktop-wrong-question-review.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await review.getByRole('button', { name: /Câu 1 · Chưa đúng/ }).focus(); await page.keyboard.press('Enter');
+  assert.equal(await scope.locator('.exam-question-map button').nth(0).getAttribute('aria-current'), 'step');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.screenshot({ path: path.join(output, 'mobile-wrong-question-review.png'), fullPage: true });
   const backup = await api('/api/backup/export'); assert.equal(backup.version, 6); assert.equal(backup.exams.attempts.length, 2);
   await api('/api/backup/import', backup);
   const roundtrip = await api(`/api/exam-attempts/${second.id}`); assert.deepEqual(roundtrip.answers, finished.answers); assert.deepEqual(roundtrip.results, finished.results);
   await scope.getByRole('button', { name: 'Lịch sử', exact: true }).click(); await scope.locator('.exam-history article').nth(1).waitFor();
   assert.equal(await scope.locator('.exam-history article').count(), 2);
   assert.deepEqual(errors, []);
-  const result = { passed: true, output, assertions: ['JSON import', 'furigana/font isolation', 'autosave/IME', 'pause offline failure', 'atomic pause save', 'frozen timer after browser/JVM restart', 'explicit resume with remaining budget', 'current question restoration', 'Postman pause/resume contracts', 'both feedback modes', 'locked answers', 'multi-tab revision conflict', 'offline retry', 'JVM restart', 'backup v6 roundtrip', 'mobile overflow', 'history'], firstAttempt: first.id, secondAttempt: second.id };
+  const result = { passed: true, output, assertions: ['JSON import', 'Japanese font cascade on passages, ruby, choices and answer fields', 'section coaching hidden', 'growing blanks and IME', 'long mobile answers at 32px in all five fonts', 'wrong/partial/unanswered review and keyboard navigation', 'autosave/IME', 'pause offline failure', 'atomic pause save', 'frozen timer after browser/JVM restart', 'explicit resume with remaining budget', 'current question restoration', 'Postman pause/resume contracts', 'both feedback modes', 'locked answers', 'multi-tab revision conflict', 'offline retry', 'JVM restart', 'backup v6 roundtrip', 'mobile overflow', 'history'], firstAttempt: first.id, secondAttempt: second.id };
   await writeFile(path.join(output, 'result.json'), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {

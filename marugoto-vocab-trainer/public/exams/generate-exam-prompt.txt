@@ -8,14 +8,12 @@ CẤU TRÚC
 {
   "schemaVersion": 1,
   "id": "n5-test-001",
-  "title": "Tên đề",
+  "title": "日本語テスト",
   "description": "Mô tả ngắn",
-  "instructions": "Hướng dẫn làm bài",
   "timeLimitMinutes": 30,
   "sections": [{
     "id": "grammar",
-    "title": "Ngữ pháp",
-    "instructions": "Hướng dẫn phần thi",
+    "title": "文法・記述",
     "questions": [
       {
         "id": "q1",
@@ -36,7 +34,7 @@ CẤU TRÚC
       {
         "id": "q3",
         "type": "essay",
-        "prompt": "Viết ba câu giới thiệu bản thân.",
+        "prompt": "あなたのことを三つの文で書いてください。",
         "modelAnswer": "私はアンです。学生です。ベトナム人です。",
         "explanation": "Mẫu tham khảo, không phải đáp án duy nhất. Dùng ～は～です; không tự cho điểm câu này."
       }
@@ -44,8 +42,18 @@ CẤU TRÚC
   }]
 }
 
+PHONG CÁCH CÂU HỎI
+- Viết theo phong cách một đề thi tiếng Nhật thực tế: ngữ liệu tự nhiên, câu dẫn ngắn gọn, chỉ giữ thông tin cần thiết. Ưu tiên tiếng Nhật cho đoạn đọc, câu hỏi và lựa chọn, với từ vựng phù hợp phạm vi người học. Không cần thêm tình huống hay lời dẫn tiếng Việt cho mọi câu.
+- Hoàn toàn cho phép bài chỉ yêu cầu chọn đáp án đúng nhất, chọn từ/dạng từ phù hợp hoặc điền vào câu tiếng Nhật. Ví dụ có thể chỉ là "学校（　）日本語を勉強します。" kèm các lựa chọn; không bắt buộc hỏi "vì sao" hay yêu cầu phân tích ở mỗi câu.
+- Hạn chế câu hỏi có đáp án quá dễ suy ra từ cách diễn đạt, như "vì sao lại dùng xxx" rồi nêu ngay chức năng của xxx, dịch sẵn ý cần chọn hoặc chỉ đích danh cấu trúc phải dùng. Không viết lời dẫn dài để dẫn người học đến đáp án.
+- Câu hỏi "なぜ／どうして／vì sao" vẫn phù hợp trong đọc hiểu nếu thực sự cần hiểu/suy luận từ ngữ liệu; tránh kiểu hỏi lý thuyết ngữ pháp khiến lựa chọn đúng hiển nhiên chỉ nhờ câu dẫn.
+- Khi có đoạn đọc, dùng passage cho văn bản chung, prompt cho câu hỏi liên quan và options/blanks cho câu trả lời. Với câu ngữ pháp độc lập, prompt có thể chỉ là câu có chỗ trống; không cần tạo một đoạn đọc giả để đủ khuôn.
+- Không sinh trường instructions ở cấp đề hoặc cấp phần. Không thêm đoạn "hướng dẫn phân tích", mẹo giải, mô tả mục tiêu học hay nhắc điểm ngữ pháp phía trên câu hỏi. Đặt title của phần ngắn gọn, chẳng hạn "文法", "読解", không tiết lộ mẫu cần chọn. Chỉ ghi yêu cầu thao tác tối thiểu trong prompt khi người làm cần biết cách trả lời, nhất là essay hoặc giới hạn phần cần điền.
+- Giữ đủ ngữ cảnh để chỉ có một đáp án tốt nhất; cắt thông tin thừa không có nghĩa là bỏ dữ kiện cần phân biệt các lựa chọn. Đáp án nhiễu phải hợp lý, tương đương về cách trình bày, không thể loại chỉ nhờ độ dài hay dấu hiệu hình thức.
+- Phần phân tích kỹ và lý do các lựa chọn sai thuộc explanation/modelAnswer, chỉ xem sau khi chấm; không đưa chúng vào passage, prompt hoặc options. Độ khó đến từ khả năng hiểu và vận dụng tiếng Nhật, không từ lời dẫn rườm rà.
+
 QUY TẮC BẮT BUỘC
-1. Không thêm trường ngoài các trường trong mẫu. description, instructions, timeLimitMinutes là tùy chọn. Mỗi phần có thể thêm passage cho đoạn đọc dùng chung; tách thành phần khác nếu dùng đoạn đọc khác.
+1. Không thêm trường ngoài các trường trong mẫu, ngoại trừ passage ở cấp phần để chứa đoạn đọc dùng chung. description, timeLimitMinutes là tùy chọn. Schema v1 vẫn hỗ trợ instructions cho đề cũ, nhưng đề mới theo prompt này phải bỏ trường đó ở cả hai cấp. Tách thành phần khác nếu dùng đoạn đọc khác.
 2. ID có 1–120 ký tự, bắt đầu bằng chữ/số, chỉ chứa A-Z a-z 0-9 _ . : -. Không dùng constructor, prototype. ID phần không trùng nhau; ID câu duy nhất trong toàn đề; ID lựa chọn/chỗ trống duy nhất trong câu.
 3. Mỗi single_choice có 2–20 lựa chọn, đúng một đáp án. correctOptionId phải có trong options. Không ghi đáp án đúng vào prompt hoặc nội dung lựa chọn dưới dạng gợi ý.
 4. Mỗi fill_blank có 1–100 chỗ trống; mỗi {{id}} xuất hiện đúng một lần trong prompt và khớp một phần tử blanks. Mỗi acceptedAnswers có ít nhất một chuỗi đúng. Chỉ yêu cầu nhập phần đang thiếu, không lặp lại phần đã in sẵn. Liệt kê đầy đủ các biến thể hợp lệ.

@@ -4,6 +4,12 @@ Mở **Bài kiểm tra → Nhập JSON**. Chọn file UTF-8 hoặc dán nội du
 
 Trang cung cấp `exam-template.json`, JSON Schema `exam.schema.json` (Draft 2020-12) và `generate-exam-prompt.txt` để tải/sao chép. Điền phạm vi học và yêu cầu vào prompt; yêu cầu công cụ sinh đề trả đúng JSON rồi import. Không cần Word hoặc dịch vụ AI trong ứng dụng.
 
+Prompt sinh đề ưu tiên cách ra đề thi tiếng Nhật: đoạn đọc khi cần, câu hỏi ngắn gọn và các lựa chọn/ô trả lời; không cần lời dẫn dài hay hỏi lý thuyết “vì sao dùng mẫu này”. Không sinh `instructions` ở cấp đề/phần, không gợi sẵn đáp án trong câu dẫn. Giữ đủ ngữ cảnh để đáp án tốt nhất là duy nhất; phân tích chi tiết nằm trong `explanation` để đọc sau khi chấm. Đề cũ vẫn nhập được, nhưng hướng dẫn của từng phần không hiện phía trên câu hỏi khi làm bài.
+
+**Font chữ tiếng Nhật** áp dụng cho đoạn đọc, câu hỏi, lựa chọn, furigana và ô trả lời trong bài thi. Quy tắc font tiếng Nhật chung của web không ghi đè thiết lập này; các trang học khác giữ font riêng. Cỡ chữ và giãn dòng vẫn áp dụng cho vùng nội dung bài thi.
+
+Ô điền đáp án tự co giãn theo nội dung và font đang chọn; câu trả lời dài tự xuống dòng trong ô khi hết chiều ngang, kể cả trên điện thoại. Sau khi nộp, mục **Câu cần xem lại** liệt kê nội dung những câu tự chấm bị sai, đúng một phần hoặc bỏ trống. Bấm một mục để mở lại câu hỏi cùng bài làm và giải thích. Bảng số câu dùng xanh cho câu đúng, đỏ cho câu chưa đúng, vàng cho câu đúng một phần và xám cho tự luận; nhãn trạng thái cũng đọc được bằng bàn phím/trình đọc màn hình.
+
 ## Định dạng phiên bản 1
 
 - Đề: `schemaVersion: 1`, `id`, `title`, `sections`; tùy chọn `description`, `instructions`, `timeLimitMinutes` (số nguyên 1–1440; bỏ trường nếu không giới hạn).

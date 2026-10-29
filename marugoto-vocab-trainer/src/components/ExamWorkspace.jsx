@@ -6,6 +6,12 @@ const TYPE_LABEL = { single_choice: 'Trắc nghiệm', fill_blank: 'Điền từ
 const SAVE_LABEL = { saved: 'Đã lưu', pending: 'Chưa lưu', saving: 'Đang lưu…', error: 'Lưu lỗi' };
 const date = value => new Date(value).toLocaleString('vi-VN');
 const modeLabel = mode => mode === 'per_question' ? 'Ngay từng câu' : 'Sau khi nộp đề';
+function resultState(result) {
+  if (!result) return null;
+  if (result.kind === 'REFERENCE') return { className: 'reference', label: 'Tự luận · tự đối chiếu' };
+  if (result.correct) return { className: 'correct', label: 'Đúng' };
+  return result.score > 0 ? { className: 'partial', label: 'Đúng một phần' } : { className: 'incorrect', label: 'Chưa đúng' };
+}
 function download(name, value, type = 'application/json') {
   const url = URL.createObjectURL(new Blob([value], { type }));
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -21,17 +27,27 @@ export function ExamContent({ value, furigana = false, blank }) {
     : <React.Fragment key={index}>{renderText(token.text, index)}</React.Fragment>)}</>;
 }
 
+function BlankAnswer({ value, state, ...props }) {
+  // The hidden copy uses the exact exam font and wraps at the available width.
+  // Sharing its grid cell lets the textarea grow in both directions, including
+  // during IME composition, without measuring characters or guessing their size.
+  return <span className={`exam-blank${state ? ` ${state}` : ''}`}>
+    <span className="exam-blank-mirror" aria-hidden="true">{value || '　'}{'\u200b'}</span>
+    <textarea {...props} value={value} rows={1} cols={1} aria-invalid={state === 'incorrect' || undefined}/>
+  </span>;
+}
+
 function DisplaySettings({ prefs, setPrefs }) {
   const update = patch => setPrefs(old => displayPreferences({ ...old, ...patch }));
   return <details className="exam-display"><summary>Kiểu chữ & furigana</summary>
     <div className="exam-display-controls">
-      <label>Font bài thi<select value={prefs.font} onChange={e => update({ font: e.target.value })}>{Object.keys(EXAM_FONTS).map(font => <option key={font}>{font}</option>)}</select></label>
+      <label>Font chữ tiếng Nhật<select value={prefs.font} onChange={e => update({ font: e.target.value })}>{Object.keys(EXAM_FONTS).map(font => <option key={font}>{font}</option>)}</select></label>
       <label>Cỡ chữ: {prefs.size}px<input aria-label="Cỡ chữ bài thi" type="range" min="16" max="32" value={prefs.size} onChange={e => update({ size: e.target.value })}/></label>
       <label>Giãn dòng: {prefs.lineHeight.toFixed(1)}<input aria-label="Giãn dòng bài thi" type="range" min="1.5" max="2.2" step="0.1" value={prefs.lineHeight} onChange={e => update({ lineHeight: e.target.value })}/></label>
       <label className="exam-check-label"><input type="checkbox" checked={prefs.furigana} onChange={e => update({ furigana: e.target.checked })}/>Hiện furigana</label>
     </div>
     <p className="exam-paper exam-font-preview" lang="ja"><ExamContent value={[{ text: '試験', reading: 'しけん' }, { text: 'の文字を読みましょう。' }]} furigana={prefs.furigana}/></p>
-    <small>Font lấy từ máy đang dùng; nếu chưa cài, trình duyệt dùng font dự phòng.</small>
+    <small>Áp dụng cho chữ trong đoạn đọc, câu hỏi, lựa chọn và ô trả lời. Font lấy từ máy đang dùng; nếu chưa cài, trình duyệt dùng font dự phòng.</small>
   </details>;
 }
 
@@ -56,7 +72,7 @@ function QuestionFeedback({ question, result, furigana }) {
 
 export function ExamWorkspace({ active }) {
   const [, redraw] = useReducer(n => n + 1, 0);
-  const sessionRef = useRef(null);
+  const sessionRef = useRef(null), questionPanel = useRef(null);
   if (!sessionRef.current) {
     let storage, draftScope = '';
     try {
@@ -137,6 +153,10 @@ export function ExamWorkspace({ active }) {
   const selectQuestion = index => session.selectQuestion(allQuestions[index].question.id);
   const currentItem = allQuestions[current] || allQuestions[0];
   const submitted = attempt?.status === 'SUBMITTED';
+  const incorrectQuestions = allQuestions.flatMap(({ question }, index) => {
+    const state = resultState(attempt.results[question.id]);
+    return state && ['incorrect', 'partial'].includes(state.className) ? [{ question, index, state }] : [];
+  });
   const paused = attempt?.status === 'PAUSED';
   const disabled = session.busy || session.conflict || expired || submitted || paused;
   const completed = allQuestions.filter(({ question }) => isAnswered(question, session.answers[question.id])).length;
@@ -219,25 +239,35 @@ export function ExamWorkspace({ active }) {
       {submitted && <div className="exam-result-summary" aria-label="Kết quả bài kiểm tra"><div><span>Điểm tự động</span><strong>{attempt.metrics.maxScore ? `${attempt.metrics.score} / ${attempt.metrics.maxScore}` : 'Không có câu tính điểm'}</strong></div>
         <div><span>Đơn vị trả lời đúng</span><strong>{attempt.metrics.correctUnits}/{attempt.metrics.totalUnits}{attempt.metrics.totalUnits > 0 && ` · ${attempt.metrics.correctPercent}%`}</strong></div>
         <div><span>Tự luận đã viết</span><strong>{attempt.metrics.answeredEssays}/{attempt.metrics.essayCount}</strong><small>Không tính trong điểm tự động</small></div></div>}
+      {submitted && incorrectQuestions.length > 0 && <section className="exam-review" aria-label="Câu trả lời chưa đúng">
+        <h3>Câu cần xem lại <span>{incorrectQuestions.length}</span></h3>
+        <p>Bấm vào câu để xem bài làm, đáp án và giải thích. Bao gồm câu đúng một phần và câu bỏ trống.</p>
+        <div className="exam-review-list">{incorrectQuestions.map(({ question, index, state }) => <button key={question.id} className={`exam-review-item ${state.className}`}
+          onClick={() => { selectQuestion(index); requestAnimationFrame(() => { questionPanel.current?.focus(); questionPanel.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }); }}>
+          <strong>Câu {index + 1} · {state.label}</strong>
+          <span className="exam-paper exam-review-prompt"><ExamContent value={question.prompt} furigana={prefs.furigana} blank={() => '____'}/></span>
+        </button>)}</div>
+      </section>}
       {confirmSubmit && !submitted && !paused && <div className="exam-submit-confirm" role="alert"><p>Bạn đã trả lời {completed}/{allQuestions.length} câu. Nộp bài sẽ khóa toàn bộ câu trả lời.</p><button disabled={disabled} onClick={() => action(async () => { await session.submit(); setConfirmSubmit(false); await refreshLibrary(); })}>Xác nhận nộp bài</button><button className="button-secondary" disabled={session.busy} onClick={() => setConfirmSubmit(false)}>Tiếp tục làm</button></div>}
       {!paused && <div className="exam-taking-layout"><aside className="exam-question-map" aria-label="Điều hướng câu hỏi">
         <h3>Câu hỏi</h3><div>{allQuestions.map(({ question }, i) => {
-          const checked = Object.hasOwn(attempt.results, question.id); const answered = isAnswered(question, session.answers[question.id]);
-          return <button key={question.id} disabled={session.busy || session.conflict} aria-current={current === i ? 'step' : undefined} className={`${checked ? 'checked' : answered ? 'answered' : ''} ${session.flagged.includes(question.id) ? 'flagged' : ''}`} title={`Câu ${i + 1}: ${checked ? '✓ đã khóa' : answered ? 'đã trả lời' : 'chưa trả lời'}${session.flagged.includes(question.id) ? ', đánh dấu xem lại' : ''}`} onClick={() => selectQuestion(i)}>{i + 1}{session.flagged.includes(question.id) && <sup>*</sup>}</button>;
-        })}</div><p>Viền chấm: xem lại<br/>Nền xanh: đã trả lời<br/>✓ trong chú thích: câu đã khóa</p>
+          const state = resultState(attempt.results[question.id]); const answered = isAnswered(question, session.answers[question.id]);
+          const label = `Câu ${i + 1}: ${state ? `${state.label}, đã khóa` : answered ? 'đã trả lời' : 'chưa trả lời'}${session.flagged.includes(question.id) ? ', đánh dấu xem lại' : ''}`;
+          return <button key={question.id} disabled={session.busy || session.conflict} aria-label={label} aria-current={current === i ? 'step' : undefined} className={`${state ? `checked graded-${state.className}` : answered ? 'answered' : ''} ${session.flagged.includes(question.id) ? 'flagged' : ''}`} title={label} onClick={() => selectQuestion(i)}>{i + 1}{session.flagged.includes(question.id) && <sup>*</sup>}</button>;
+        })}</div><p>Viền chấm: đánh dấu xem lại<br/>Xanh: đã trả lời / đúng<br/>Đỏ: chưa đúng · vàng: đúng một phần<br/>Xám: tự luận, tự đối chiếu</p>
       </aside><div className="exam-question-body" key={currentItem.question.id}>
-        <div className="exam-section-heading"><span>{currentItem.section.title}</span>{currentItem.section.instructions && <p className="exam-paper"><ExamContent value={currentItem.section.instructions} furigana={prefs.furigana}/></p>}</div>
+        <div className="exam-section-heading"><span>{currentItem.section.title}</span></div>
         {currentItem.section.passage && <div className="exam-passage"><h3>Đoạn đọc</h3><div className="exam-paper" lang="ja"><ExamContent value={currentItem.section.passage} furigana={prefs.furigana}/></div></div>}
         {(() => {
           const q = currentItem.question; const result = attempt.results[q.id]; const locked = disabled || Boolean(result); const answer = session.answers[q.id];
-          const inputBlank = id => <input type="text" className="exam-blank" aria-label={`Câu ${current + 1}, ô ${q.blanks.findIndex(b => b.id === id) + 1}`} autoComplete="off" spellCheck="false" disabled={locked} value={answer?.[id] || ''}
+          const inputBlank = id => <BlankAnswer aria-label={`Câu ${current + 1}, ô ${q.blanks.findIndex(b => b.id === id) + 1}`} autoComplete="off" spellCheck="false" disabled={locked} value={answer?.[id] || ''} state={result?.blanks?.[id] ? result.blanks[id].correct ? 'correct' : 'incorrect' : undefined}
             onCompositionStart={() => { composing.current = true; clearTimeout(session.timer); }} onCompositionEnd={e => { composing.current = false; session.edit(q.id, { ...session.answers[q.id], [id]: e.currentTarget.value }); }}
             onChange={e => { session.edit(q.id, { ...session.answers[q.id], [id]: e.target.value }); if (composing.current) clearTimeout(session.timer); }}/ >;
-          return <article className="exam-panel exam-question"><div className="exam-question-heading"><h3>Câu {current + 1}<span>{TYPE_LABEL[q.type]}</span></h3>
+          return <article className="exam-panel exam-question" ref={questionPanel} tabIndex={-1} aria-label={`Câu ${current + 1}`}><div className="exam-question-heading"><h3>Câu {current + 1}<span>{TYPE_LABEL[q.type]}</span></h3>
             <button disabled={disabled} className="button-secondary" aria-pressed={session.flagged.includes(q.id)} onClick={() => session.toggleFlag(q.id)}>{session.flagged.includes(q.id) ? 'Bỏ đánh dấu' : 'Đánh dấu xem lại'}</button></div>
             <div className="exam-paper" lang="ja">
               <div className="exam-prompt"><ExamContent value={q.prompt} furigana={prefs.furigana} blank={q.type === 'fill_blank' ? inputBlank : undefined}/></div>
-              {q.type === 'single_choice' && <fieldset className="exam-options" disabled={locked}><legend className="sr-only">Chọn đáp án câu {current + 1}</legend>{q.options.map((option, i) => <label key={option.id} className={`${answer === option.id ? 'selected' : ''} ${result?.correctOptionId === option.id ? 'correct' : ''}`}>
+              {q.type === 'single_choice' && <fieldset className="exam-options" disabled={locked}><legend className="sr-only">Chọn đáp án câu {current + 1}</legend>{q.options.map((option, i) => <label key={option.id} className={`${answer === option.id ? 'selected' : ''} ${result?.correctOptionId === option.id ? 'correct' : ''} ${result?.correct === false && answer === option.id ? 'incorrect' : ''}`}>
                 <input type="radio" name={`exam-${attempt.id}-${q.id}`} checked={answer === option.id} onChange={() => session.edit(q.id, option.id)}/><span className="exam-option-letter">{String.fromCharCode(65 + i)}</span><span><ExamContent value={option.text} furigana={prefs.furigana}/></span></label>)}</fieldset>}
               {q.type === 'essay' && <label className="exam-essay-label"><span className="sr-only">Bài viết câu {current + 1}</span><textarea aria-label={`Bài viết câu ${current + 1}`} disabled={locked} value={answer || ''} placeholder="Viết câu trả lời tại đây…" spellCheck="false"
                 onCompositionStart={() => { composing.current = true; clearTimeout(session.timer); }} onCompositionEnd={e => { composing.current = false; session.edit(q.id, e.currentTarget.value); }}
