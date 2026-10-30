@@ -23,3 +23,27 @@ test('downloadable sample has shared reading, furigana, all question types and v
     assert.ok(prompt.includes(q.type));
   }
 });
+
+test('vocabulary authoring includes full English support and actual kana production', async () => {
+  const sample = JSON.parse(await readFile(new URL('../../public/exams/vocab-template.json', import.meta.url), 'utf8'));
+  const schema = JSON.parse(await readFile(new URL('../../public/exams/exam.schema.json', import.meta.url), 'utf8'));
+  const prompt = await readFile(new URL('../../public/exams/generate-exam-prompt.txt', import.meta.url), 'utf8');
+  const questions = sample.sections.flatMap(s => s.questions);
+  assert.deepEqual(new Set(questions.map(q => q.type)), new Set(['single_choice', 'fill_blank']));
+  for (const kind of ['choice', 'fill', 'essay']) assert.ok(schema.$defs[kind].properties.promptTranslationEn);
+  for (const q of questions) {
+    assert.equal(typeof q.promptTranslationEn, 'string');
+    assert.ok(q.promptTranslationEn.trim());
+    assert.equal(typeof q.prompt, 'string'); // No ruby can disclose the tested reading.
+    if (q.type === 'fill_blank') {
+      assert.ok(q.prompt.includes('{{reading}}'));
+      for (const answer of q.blanks[0].acceptedAnswers) {
+        assert.match(answer, /^[\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u);
+        assert.ok(!q.prompt.includes(answer));
+        assert.ok(!q.promptTranslationEn.includes(answer));
+      }
+    }
+  }
+  assert.ok(prompt.includes('ĐỀ TẬP TRUNG TỪ VỰNG'));
+  assert.ok(prompt.includes('promptTranslationEn'));
+});

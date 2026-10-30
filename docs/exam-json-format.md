@@ -14,7 +14,7 @@ Prompt sinh đề ưu tiên cách ra đề thi tiếng Nhật: đoạn đọc kh
 
 - Đề: `schemaVersion: 1`, `id`, `title`, `sections`; tùy chọn `description`, `instructions`, `timeLimitMinutes` (số nguyên 1–1440; bỏ trường nếu không giới hạn).
 - Phần: `id`, `title`, `questions`; tùy chọn `instructions`, `passage` (đoạn đọc dùng chung cho các câu trong phần).
-- Câu: `id`, `type`, `prompt`, `explanation`.
+- Câu: `id`, `type`, `prompt`, `explanation`; tùy chọn `promptTranslationEn` (chuỗi tiếng Anh không trống, tối đa 200000 ký tự). Trường này được phép cho cả ba loại câu và không bắt buộc trong schema để đề cũ tiếp tục hợp lệ.
 - `single_choice`: `options: [{id, text}]`, `correctOptionId`, `points?` (mặc định 1).
 - `fill_blank`: `blanks: [{id, acceptedAnswers, points?}]`; mỗi `{{id}}` trong prompt tương ứng đúng một blank, xuất hiện đúng một lần. Điểm mặc định 1 mỗi ô. Câu nhiều ô được tính điểm từng ô.
 - `essay`: `modelAnswer`; không có điểm tự động. Mọi nội dung viết vẫn được lưu.
@@ -26,6 +26,30 @@ ID có 1–120 ký tự, bắt đầu bằng chữ/số, sau đó dùng chữ/s�
 Điền từ dùng NFC + bỏ khoảng trắng đầu/cuối rồi so khớp toàn bộ chuỗi. Không đổi kana, bỏ trường âm/dấu câu/dấu tiếng Việt hoặc đoán dạng chia. Các biến thể phải ghi rõ trong `acceptedAnswers`. Đáp án không được trống.
 
 Nhập cùng ID và cùng nội dung (không phân biệt thứ tự thuộc tính object) dùng lại đề cũ; thay nội dung tạo phiên bản mới. Thứ tự mảng luôn có ý nghĩa. Mỗi lượt làm giữ bản chụp đề bất biến.
+
+## Quy tắc sinh đề tập trung từ vựng
+
+- Mỗi câu có `promptTranslationEn`: bản dịch tiếng Anh đầy đủ của câu/ngữ cảnh và yêu cầu trả lời trong `prompt`. Không chỉ dịch riêng từ đích; không đặt ở `explanation` vì người học cần hiểu câu trước khi trả lời.
+- Bản dịch hiện ngay dưới câu Nhật, trước lựa chọn nếu có; dùng font giao diện và cỡ khoảng một nửa chữ Nhật, giới hạn 11–16px. Không ghép bản dịch vào `prompt`, không dùng HTML/Markdown để điều khiển cỡ chữ.
+- Dùng từ nền và ngữ pháp đã học; ưu tiên cấu trúc đơn giản khi phạm vi chưa được xác nhận. Không biến đề từ vựng thành bài đoán ngữ pháp hoặc từ mới trong câu dẫn. Nếu cần passage, đưa bản dịch đầy đủ của đoạn ngữ cảnh liên quan vào `promptTranslationEn` của câu; chưa có trường bản dịch passage riêng.
+- Đề phải có cả `single_choice` và `fill_blank` tự nhập cách đọc kana. Tỷ lệ theo yêu cầu người học; không làm toàn trắc nghiệm.
+- Câu tự điền cách đọc hiển thị rõ từ đích, yêu cầu hiragana cho từ kanji (hoặc ghi rõ katakana khi phù hợp), rồi đặt `{{reading}}` khớp với blank `reading`. Không biến dạng này thành chọn đáp án và không yêu cầu chép lại từ vốn đã in bằng kana.
+- Không gắn token `reading` lên từ đích hoặc để cách đọc kana/romaji lộ trong bản dịch/ngữ cảnh. Chỉ liệt kê cách đọc kana hợp lệ trong `acceptedAnswers`; bộ chấm vẫn so khớp chính xác sau NFC và bỏ khoảng trắng đầu/cuối.
+- Bản dịch được phép hỗ trợ nghĩa. Nếu điều đó làm lộ đáp án của câu chọn nghĩa, đổi dạng sang chọn cách đọc/chọn từ tiếng Nhật hoặc tự điền kana; vẫn dịch đầy đủ. Không coi câu đã được gợi nghĩa là phép đo độc lập về tự nhớ nghĩa.
+- Không tự áp dụng bản dịch bắt buộc cho đề tập trung ngữ pháp. JSON cũ không có trường này vẫn nhập và làm được; không cần migration hoặc sửa đề/lượt làm đã lưu.
+
+Ví dụ hoàn chỉnh để tải: `public/exams/vocab-template.json`, gồm một câu trắc nghiệm cách đọc và một câu tự điền hiragana. Prompt sinh đề tải/sao chép trong ứng dụng đã có các quy tắc này. `promptTranslationEn` là chuỗi thuần, được hiển thị an toàn như văn bản, không phân tích HTML hoặc placeholder thành ô trả lời.
+
+```json
+{
+  "id": "kana-q1",
+  "type": "fill_blank",
+  "prompt": "学校へ行きます。「学校」の読み方をひらがなで書いてください。\n{{reading}}",
+  "promptTranslationEn": "I go to school. Write the reading of “学校” in hiragana.",
+  "blanks": [{"id": "reading", "acceptedAnswers": ["がっこう"], "points": 1}],
+  "explanation": "学校 đọc là がっこう; cần có っ nhỏ và trường âm こう."
+}
+```
 
 ## Làm bài và lưu dữ liệu
 

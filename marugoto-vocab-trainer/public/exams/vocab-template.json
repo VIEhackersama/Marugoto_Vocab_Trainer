@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "vocab-kana-english-sample-001",
+  "title": "Đề mẫu từ vựng · Cách đọc kana và bản dịch tiếng Anh",
+  "description": "Hai câu minh họa: một câu trắc nghiệm và một câu tự điền hiragana. Mỗi câu có bản dịch tiếng Anh đầy đủ.",
+  "sections": [
+    {
+      "id": "vocab",
+      "title": "語彙・読み方",
+      "questions": [
+        {
+          "id": "q1",
+          "type": "single_choice",
+          "prompt": "これは先生の本です。「先生」の読み方はどれですか。",
+          "promptTranslationEn": "This is the teacher's book. Which reading is correct for “先生”?",
+          "options": [
+            {
+              "id": "a",
+              "text": "せんせい"
+            },
+            {
+              "id": "b",
+              "text": "せんさい"
+            },
+            {
+              "id": "c",
+              "text": "せんせ"
+            },
+            {
+              "id": "d",
+              "text": "せいせん"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "先生 đọc là せんせい, nghĩa là giáo viên/thầy cô. Đây là câu kiểm tra cách đọc, bản dịch chỉ hỗ trợ hiểu ngữ cảnh."
+        },
+        {
+          "id": "q2",
+          "type": "fill_blank",
+          "prompt": "学校へ行きます。「学校」の読み方をひらがなで書いてください。\n{{reading}}",
+          "promptTranslationEn": "I go to school. Write the reading of “学校” in hiragana.",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "がっこう"
+              ],
+              "points": 1
+            }
+          ],
+          "explanation": "学校 đọc là がっこう. Cần có っ nhỏ và trường âm こう; không chấp nhận romaji hoặc cách đọc sai."
+        }
+      ]
+    }
+  ]
+}

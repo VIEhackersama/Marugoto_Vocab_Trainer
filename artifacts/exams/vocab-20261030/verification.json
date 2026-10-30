@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "examFile": "public/exams/de-tu-vung-ca-nhan-2026-10-30.json",
+  "questions": 80,
+  "uniqueVocabularyTargets": 76,
+  "maxScore": 100,
+  "fullKeyScore": 100,
+  "emptyScore": 0,
+  "truncatedReadingScore": 96,
+  "postmanAssertions": 5,
+  "checks": [
+    "exact VOCAB IDs/stages",
+    "all 47 lower-stage words",
+    "balanced answer positions",
+    "no reading hints in furigana",
+    "backend preview/import",
+    "idempotent import",
+    "hidden keys while working",
+    "real grader",
+    "mobile layout",
+    "80-question navigation",
+    "reading input and result display"
+  ]
+}

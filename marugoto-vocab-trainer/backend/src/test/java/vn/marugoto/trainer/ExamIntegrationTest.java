@@ -58,6 +58,29 @@ class ExamIntegrationTest {
         assertEquals("Đề mẫu N5 · Ngữ pháp, đọc hiểu và viết", exams.get(id(a)).path("document").path("title").asText());
     }
 
+    @Test void englishPromptTranslationSurvivesImportExportAndUnsubmittedViewsWithoutAnswerKeys() throws Exception {
+        var source = sample();
+        for (var section : source.path("sections")) for (var question : section.path("questions"))
+            ((ObjectNode) question).put("promptTranslationEn", "A complete English sentence and task.");
+        var imported = exams.importExam(source);
+        assertEquals(source, exams.export(id(imported)));
+        var attempt = exams.start(id(imported), json.createObjectNode());
+        for (var section : attempt.path("document").path("sections")) for (var question : section.path("questions")) {
+            assertEquals("A complete English sentence and task.", question.path("promptTranslationEn").asText());
+            assertFalse(question.has("explanation"));
+            assertFalse(question.has("correctOptionId"));
+        }
+    }
+
+    @Test void englishPromptTranslationRejectsEmptyAndNonStringValues() throws Exception {
+        for (var value : List.of(json.readTree("null"), json.readTree("42"), json.readTree("[]"), json.readTree("\"   \""))) {
+            var source = sample();
+            ((ObjectNode) source.path("sections").get(0).path("questions").get(0)).set("promptTranslationEn", value);
+            var error = assertThrows(IllegalArgumentException.class, () -> exams.preview(source));
+            assertTrue(error.getMessage().contains(".promptTranslationEn"));
+        }
+    }
+
     @Test void validatesFieldPathsAndNeverImportsPartOfAnInvalidDocument() throws Exception {
         var cases = List.of("version", "duplicateQuestion", "duplicateSection", "option", "placeholder", "duplicateBlank", "missingExplanation", "type", "float", "splitToken", "readingBlank", "unknownField");
         for (var kind : cases) {

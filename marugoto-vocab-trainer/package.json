@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --configLoader runner",
     "build": "vite build --configLoader runner",
+    "clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-project.ps1",
     "test": "node --test",
     "exams:verify": "node scripts/verify-exams.mjs",
     "exams:generate:de01": "node scripts/exams/create-de-01-20261028.mjs",

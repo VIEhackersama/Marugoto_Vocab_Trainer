@@ -1,0 +1,4210 @@
+{
+  "schemaVersion": 1,
+  "id": "vocab-progress-20261030-01",
+  "title": "語彙テスト 01 · Từ vựng theo tiến độ 30/10/2026",
+  "description": "80 câu, 100 điểm, 75 phút; chỉ kiểm tra từ vựng từ 235 mục VOCAB trong bunpro-progress.json. Ưu tiên 47 từ cấp 0–3; từ cấp cao hơn được kiểm tra chọn lọc trong ngữ cảnh. Gồm 60 câu trắc nghiệm và 20 câu ghi cách đọc bằng hiragana. Cách đọc cần kiểm tra không kèm furigana ở từ đích.",
+  "timeLimitMinutes": 75,
+  "sections": [
+    {
+      "id": "reading-choice",
+      "title": "文字・読み方",
+      "questions": [
+        {
+          "id": "q01",
+          "type": "single_choice",
+          "prompt": "「旅行」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "りょこう"
+            },
+            {
+              "id": "b",
+              "text": "りこう"
+            },
+            {
+              "id": "c",
+              "text": "りょうこう"
+            },
+            {
+              "id": "d",
+              "text": "りょこ"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "旅行＝りょこう: du lịch/chuyến đi. Âm りょ là âm ghép; こう có trường âm. Không viết りょうこう hay rút ngắn thành りょこ."
+        },
+        {
+          "id": "q02",
+          "type": "single_choice",
+          "prompt": "「夏休み」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "なつやすむ"
+            },
+            {
+              "id": "b",
+              "text": "なつやさみ"
+            },
+            {
+              "id": "c",
+              "text": "なつやすめ"
+            },
+            {
+              "id": "d",
+              "text": "なつやすみ"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "夏休み＝なつやすみ: kỳ nghỉ hè. 休み là danh từ kỳ nghỉ/nghỉ ngơi; không thay đuôi bằng 休む là động từ nghỉ."
+        },
+        {
+          "id": "q03",
+          "type": "single_choice",
+          "prompt": "「初めて」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "はじめで"
+            },
+            {
+              "id": "b",
+              "text": "はじめて"
+            },
+            {
+              "id": "c",
+              "text": "はじまて"
+            },
+            {
+              "id": "d",
+              "text": "はしめて"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "初めて＝はじめて: lần đầu tiên. Ghi nhớ cả cụm; không đổi じ thành し hoặc て thành で."
+        },
+        {
+          "id": "q04",
+          "type": "single_choice",
+          "prompt": "「医者」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "いしや"
+            },
+            {
+              "id": "b",
+              "text": "いしょう"
+            },
+            {
+              "id": "c",
+              "text": "いしゃ"
+            },
+            {
+              "id": "d",
+              "text": "いっしゃ"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "医者＝いしゃ: bác sĩ. しゃ dùng ゃ nhỏ, không phải hai âm tách rời し・や; không có âm ngắt っ."
+        },
+        {
+          "id": "q05",
+          "type": "single_choice",
+          "prompt": "「病院」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "びょういん"
+            },
+            {
+              "id": "b",
+              "text": "びよういん"
+            },
+            {
+              "id": "c",
+              "text": "びょうにん"
+            },
+            {
+              "id": "d",
+              "text": "びょいん"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "病院＝びょういん: bệnh viện. Phân biệt びょう (ょ nhỏ và có う) với びよう. Bỏ trường âm hoặc đổi いん thành にん đều không đúng từ này."
+        },
+        {
+          "id": "q06",
+          "type": "single_choice",
+          "prompt": "「喫茶店」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "きっさてい"
+            },
+            {
+              "id": "b",
+              "text": "きっさてん"
+            },
+            {
+              "id": "c",
+              "text": "きさてん"
+            },
+            {
+              "id": "d",
+              "text": "きっちゃてん"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "喫茶店＝きっさてん: quán cà phê/quán giải khát. Có っ trước さ; cả từ không đọc theo kiểu ghép máy móc từng âm chữ Hán."
+        },
+        {
+          "id": "q07",
+          "type": "single_choice",
+          "prompt": "「留学生」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "りゅうがくさい"
+            },
+            {
+              "id": "b",
+              "text": "りゆうがくせい"
+            },
+            {
+              "id": "c",
+              "text": "りゅうがくせい"
+            },
+            {
+              "id": "d",
+              "text": "りゅがくせい"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "留学生＝りゅうがくせい: du học sinh. りゅう có ゅ nhỏ và trường âm; phần cuối là せい."
+        },
+        {
+          "id": "q08",
+          "type": "single_choice",
+          "prompt": "「外国人」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "がいこくひと"
+            },
+            {
+              "id": "b",
+              "text": "がいごくじん"
+            },
+            {
+              "id": "c",
+              "text": "がいこくにん"
+            },
+            {
+              "id": "d",
+              "text": "がいこくじん"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "外国人＝がいこくじん: người nước ngoài. Trong từ này 人 đọc じん, không đọc にん hay ひと; 国 là こく."
+        },
+        {
+          "id": "q09",
+          "type": "single_choice",
+          "prompt": "「誕生日」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "たんしょうび"
+            },
+            {
+              "id": "b",
+              "text": "たんじょうび"
+            },
+            {
+              "id": "c",
+              "text": "たんじょうにち"
+            },
+            {
+              "id": "d",
+              "text": "たんじょび"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "誕生日＝たんじょうび: sinh nhật. じょう có trường âm; 日 trong cả từ này đọc び."
+        },
+        {
+          "id": "q10",
+          "type": "single_choice",
+          "prompt": "「図書館」の読み方はどれですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "としょうかん"
+            },
+            {
+              "id": "b",
+              "text": "ずしょかん"
+            },
+            {
+              "id": "c",
+              "text": "としょかん"
+            },
+            {
+              "id": "d",
+              "text": "としょがん"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "図書館＝としょかん: thư viện. としょ không có trường âm sau しょ; 館 ở đây đọc かん."
+        }
+      ]
+    },
+    {
+      "id": "basic-meaning",
+      "title": "語彙",
+      "questions": [
+        {
+          "id": "q11",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "学生"
+            },
+            {
+              "text": "たちは、この"
+            },
+            {
+              "text": "部屋",
+              "reading": "へや"
+            },
+            {
+              "text": "で"
+            },
+            {
+              "text": "先生"
+            },
+            {
+              "text": "と"
+            },
+            {
+              "text": "勉強"
+            },
+            {
+              "text": "します。ここは（　）です。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "教室",
+                  "reading": "きょうしつ"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "台所",
+                  "reading": "だいどころ"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "玄関",
+                  "reading": "げんかん"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "映画館"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "教室: phòng học. 台所 là bếp, 玄関 là lối vào nhà, 映画館 là rạp chiếu phim. Câu hỏi yêu cầu nhận ra loại phòng, không yêu cầu chọn trợ từ."
+        },
+        {
+          "id": "q12",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "毎朝",
+              "reading": "まいあさ"
+            },
+            {
+              "text": "、（　）を"
+            },
+            {
+              "text": "読"
+            },
+            {
+              "text": "んで、ニュースを"
+            },
+            {
+              "text": "知"
+            },
+            {
+              "text": "ります。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "鞄",
+                  "reading": "かばん"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "時計",
+                  "reading": "とけい"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "帽子",
+                  "reading": "ぼうし"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "新聞",
+                  "reading": "しんぶん"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "新聞: báo. Đọc báo để biết tin tức là cách dùng tự nhiên của từ này; 帽子 là mũ, 鞄 là túi, 時計 là đồng hồ."
+        },
+        {
+          "id": "q13",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「日本語の"
+            },
+            {
+              "text": "授業",
+              "reading": "じゅぎょう"
+            },
+            {
+              "text": "」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "quyển sách của Nhật Bản"
+            },
+            {
+              "id": "b",
+              "text": "giáo viên người Nhật"
+            },
+            {
+              "id": "c",
+              "text": "du học sinh Nhật Bản"
+            },
+            {
+              "id": "d",
+              "text": "tiết học tiếng Nhật"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "日本語 nghĩa là tiếng Nhật, không phải người Nhật hay giáo viên. 授業 là tiết học/buổi học, nên 日本語の授業 là tiết học tiếng Nhật."
+        },
+        {
+          "id": "q14",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "子",
+              "reading": "こ"
+            },
+            {
+              "text": "どもたちが"
+            },
+            {
+              "text": "毎日"
+            },
+            {
+              "text": "通",
+              "reading": "かよ"
+            },
+            {
+              "text": "って、"
+            },
+            {
+              "text": "先生"
+            },
+            {
+              "text": "と"
+            },
+            {
+              "text": "勉強"
+            },
+            {
+              "text": "するところはどこですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "映画館"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "病院"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "学校"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": "ホテル"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "学校: trường học. ホテル là khách sạn, 病院 là bệnh viện, 映画館 là rạp phim. 子どもたちが毎日通う nói đến sinh hoạt đi học, không phải một chuyến đến nơi bất kỳ."
+        },
+        {
+          "id": "q15",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "電話",
+              "reading": "でんわ"
+            },
+            {
+              "text": "をしたいです。"
+            },
+            {
+              "text": "電話",
+              "reading": "でんわ"
+            },
+            {
+              "text": "の（　）を"
+            },
+            {
+              "text": "教",
+              "reading": "おし"
+            },
+            {
+              "text": "えてください。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "誕生日"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "番号",
+                  "reading": "ばんごう"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "半分",
+                  "reading": "はんぶん"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "名前",
+                  "reading": "なまえ"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "番号: số/số hiệu. 電話の番号 là số điện thoại; tên, sinh nhật và một nửa không cung cấp số để gọi."
+        },
+        {
+          "id": "q16",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "カメラで"
+            },
+            {
+              "text": "撮",
+              "reading": "と"
+            },
+            {
+              "text": "りました。"
+            },
+            {
+              "text": "旅行"
+            },
+            {
+              "text": "の（　）を"
+            },
+            {
+              "text": "友達",
+              "reading": "ともだち"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "見",
+              "reading": "み"
+            },
+            {
+              "text": "せます。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "写真",
+                  "reading": "しゃしん"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "鶏肉"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "文法"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "砂糖",
+                  "reading": "さとう"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "写真: ảnh. カメラで撮る và 写真を見せる là các kết hợp tự nhiên. 砂糖 là đường, 鶏肉 là thịt gà, 文法 là ngữ pháp."
+        },
+        {
+          "id": "q17",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "猫",
+              "reading": "ねこ"
+            },
+            {
+              "text": "や"
+            },
+            {
+              "text": "犬",
+              "reading": "いぬ"
+            },
+            {
+              "text": "は（　）です。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "文法"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "飲",
+                  "reading": "の"
+                },
+                {
+                  "text": "み"
+                },
+                {
+                  "text": "物"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "食"
+                },
+                {
+                  "text": "べ"
+                },
+                {
+                  "text": "物"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "動物"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "動物: động vật. 猫 và 犬 thuộc nhóm động vật. 飲み物 là đồ uống; 食べ物 là thức ăn; 文法 là ngữ pháp."
+        },
+        {
+          "id": "q18",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "お"
+            },
+            {
+              "text": "茶"
+            },
+            {
+              "text": "やジュースは（　）です。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "教室",
+                  "reading": "きょうしつ"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "飲",
+                  "reading": "の"
+                },
+                {
+                  "text": "み"
+                },
+                {
+                  "text": "物"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "新聞",
+                  "reading": "しんぶん"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "動物"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "飲み物: đồ uống, thứ để uống. Cả trà và nước trái cây đều thuộc nhóm này. Những lựa chọn còn lại lần lượt là động vật, phòng học và báo."
+        },
+        {
+          "id": "q19",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「"
+            },
+            {
+              "text": "私",
+              "reading": "わたし"
+            },
+            {
+              "text": "の妹」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "em gái của tôi"
+            },
+            {
+              "id": "b",
+              "text": "mẹ của tôi"
+            },
+            {
+              "id": "c",
+              "text": "chị gái của tôi"
+            },
+            {
+              "id": "d",
+              "text": "anh trai của tôi"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "妹＝いもうと: em gái của mình. 姉 là chị gái, 兄 là anh trai, お母さん là mẹ. Ở đây kiểm tra quan hệ gia đình, không kiểm tra mẫu の."
+        },
+        {
+          "id": "q20",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "コーヒーに（　）を"
+            },
+            {
+              "text": "少",
+              "reading": "すこ"
+            },
+            {
+              "text": "し"
+            },
+            {
+              "text": "入",
+              "reading": "い"
+            },
+            {
+              "text": "れます。"
+            },
+            {
+              "text": "甘",
+              "reading": "あま"
+            },
+            {
+              "text": "くなります。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "紙",
+                  "reading": "かみ"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "魚",
+                  "reading": "さかな"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "砂糖",
+                  "reading": "さとう"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "鶏肉"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "砂糖: đường. Cho một ít đường vào cà phê làm nó ngọt hơn. 紙 là giấy; 魚 là cá; 鶏肉 là thịt gà."
+        }
+      ]
+    },
+    {
+      "id": "basic-context",
+      "title": "文の中のことば",
+      "questions": [
+        {
+          "id": "q21",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "部屋",
+              "reading": "へや"
+            },
+            {
+              "text": "は（　）です。"
+            },
+            {
+              "text": "昼",
+              "reading": "ひる"
+            },
+            {
+              "text": "は"
+            },
+            {
+              "text": "電気",
+              "reading": "でんき"
+            },
+            {
+              "text": "をつけなくても、"
+            },
+            {
+              "text": "本",
+              "reading": "ほん"
+            },
+            {
+              "text": "がよく"
+            },
+            {
+              "text": "読"
+            },
+            {
+              "text": "めます。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "明"
+                },
+                {
+                  "text": "るい"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "細",
+                  "reading": "ほそ"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "暗",
+                  "reading": "くら"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "冷",
+                  "reading": "つめ"
+                },
+                {
+                  "text": "たい"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "明るい: sáng, nhiều ánh sáng. Ngữ cảnh nói đọc được sách ban ngày mà không bật đèn. 暗い là tối, 冷たい là lạnh khi tiếp xúc, 細い là mảnh/hẹp; đây không phải các nghĩa đang được mô tả."
+        },
+        {
+          "id": "q22",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "毎週",
+              "reading": "まいしゅう"
+            },
+            {
+              "text": "、"
+            },
+            {
+              "text": "先生"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "日本語"
+            },
+            {
+              "text": "を（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "返"
+                },
+                {
+                  "text": "します"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "走",
+                  "reading": "はし"
+                },
+                {
+                  "text": "ります"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "置",
+                  "reading": "お"
+                },
+                {
+                  "text": "きます"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "習"
+                },
+                {
+                  "text": "います"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "習う: học một kỹ năng/kiến thức từ người dạy; ở đây là học tiếng Nhật với giáo viên. 返す là trả lại, 走る là chạy, 置く là đặt/để. Các dạng lịch sự đã được cung cấp sẵn."
+        },
+        {
+          "id": "q23",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "昨日"
+            },
+            {
+              "text": "、"
+            },
+            {
+              "text": "友達",
+              "reading": "ともだち"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "本",
+              "reading": "ほん"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "借",
+              "reading": "か"
+            },
+            {
+              "text": "りました。"
+            },
+            {
+              "text": "今日"
+            },
+            {
+              "text": "、その"
+            },
+            {
+              "text": "本",
+              "reading": "ほん"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "友達",
+              "reading": "ともだち"
+            },
+            {
+              "text": "に（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "習"
+                },
+                {
+                  "text": "います"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "返"
+                },
+                {
+                  "text": "します"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "遊"
+                },
+                {
+                  "text": "びます"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "泳",
+                  "reading": "およ"
+                },
+                {
+                  "text": "ぎます"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "返す: trả lại vật cho người đã cho mượn. 借りる là mượn, còn hành động đưa lại cuốn sách là 返す. Phân biệt 返す với 帰る: 帰る là người trở về."
+        },
+        {
+          "id": "q24",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "宿題",
+              "reading": "しゅくだい"
+            },
+            {
+              "text": "はもう"
+            },
+            {
+              "text": "終",
+              "reading": "お"
+            },
+            {
+              "text": "わりました。これから"
+            },
+            {
+              "text": "友達",
+              "reading": "ともだち"
+            },
+            {
+              "text": "と"
+            },
+            {
+              "text": "公園",
+              "reading": "こうえん"
+            },
+            {
+              "text": "で（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "置",
+                  "reading": "お"
+                },
+                {
+                  "text": "きます"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "返"
+                },
+                {
+                  "text": "します"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "遊"
+                },
+                {
+                  "text": "びます"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "閉",
+                  "reading": "し"
+                },
+                {
+                  "text": "めます"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "遊ぶ: chơi, vui chơi; 友達と公園で遊ぶ là chơi cùng bạn ở công viên. Không dùng các động từ trả lại, đặt hay đóng để diễn tả hoạt động này."
+        },
+        {
+          "id": "q25",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "次",
+              "reading": "つぎ"
+            },
+            {
+              "text": "の"
+            },
+            {
+              "text": "角",
+              "reading": "かど"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "右",
+              "reading": "みぎ"
+            },
+            {
+              "text": "に（　）ください。"
+            },
+            {
+              "text": "駅",
+              "reading": "えき"
+            },
+            {
+              "text": "はその"
+            },
+            {
+              "text": "道",
+              "reading": "みち"
+            },
+            {
+              "text": "にあります。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "借",
+                  "reading": "か"
+                },
+                {
+                  "text": "りて"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "浴",
+                  "reading": "あ"
+                },
+                {
+                  "text": "びて"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "曲",
+                  "reading": "ま"
+                },
+                {
+                  "text": "がって"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "食"
+                },
+                {
+                  "text": "べて"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "曲がる: rẽ, đổi hướng. 角を右に曲がる là rẽ phải ở góc đường. Các lựa chọn đều đã cho dạng nối với ください; cần chọn đúng nghĩa của động từ."
+        },
+        {
+          "id": "q26",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "その"
+            },
+            {
+              "text": "鞄",
+              "reading": "かばん"
+            },
+            {
+              "text": "は、"
+            },
+            {
+              "text": "机"
+            },
+            {
+              "text": "の"
+            },
+            {
+              "text": "上",
+              "reading": "うえ"
+            },
+            {
+              "text": "に（　）ください。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "置",
+                  "reading": "お"
+                },
+                {
+                  "text": "いて"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "飛",
+                  "reading": "と"
+                },
+                {
+                  "text": "んで"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "泳",
+                  "reading": "およ"
+                },
+                {
+                  "text": "いで"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "休"
+                },
+                {
+                  "text": "んで"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "置く: đặt/để một vật ở nơi nào đó. Trong câu này là đặt túi lên bàn. 泳ぐ là bơi, 飛ぶ là bay, 休む là nghỉ; không diễn tả việc đặt đồ vật."
+        },
+        {
+          "id": "q27",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "バスがすぐ"
+            },
+            {
+              "text": "出"
+            },
+            {
+              "text": "ます。"
+            },
+            {
+              "text": "歩"
+            },
+            {
+              "text": "かないで、（　）ください。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "座"
+                },
+                {
+                  "text": "って"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "走",
+                  "reading": "はし"
+                },
+                {
+                  "text": "って"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "寝",
+                  "reading": "ね"
+                },
+                {
+                  "text": "て"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "読"
+                },
+                {
+                  "text": "んで"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "走る: chạy. Xe buýt sắp đi nên người nói yêu cầu chạy thay vì đi bộ. 座る là ngồi, 寝る là ngủ/đi ngủ, 読む là đọc."
+        },
+        {
+          "id": "q28",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "A：「（　）、"
+            },
+            {
+              "text": "駅",
+              "reading": "えき"
+            },
+            {
+              "text": "はどこですか。」\nB：「あそこです。」"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "初"
+                },
+                {
+                  "text": "めてです"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": "そうです"
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "大丈夫",
+                  "reading": "だいじょうぶ"
+                },
+                {
+                  "text": "です"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": "すみません"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "すみません ở đầu lời hỏi dùng để xin phép/thu hút sự chú ý một cách lịch sự, gần với “xin lỗi, cho tôi hỏi…”. Không chỉ dùng khi nhận lỗi. Những lựa chọn khác không mở lời hỏi đường tự nhiên trong đoạn hội thoại này."
+        },
+        {
+          "id": "q29",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「僕」と"
+            },
+            {
+              "text": "同",
+              "reading": "おな"
+            },
+            {
+              "text": "じ"
+            },
+            {
+              "text": "人"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "指",
+              "reading": "さ"
+            },
+            {
+              "text": "すことばはどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "あなた"
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "私",
+                  "reading": "わたし"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "彼",
+                  "reading": "かれ"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "彼女",
+                  "reading": "かのじょ"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "僕＝ぼく là đại từ ngôi thứ nhất: người nói tự xưng, nên cùng chỉ người nói như 私 trong ngữ cảnh này. 彼/彼女 chỉ người thứ ba, あなた chỉ người nghe. 僕 thường có sắc thái nam giới/thân mật hơn, không phải từ thay thế 私 trong mọi hoàn cảnh."
+        },
+        {
+          "id": "q30",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "りんごの（　）を"
+            },
+            {
+              "text": "飲",
+              "reading": "の"
+            },
+            {
+              "text": "みます。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "鶏肉"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": "スポーツ"
+            },
+            {
+              "id": "c",
+              "text": "ジュース"
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "砂糖",
+                  "reading": "さとう"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "ジュース: nước trái cây/nước ép. りんごのジュース là nước táo. Các lựa chọn khác không phải loại đồ uống phù hợp với câu này."
+        },
+        {
+          "id": "q31",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "朝",
+              "reading": "あさ"
+            },
+            {
+              "text": "、ご"
+            },
+            {
+              "text": "飯",
+              "reading": "はん"
+            },
+            {
+              "text": "とおかずを"
+            },
+            {
+              "text": "箱",
+              "reading": "はこ"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "入",
+              "reading": "い"
+            },
+            {
+              "text": "れました。"
+            },
+            {
+              "text": "昼",
+              "reading": "ひる"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "学校"
+            },
+            {
+              "text": "で、この（　）を"
+            },
+            {
+              "text": "食"
+            },
+            {
+              "text": "べます。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "お"
+                },
+                {
+                  "text": "弁当",
+                  "reading": "べんとう"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "新聞",
+                  "reading": "しんぶん"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "帽子",
+                  "reading": "ぼうし"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": "ノート"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "お弁当: cơm hộp/bữa ăn được chuẩn bị trong hộp để mang đi. Ở đây là bữa trưa mang từ nhà tới trường. ノート là vở, 帽子 là mũ, 新聞 là báo."
+        },
+        {
+          "id": "q32",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「右」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "bên ngoài"
+            },
+            {
+              "id": "b",
+              "text": "ở xa"
+            },
+            {
+              "id": "c",
+              "text": "bên trái"
+            },
+            {
+              "id": "d",
+              "text": "bên phải"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "右＝みぎ: bên phải. Ghi nhớ hướng của từ này; không phải bên trái, bên ngoài hoặc khoảng cách xa."
+        },
+        {
+          "id": "q33",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "ケーキを"
+            },
+            {
+              "text": "同",
+              "reading": "おな"
+            },
+            {
+              "text": "じ"
+            },
+            {
+              "text": "大",
+              "reading": "おお"
+            },
+            {
+              "text": "きさの"
+            },
+            {
+              "text": "二",
+              "reading": "ふた"
+            },
+            {
+              "text": "つに"
+            },
+            {
+              "text": "分",
+              "reading": "わ"
+            },
+            {
+              "text": "けます。"
+            },
+            {
+              "text": "一",
+              "reading": "ひと"
+            },
+            {
+              "text": "つは、ケーキの（　）です。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "写真",
+                  "reading": "しゃしん"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "時間",
+                  "reading": "じかん"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "番号",
+                  "reading": "ばんごう"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "半分",
+                  "reading": "はんぶん"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "半分: một nửa. Chia chiếc bánh thành hai phần bằng nhau thì mỗi phần là một nửa. Không phải cứ chia thành hai phần bất kỳ là hai nửa bằng nhau; dữ kiện 同じ大きさ làm rõ điều đó."
+        },
+        {
+          "id": "q34",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「有る」に"
+            },
+            {
+              "text": "最",
+              "reading": "もっと"
+            },
+            {
+              "text": "も"
+            },
+            {
+              "text": "近",
+              "reading": "ちか"
+            },
+            {
+              "text": "い"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "có, tồn tại (đồ vật/sự việc)"
+            },
+            {
+              "id": "b",
+              "text": "mang theo một vật"
+            },
+            {
+              "id": "c",
+              "text": "biết một thông tin"
+            },
+            {
+              "id": "d",
+              "text": "đặt một vật xuống"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "有る＝ある: có/tồn tại. Từ này thường được viết bằng hiragana ある. Không đồng nghĩa với 知る (biết), 持つ (cầm/có/mang theo theo ngữ cảnh) hoặc 置く (đặt/để)."
+        },
+        {
+          "id": "q35",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "テストは"
+            },
+            {
+              "text": "九時",
+              "reading": "くじ"
+            },
+            {
+              "text": "から"
+            },
+            {
+              "text": "十時",
+              "reading": "じゅうじ"
+            },
+            {
+              "text": "までです。テストの（　）は"
+            },
+            {
+              "text": "一時間",
+              "reading": "いちじかん"
+            },
+            {
+              "text": "です。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "誕生日"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "時間",
+                  "reading": "じかん"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "名前",
+                  "reading": "なまえ"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "番号",
+                  "reading": "ばんごう"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "時間: thời gian/khoảng thời gian. Từ 9 giờ đến 10 giờ là một giờ. 番号 là số hiệu, 名前 là tên, 誕生日 là sinh nhật; không diễn tả độ dài buổi kiểm tra."
+        },
+        {
+          "id": "q36",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "白",
+              "reading": "しろ"
+            },
+            {
+              "text": "い（　）に、"
+            },
+            {
+              "text": "名前",
+              "reading": "なまえ"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "書"
+            },
+            {
+              "text": "いてください。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "砂糖",
+                  "reading": "さとう"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "水",
+                  "reading": "みず"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "紙",
+                  "reading": "かみ"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "橋",
+                  "reading": "はし"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "紙: giấy, vật có thể dùng để viết tên lên. Đừng nhầm chỉ vì một đồ vật cũng có thể màu trắng; cần xét cả hành động 書く. 水 là nước, 橋 là cầu, 砂糖 là đường."
+        },
+        {
+          "id": "q37",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "川",
+              "reading": "かわ"
+            },
+            {
+              "text": "の"
+            },
+            {
+              "text": "上",
+              "reading": "うえ"
+            },
+            {
+              "text": "に（　）があります。そこを"
+            },
+            {
+              "text": "歩"
+            },
+            {
+              "text": "いて、"
+            },
+            {
+              "text": "向",
+              "reading": "む"
+            },
+            {
+              "text": "こうへ"
+            },
+            {
+              "text": "行"
+            },
+            {
+              "text": "きます。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "橋",
+                  "reading": "はし"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "教室",
+                  "reading": "きょうしつ"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "机"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "鞄",
+                  "reading": "かばん"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "橋: cây cầu. Nó bắc qua sông và cho người đi sang bờ bên kia. 机 là bàn, 教室 là phòng học, 鞄 là túi; không phù hợp chức năng được mô tả."
+        },
+        {
+          "id": "q38",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「青」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "màu trắng"
+            },
+            {
+              "id": "b",
+              "text": "màu xanh lam"
+            },
+            {
+              "id": "c",
+              "text": "màu đen"
+            },
+            {
+              "id": "d",
+              "text": "màu đỏ"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "青＝あお: màu xanh lam/xanh dương trong cách gọi màu cơ bản này. Một số kết hợp cố định dùng 青 cho sắc xanh khác, nhưng không phải nghĩa đang hỏi ở đây."
+        },
+        {
+          "id": "q39",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「ご飯」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "として"
+            },
+            {
+              "text": "正",
+              "reading": "ただ"
+            },
+            {
+              "text": "しいものはどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "bánh mì; đồ ngọt"
+            },
+            {
+              "id": "b",
+              "text": "nước uống; nước trái cây"
+            },
+            {
+              "id": "c",
+              "text": "cơm; bữa ăn"
+            },
+            {
+              "id": "d",
+              "text": "thịt gà; thịt nói chung"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "ご飯＝ごはん có thể chỉ cơm đã nấu hoặc bữa ăn, tùy ngữ cảnh. Không giới hạn từ này vào một món ăn phụ; các cặp nghĩa ở lựa chọn khác không phải nghĩa của ご飯."
+        },
+        {
+          "id": "q40",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「外」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "một nửa"
+            },
+            {
+              "id": "b",
+              "text": "bên phải"
+            },
+            {
+              "id": "c",
+              "text": "ở giữa"
+            },
+            {
+              "id": "d",
+              "text": "bên ngoài"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "外＝そと: bên ngoài. Đây là từ chỉ phía/phạm vi ngoài, không phải hướng phải hay số lượng một nửa."
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "title": "ことばの使い方",
+      "questions": [
+        {
+          "id": "q41",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "寒",
+              "reading": "さむ"
+            },
+            {
+              "text": "いです。ドアを（　）ください。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "飛",
+                  "reading": "と"
+                },
+                {
+                  "text": "んで"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "泳",
+                  "reading": "およ"
+                },
+                {
+                  "text": "いで"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "返"
+                },
+                {
+                  "text": "して"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "閉",
+                  "reading": "し"
+                },
+                {
+                  "text": "めて"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "閉める: đóng một vật như cửa. Vì lạnh nên yêu cầu đóng cửa. 返す là trả lại, 飛ぶ là bay, 泳ぐ là bơi; không mang nghĩa đóng cửa."
+        },
+        {
+          "id": "q42",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "私",
+              "reading": "わたし"
+            },
+            {
+              "text": "は"
+            },
+            {
+              "text": "先生"
+            },
+            {
+              "text": "です。"
+            },
+            {
+              "text": "学生"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "日本語"
+            },
+            {
+              "text": "を（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "教",
+                  "reading": "おし"
+                },
+                {
+                  "text": "えます"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "忘",
+                  "reading": "わす"
+                },
+                {
+                  "text": "れます"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "返"
+                },
+                {
+                  "text": "します"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "借",
+                  "reading": "か"
+                },
+                {
+                  "text": "ります"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "教える: dạy/chỉ cho người khác. Người nói là giáo viên và truyền đạt tiếng Nhật cho học sinh. Phân biệt với 習う: học từ người dạy. Không yêu cầu bạn tự chia động từ."
+        },
+        {
+          "id": "q43",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "明日"
+            },
+            {
+              "text": "、"
+            },
+            {
+              "text": "駅",
+              "reading": "えき"
+            },
+            {
+              "text": "で"
+            },
+            {
+              "text": "友達",
+              "reading": "ともだち"
+            },
+            {
+              "text": "に（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "寝",
+                  "reading": "ね"
+                },
+                {
+                  "text": "ます"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "座"
+                },
+                {
+                  "text": "ります"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "会",
+                  "reading": "あ"
+                },
+                {
+                  "text": "います"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "飲",
+                  "reading": "の"
+                },
+                {
+                  "text": "みます"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "会う: gặp một người. 駅で友達に会う là gặp bạn ở ga. 座る/ngồi, 飲む/uống và 寝る/ngủ không diễn tả cuộc gặp ấy."
+        },
+        {
+          "id": "q44",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "毎朝",
+              "reading": "まいあさ"
+            },
+            {
+              "text": "、シャワーを（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "食"
+                },
+                {
+                  "text": "べます"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "浴",
+                  "reading": "あ"
+                },
+                {
+                  "text": "びます"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "飲",
+                  "reading": "の"
+                },
+                {
+                  "text": "みます"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "泳",
+                  "reading": "およ"
+                },
+                {
+                  "text": "ぎます"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "浴びる: tắm/chịu dòng nước hoặc thứ chiếu/rơi vào người; シャワーを浴びる là tắm vòi sen. Không dùng 飲む hay 泳ぐ thay cho kết hợp này."
+        },
+        {
+          "id": "q45",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "水",
+              "reading": "みず"
+            },
+            {
+              "text": "の"
+            },
+            {
+              "text": "中",
+              "reading": "なか"
+            },
+            {
+              "text": "で、"
+            },
+            {
+              "text": "手",
+              "reading": "て"
+            },
+            {
+              "text": "と"
+            },
+            {
+              "text": "足",
+              "reading": "あし"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "動",
+              "reading": "うご"
+            },
+            {
+              "text": "かして（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "書"
+                },
+                {
+                  "text": "きます"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "飛",
+                  "reading": "と"
+                },
+                {
+                  "text": "びます"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "話",
+                  "reading": "はな"
+                },
+                {
+                  "text": "します"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "泳",
+                  "reading": "およ"
+                },
+                {
+                  "text": "ぎます"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "泳ぐ: bơi, di chuyển trong nước bằng cơ thể. 飛ぶ là bay, 話す là nói, 書く là viết. Ngữ cảnh giúp phân biệt hoạt động trong nước với các hành động khác."
+        },
+        {
+          "id": "q46",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "雨",
+              "reading": "あめ"
+            },
+            {
+              "text": "ですが、"
+            },
+            {
+              "text": "傘",
+              "reading": "かさ"
+            },
+            {
+              "text": "がありません。"
+            },
+            {
+              "text": "家",
+              "reading": "いえ"
+            },
+            {
+              "text": "に（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "習"
+                },
+                {
+                  "text": "いました"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "会",
+                  "reading": "あ"
+                },
+                {
+                  "text": "いました"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "忘",
+                  "reading": "わす"
+                },
+                {
+                  "text": "れました"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "泳",
+                  "reading": "およ"
+                },
+                {
+                  "text": "ぎました"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "忘れる: quên. 家に傘を忘れる là để quên ô ở nhà. Không phải người nói đi bơi, học với ai hoặc gặp ai ở nhà."
+        },
+        {
+          "id": "q47",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「"
+            },
+            {
+              "text": "部屋",
+              "reading": "へや"
+            },
+            {
+              "text": "を出る」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "ngồi trong phòng"
+            },
+            {
+              "id": "b",
+              "text": "ra khỏi phòng"
+            },
+            {
+              "id": "c",
+              "text": "trở về phòng"
+            },
+            {
+              "id": "d",
+              "text": "đóng cửa phòng"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "出る: ra, đi ra/rời khỏi. 部屋を出る là ra khỏi phòng; không đồng nghĩa với 帰る (trở về), 閉める (đóng) hoặc 座る (ngồi)."
+        },
+        {
+          "id": "q48",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "母",
+              "reading": "はは"
+            },
+            {
+              "text": "は（　）で、"
+            },
+            {
+              "text": "今日"
+            },
+            {
+              "text": "のご"
+            },
+            {
+              "text": "飯",
+              "reading": "はん"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "作",
+              "reading": "つく"
+            },
+            {
+              "text": "っています。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "台所",
+                  "reading": "だいどころ"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "教室",
+                  "reading": "きょうしつ"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "図書館"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "玄関",
+                  "reading": "げんかん"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "台所: nhà bếp, nơi chuẩn bị/nấu bữa ăn. 玄関 là lối vào nhà, 教室 là phòng học, 図書館 là thư viện."
+        },
+        {
+          "id": "q49",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "大",
+              "reading": "おお"
+            },
+            {
+              "text": "きいスクリーンで"
+            },
+            {
+              "text": "映画",
+              "reading": "えいが"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "見",
+              "reading": "み"
+            },
+            {
+              "text": "たいです。これから（　）へ"
+            },
+            {
+              "text": "行"
+            },
+            {
+              "text": "きます。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "レストラン"
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "図書館"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "映画館"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "病院"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "映画館: rạp chiếu phim. 映画 chỉ bộ phim; thêm 館 tạo tên địa điểm xem phim. Những địa điểm còn lại không phải nơi được mô tả."
+        },
+        {
+          "id": "q50",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "このホラー"
+            },
+            {
+              "text": "映画",
+              "reading": "えいが"
+            },
+            {
+              "text": "は（　）です。"
+            },
+            {
+              "text": "一人"
+            },
+            {
+              "text": "では"
+            },
+            {
+              "text": "見",
+              "reading": "み"
+            },
+            {
+              "text": "たくありません。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "熱",
+                  "reading": "あつ"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "怖",
+                  "reading": "こわ"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "細",
+                  "reading": "ほそ"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "丸",
+                  "reading": "まる"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "怖い: đáng sợ/sợ. Người nói không muốn xem phim kinh dị một mình vì nó đáng sợ. 熱い là nóng của vật, 丸い là tròn, 細い là mảnh/hẹp."
+        },
+        {
+          "id": "q51",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "家",
+              "reading": "いえ"
+            },
+            {
+              "text": "から"
+            },
+            {
+              "text": "学校"
+            },
+            {
+              "text": "までバスで"
+            },
+            {
+              "text": "二時間",
+              "reading": "にじかん"
+            },
+            {
+              "text": "かかります。"
+            },
+            {
+              "text": "学校"
+            },
+            {
+              "text": "は（　）です。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "遠",
+                  "reading": "とお"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "丸",
+                  "reading": "まる"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "近",
+                  "reading": "ちか"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "安",
+                  "reading": "やす"
+                },
+                {
+                  "text": "い"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "遠い: xa. Hai tiếng đi xe buýt từ nhà tới trường gợi khoảng cách xa; 近い là gần. 安い nói giá rẻ, 丸い nói hình tròn, không nói khoảng cách."
+        },
+        {
+          "id": "q52",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "図書館"
+            },
+            {
+              "text": "の"
+            },
+            {
+              "text": "本",
+              "reading": "ほん"
+            },
+            {
+              "text": "を"
+            },
+            {
+              "text": "家",
+              "reading": "いえ"
+            },
+            {
+              "text": "へ"
+            },
+            {
+              "text": "持"
+            },
+            {
+              "text": "って"
+            },
+            {
+              "text": "帰",
+              "reading": "かえ"
+            },
+            {
+              "text": "ります。"
+            },
+            {
+              "text": "一週間",
+              "reading": "いっしゅうかん"
+            },
+            {
+              "text": "、その"
+            },
+            {
+              "text": "本",
+              "reading": "ほん"
+            },
+            {
+              "text": "を（　）。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": [
+                {
+                  "text": "浴",
+                  "reading": "あ"
+                },
+                {
+                  "text": "びます"
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "text": [
+                {
+                  "text": "閉",
+                  "reading": "し"
+                },
+                {
+                  "text": "めます"
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "text": [
+                {
+                  "text": "返"
+                },
+                {
+                  "text": "します"
+                }
+              ]
+            },
+            {
+              "id": "d",
+              "text": [
+                {
+                  "text": "借",
+                  "reading": "か"
+                },
+                {
+                  "text": "ります"
+                }
+              ]
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "借りる: mượn/tạm sử dụng đồ của nơi khác. Mang sách thư viện về sử dụng một tuần là mượn sách; 返す là trả lại sau khi mượn, không phải hành động đang bắt đầu ở đây."
+        }
+      ]
+    },
+    {
+      "id": "context-apartment",
+      "title": "語彙・短い文 1",
+      "passage": [
+        {
+          "text": "このアパートは"
+        },
+        {
+          "text": "駅",
+          "reading": "えき"
+        },
+        {
+          "text": "から"
+        },
+        {
+          "text": "歩"
+        },
+        {
+          "text": "いて"
+        },
+        {
+          "text": "三分",
+          "reading": "さんぷん"
+        },
+        {
+          "text": "です。コンビニも"
+        },
+        {
+          "text": "近",
+          "reading": "ちか"
+        },
+        {
+          "text": "く、"
+        },
+        {
+          "text": "買",
+          "reading": "か"
+        },
+        {
+          "text": "い"
+        },
+        {
+          "text": "物"
+        },
+        {
+          "text": "に"
+        },
+        {
+          "text": "便利",
+          "reading": "べんり"
+        },
+        {
+          "text": "です。"
+        },
+        {
+          "text": "玄関",
+          "reading": "げんかん"
+        },
+        {
+          "text": "には"
+        },
+        {
+          "text": "靴",
+          "reading": "くつ"
+        },
+        {
+          "text": "や"
+        },
+        {
+          "text": "傘",
+          "reading": "かさ"
+        },
+        {
+          "text": "があります。\nAの"
+        },
+        {
+          "text": "部屋",
+          "reading": "へや"
+        },
+        {
+          "text": "は"
+        },
+        {
+          "text": "月",
+          "reading": "つき"
+        },
+        {
+          "text": "十万円",
+          "reading": "じゅうまんえん"
+        },
+        {
+          "text": "、Bの"
+        },
+        {
+          "text": "部屋",
+          "reading": "へや"
+        },
+        {
+          "text": "は"
+        },
+        {
+          "text": "月",
+          "reading": "つき"
+        },
+        {
+          "text": "六万円",
+          "reading": "ろくまんえん"
+        },
+        {
+          "text": "です。Aのほうが"
+        },
+        {
+          "text": "高",
+          "reading": "たか"
+        },
+        {
+          "text": "いです。"
+        },
+        {
+          "text": "見学"
+        },
+        {
+          "text": "の"
+        },
+        {
+          "text": "後",
+          "reading": "あと"
+        },
+        {
+          "text": "で、"
+        },
+        {
+          "text": "冷",
+          "reading": "つめ"
+        },
+        {
+          "text": "たい"
+        },
+        {
+          "text": "牛乳",
+          "reading": "ぎゅうにゅう"
+        },
+        {
+          "text": "を"
+        },
+        {
+          "text": "飲",
+          "reading": "の"
+        },
+        {
+          "text": "みました。"
+        }
+      ],
+      "questions": [
+        {
+          "id": "q53",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "文"
+            },
+            {
+              "text": "の「便利」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "に"
+            },
+            {
+              "text": "最",
+              "reading": "もっと"
+            },
+            {
+              "text": "も"
+            },
+            {
+              "text": "近",
+              "reading": "ちか"
+            },
+            {
+              "text": "いものはどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "không đi mua sắm"
+            },
+            {
+              "id": "b",
+              "text": "mất nhiều thời gian để mua sắm"
+            },
+            {
+              "id": "c",
+              "text": "cảm thấy sợ khi mua sắm"
+            },
+            {
+              "id": "d",
+              "text": "thuận tiện cho việc mua sắm"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "便利: tiện lợi. Ở đây ga và cửa hàng ở gần nên đi lại, mua sắm thuận tiện. 便利 không có nghĩa chỉ đơn thuần nổi tiếng, đắt hay đẹp."
+        },
+        {
+          "id": "q54",
+          "type": "single_choice",
+          "prompt": "「玄関」はどこですか。",
+          "options": [
+            {
+              "id": "a",
+              "text": "ご飯を作るところ"
+            },
+            {
+              "id": "b",
+              "text": "授業をするところ"
+            },
+            {
+              "id": "c",
+              "text": "家に入るところ"
+            },
+            {
+              "id": "d",
+              "text": "お風呂に入るところ"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "玄関: khu vực/lối vào nhà, thường là nơi để và thay giày. Không phải nhà bếp, phòng tắm hay phòng học. Các mô tả là nghĩa của địa điểm, không yêu cầu tính toán hay suy luận lịch trình."
+        },
+        {
+          "id": "q55",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "文"
+            },
+            {
+              "text": "の「高い」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "ga ở xa hơn"
+            },
+            {
+              "id": "b",
+              "text": "giá thuê đắt hơn"
+            },
+            {
+              "id": "c",
+              "text": "căn phòng ở tầng cao hơn"
+            },
+            {
+              "id": "d",
+              "text": "trần phòng cao hơn"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "高い có thể nói độ cao hoặc giá đắt. Ngay trước đó so sánh tiền thuê 10万円 và 6万円, nên ở đây là đắt hơn; không có thông tin về tầng hay trần phòng."
+        },
+        {
+          "id": "q56",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「冷たい"
+            },
+            {
+              "text": "牛乳",
+              "reading": "ぎゅうにゅう"
+            },
+            {
+              "text": "」の「冷たい」と"
+            },
+            {
+              "text": "同",
+              "reading": "おな"
+            },
+            {
+              "text": "じ"
+            },
+            {
+              "text": "使",
+              "reading": "つか"
+            },
+            {
+              "text": "い"
+            },
+            {
+              "text": "方",
+              "reading": "かた"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "冷たい水を飲みます。"
+            },
+            {
+              "id": "b",
+              "text": "今日は寒いです。"
+            },
+            {
+              "id": "c",
+              "text": "このカレーは辛いです。"
+            },
+            {
+              "id": "d",
+              "text": "あの人は背が高いです。"
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "冷たい ở đây là nhiệt độ lạnh của đồ uống/vật khi tiếp xúc. 冷たい水 cùng cách dùng đó; 寒い nói cảm giác lạnh/thời tiết, 辛い nói vị cay, 背が高い nói chiều cao của người."
+        }
+      ]
+    },
+    {
+      "id": "context-friends",
+      "title": "語彙・短い文 2",
+      "passage": [
+        {
+          "text": "A：「"
+        },
+        {
+          "text": "昨日"
+        },
+        {
+          "text": "は"
+        },
+        {
+          "text": "仕事",
+          "reading": "しごと"
+        },
+        {
+          "text": "が"
+        },
+        {
+          "text": "多",
+          "reading": "おお"
+        },
+        {
+          "text": "くて、"
+        },
+        {
+          "text": "大変",
+          "reading": "たいへん"
+        },
+        {
+          "text": "でした。"
+        },
+        {
+          "text": "今日"
+        },
+        {
+          "text": "は"
+        },
+        {
+          "text": "風邪",
+          "reading": "かぜ"
+        },
+        {
+          "text": "で、"
+        },
+        {
+          "text": "熱",
+          "reading": "ねつ"
+        },
+        {
+          "text": "もあります。」\nB：「"
+        },
+        {
+          "text": "一人"
+        },
+        {
+          "text": "で"
+        },
+        {
+          "text": "病院"
+        },
+        {
+          "text": "へ"
+        },
+        {
+          "text": "行"
+        },
+        {
+          "text": "きますか。」\nA：「はい、"
+        },
+        {
+          "text": "大丈夫",
+          "reading": "だいじょうぶ"
+        },
+        {
+          "text": "です。"
+        },
+        {
+          "text": "病院"
+        },
+        {
+          "text": "は"
+        },
+        {
+          "text": "家",
+          "reading": "いえ"
+        },
+        {
+          "text": "から"
+        },
+        {
+          "text": "近",
+          "reading": "ちか"
+        },
+        {
+          "text": "いです。」\nB：「わかりました。"
+        },
+        {
+          "text": "私",
+          "reading": "わたし"
+        },
+        {
+          "text": "は"
+        },
+        {
+          "text": "明日"
+        },
+        {
+          "text": "も"
+        },
+        {
+          "text": "今日"
+        },
+        {
+          "text": "と"
+        },
+        {
+          "text": "同",
+          "reading": "おな"
+        },
+        {
+          "text": "じ"
+        },
+        {
+          "text": "時間",
+          "reading": "じかん"
+        },
+        {
+          "text": "に"
+        },
+        {
+          "text": "電話",
+          "reading": "でんわ"
+        },
+        {
+          "text": "します。」"
+        }
+      ],
+      "questions": [
+        {
+          "id": "q57",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "文"
+            },
+            {
+              "text": "の「大変でした」に"
+            },
+            {
+              "text": "最",
+              "reading": "もっと"
+            },
+            {
+              "text": "も"
+            },
+            {
+              "text": "近",
+              "reading": "ちか"
+            },
+            {
+              "text": "い"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "đã rất thuận tiện"
+            },
+            {
+              "id": "b",
+              "text": "đã rất vất vả"
+            },
+            {
+              "id": "c",
+              "text": "đã rất rảnh rỗi"
+            },
+            {
+              "id": "d",
+              "text": "đã rất giống nhau"
+            }
+          ],
+          "correctOptionId": "b",
+          "points": 1,
+          "explanation": "大変: vất vả/khó khăn/nghiêm trọng tùy ngữ cảnh. Nói về nhiều công việc hôm qua thì “đã rất vất vả” phù hợp. Không đồng nghĩa với 暇 (rảnh), 便利 (tiện) hay 同じ (giống nhau)."
+        },
+        {
+          "id": "q58",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "「"
+            },
+            {
+              "text": "今日"
+            },
+            {
+              "text": "と同じ"
+            },
+            {
+              "text": "時間",
+              "reading": "じかん"
+            },
+            {
+              "text": "」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "muộn hơn hôm nay"
+            },
+            {
+              "id": "b",
+              "text": "sớm hơn hôm nay"
+            },
+            {
+              "id": "c",
+              "text": "cùng một giờ như hôm nay"
+            },
+            {
+              "id": "d",
+              "text": "bất kỳ giờ nào hôm nay"
+            }
+          ],
+          "correctOptionId": "c",
+          "points": 1,
+          "explanation": "同じ: giống/cùng. 今日と同じ時間 nghĩa là vào cùng giờ như hôm nay; không có nghĩa sớm hơn, muộn hơn hoặc chọn giờ tùy ý."
+        },
+        {
+          "id": "q59",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "Aの「大丈夫です」に"
+            },
+            {
+              "text": "最",
+              "reading": "もっと"
+            },
+            {
+              "text": "も"
+            },
+            {
+              "text": "近",
+              "reading": "ちか"
+            },
+            {
+              "text": "い"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "Tôi tự đi được, không sao đâu."
+            },
+            {
+              "id": "b",
+              "text": "Tôi không thể tự đi được."
+            },
+            {
+              "id": "c",
+              "text": "Bệnh viện này nổi tiếng."
+            },
+            {
+              "id": "d",
+              "text": "Ngày mai tôi hoàn toàn rảnh."
+            }
+          ],
+          "correctOptionId": "a",
+          "points": 1,
+          "explanation": "大丈夫 trong lời đáp trấn an rằng người nói có thể tự tới bệnh viện, không cần lo về việc đi một mình. Nó không khẳng định người nói đã khỏi bệnh: ngay trước đó vẫn nói đang sốt."
+        },
+        {
+          "id": "q60",
+          "type": "single_choice",
+          "prompt": [
+            {
+              "text": "この"
+            },
+            {
+              "text": "文"
+            },
+            {
+              "text": "の「風邪」の"
+            },
+            {
+              "text": "意味",
+              "reading": "いみ"
+            },
+            {
+              "text": "はどれですか。"
+            }
+          ],
+          "options": [
+            {
+              "id": "a",
+              "text": "công việc khó khăn"
+            },
+            {
+              "id": "b",
+              "text": "cơn gió ngoài trời"
+            },
+            {
+              "id": "c",
+              "text": "một đợt nghỉ hè"
+            },
+            {
+              "id": "d",
+              "text": "bệnh cảm lạnh"
+            }
+          ],
+          "correctOptionId": "d",
+          "points": 1,
+          "explanation": "風邪＝かぜ: bệnh cảm/cảm lạnh. Dữ kiện bị sốt và đi bệnh viện xác định nghĩa bệnh, không phải gió. 大変 mô tả công việc vất vả nhưng không thay cho tên bệnh này."
+        }
+      ]
+    },
+    {
+      "id": "reading-write",
+      "title": "読み方の記入（ひらがな）",
+      "questions": [
+        {
+          "id": "q61",
+          "type": "fill_blank",
+          "prompt": "「明るい」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "あかるい"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "明るい＝あかるい: sáng/sáng sủa; trong ngữ cảnh khác còn có thể nói tính cách tươi sáng. Điền toàn bộ cách đọc gồm い cuối, không thêm です."
+        },
+        {
+          "id": "q62",
+          "type": "fill_blank",
+          "prompt": "「習う」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "ならう"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "習う＝ならう: học từ người dạy. Cần ならう ở dạng từ điển của từ đã cho; không đổi sang ならいます vì câu này chỉ yêu cầu cách đọc."
+        },
+        {
+          "id": "q63",
+          "type": "fill_blank",
+          "prompt": "「返す」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "かえす"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "返す＝かえす: trả lại. Phân biệt với 帰る＝かえる: người trở về. Đuôi す là một phần của từ cần ghi."
+        },
+        {
+          "id": "q64",
+          "type": "fill_blank",
+          "prompt": "「遊ぶ」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "あそぶ"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "遊ぶ＝あそぶ: chơi. Cách đọc đầy đủ là あそぶ, không phải あそび hay あそびます. Đây là nhận diện từ vựng, không yêu cầu biến đổi sang dạng khác."
+        },
+        {
+          "id": "q65",
+          "type": "fill_blank",
+          "prompt": "「書く」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "かく"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "書く＝かく: viết. Không nhầm với 聞く＝きく: nghe/hỏi. Cần ghi đúng nguyên âm của động từ đã in."
+        },
+        {
+          "id": "q66",
+          "type": "fill_blank",
+          "prompt": "「歩く」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "あるく"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "歩く＝あるく: đi bộ. Phân biệt với 走る＝はしる: chạy. Ghi đủ あるく, không thêm trợ từ hay câu văn."
+        },
+        {
+          "id": "q67",
+          "type": "fill_blank",
+          "prompt": "「持つ」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "もつ"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "持つ＝もつ: cầm, giữ, mang/có tùy cách dùng. Ghi cách đọc dạng từ điển, không cần chia động từ."
+        },
+        {
+          "id": "q68",
+          "type": "fill_blank",
+          "prompt": "「知る」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "しる"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "知る＝しる: biết/biết được. Không viết ちる. Câu hỏi chỉ kiểm tra cách đọc, không yêu cầu phân biệt các dạng diễn tả trạng thái biết."
+        },
+        {
+          "id": "q69",
+          "type": "fill_blank",
+          "prompt": "「強い」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "つよい"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "強い＝つよい: mạnh. Đọc phần 強 là つよ trong cả từ; い cuối vẫn phải điền."
+        },
+        {
+          "id": "q70",
+          "type": "fill_blank",
+          "prompt": "「読む」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "よむ"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "読む＝よむ: đọc. Đừng bỏ む hoặc đổi thành cách đọc của 書く (かく)."
+        },
+        {
+          "id": "q71",
+          "type": "fill_blank",
+          "prompt": "「机」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "つくえ"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "机＝つくえ: bàn. Đây là cách đọc của toàn từ, có ba kana つ・く・え."
+        },
+        {
+          "id": "q72",
+          "type": "fill_blank",
+          "prompt": "「鶏肉」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "とりにく"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "鶏肉＝とりにく: thịt gà. とり là gà/chim trong từ này, にく là thịt. Ghi cả bốn kana."
+        },
+        {
+          "id": "q73",
+          "type": "fill_blank",
+          "prompt": "「休む」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "やすむ"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "休む＝やすむ: nghỉ. 休み＝やすみ là danh từ nghỉ/kỳ nghỉ; đề đã in 休む nên cách đọc phải kết thúc bằng む."
+        },
+        {
+          "id": "q74",
+          "type": "fill_blank",
+          "prompt": "「食べ物」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "たべもの"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "食べ物＝たべもの: thức ăn. Phân biệt với 飲み物＝のみもの: đồ uống. Điền toàn bộ từ chứ không chỉ たべ."
+        },
+        {
+          "id": "q75",
+          "type": "fill_blank",
+          "prompt": "「文法」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "ぶんぽう"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "文法＝ぶんぽう: ngữ pháp. 法 trong từ này đọc ぽう, có trường âm; không viết ぶんほう hay ぶんぽ."
+        },
+        {
+          "id": "q76",
+          "type": "fill_blank",
+          "prompt": "「自転車」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "じてんしゃ"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "自転車＝じてんしゃ: xe đạp. しゃ có ゃ nhỏ; không viết thành しや hoặc đổi phần てん."
+        },
+        {
+          "id": "q77",
+          "type": "fill_blank",
+          "prompt": "「練習」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "れんしゅう"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "練習＝れんしゅう: luyện tập. しゅう có ゅ nhỏ và trường âm; không rút thành れんしゅ."
+        },
+        {
+          "id": "q78",
+          "type": "fill_blank",
+          "prompt": "「覚える」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "おぼえる"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "覚える＝おぼえる: ghi nhớ/học thuộc. Khác với 忘れる＝わすれる: quên. Câu hỏi không yêu cầu chia sang 覚えます."
+        },
+        {
+          "id": "q79",
+          "type": "fill_blank",
+          "prompt": "「座る」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "すわる"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "座る＝すわる: ngồi xuống/ngồi. Không nhầm với 触る＝さわる; cách đọc cần có す ở đầu."
+        },
+        {
+          "id": "q80",
+          "type": "fill_blank",
+          "prompt": "「出かける」の読み方をひらがなで書いてください。\n{{reading}}",
+          "blanks": [
+            {
+              "id": "reading",
+              "acceptedAnswers": [
+                "でかける"
+              ],
+              "points": 2
+            }
+          ],
+          "explanation": "出かける＝でかける: ra ngoài/đi ra khỏi nơi đang ở. Giữ đủ でかける; không đổi thành 出る＝でる vì đó là từ khác."
+        }
+      ]
+    }
+  ]
+}

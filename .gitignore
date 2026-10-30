@@ -1,8 +1,6 @@
-# ==========================================
-# Root Git Ignore Rules
-# ==========================================
+# Shared rules for the repository and the nested application.
 
-# --- SQLite Database & Local Data ---
+# SQLite databases, backups and local imports
 *.db
 *.db.*
 *.db-shm
@@ -10,19 +8,11 @@
 *.bak
 trainer.db*
 data/
-backend/data/
-**/data/
-**/backend/data/
 pdfs/
-backend/pdfs/
-**/pdfs/
-**/backend/pdfs/
 
 # --- Node / Frontend ---
 node_modules/
-**/node_modules/
 dist/
-**/dist/
 dist-ssr/
 *.local
 npm-debug.log*
@@ -33,17 +23,26 @@ pnpm-debug.log*
 
 # --- Java & Maven ---
 target/
-**/target/
 *.class
 *.jar
 !**/maven-wrapper.jar
 *.war
+*.ear
+*.nar
 
 # --- Environment & OS ---
 .env*
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 Desktop.ini
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+$RECYCLE.BIN/
+*.lnk
 
 # --- IDEs ---
 .idea/
@@ -51,3 +50,13 @@ Desktop.ini
 *.iml
 *.iws
 *.ipr
+.settings/
+.project
+.classpath
+.factorypath
+
+# Runtime logs and temporary QA/cache output
+*.log
+logs/
+temp/
+tmp/

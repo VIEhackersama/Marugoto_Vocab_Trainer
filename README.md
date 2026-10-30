@@ -177,55 +177,26 @@ flowchart LR
 ## 4. Cấu trúc thư mục
 
 ```text
-marugoto-vocab-trainer/
-├── backend/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/vn/marugoto/trainer/
-│   │   │   │   ├── VocabTrainerApplication.java  # Khởi chạy Spring Boot & cấu hình thư mục
-│   │   │   │   ├── DeckController.java           # API quản lý bộ từ, tải file, thẻ tùy chỉnh
-│   │   │   │   ├── DeckService.java              # Nghiệp vụ xử lý bộ thẻ, lưu file, trùng lặp
-│   │   │   │   ├── StudyController.java          # API truy vấn thẻ học 2 chiều & lọc từ khó
-│   │   │   │   ├── StudyService.java             # Nghiệp vụ truy vấn và lọc thẻ học FSRS
-│   │   │   │   ├── ReviewController.java         # API ghi nhận kết quả đánh giá thẻ kèm responseMs
-│   │   │   │   ├── ReviewService.java            # Cập nhật trạng thái FSRS và ghi nhật ký ôn tập
-│   │   │   │   ├── BackupController.java         # API xuất và nhập file sao lưu JSON
-│   │   │   │   ├── BackupService.java            # Nghiệp vụ Backup/Restore CSDL kèm pre-restore .bak
-│   │   │   │   ├── FsrsScheduler.java            # Khởi tạo và cấu hình bộ lập lịch FSRS
-│   │   │   │   ├── LifecycleController.java      # Quản lý heartbeat & đóng tab an toàn
-│   │   │   │   ├── ApiModels.java                # DTOs, Data Records và tính toán isLeech
-│   │   │   │   ├── ApiExceptionHandler.java      # Bắt lỗi toàn cục và chuẩn hóa thông báo API
-│   │   │   │   └── DatabaseMigrationRunner.java  # Thực thi script migration CSDL tự động
-│   │   │   └── resources/
-│   │   │       ├── application.properties        # Cấu hình cổng, đường dẫn CSDL SQLite & PDF
-│   │   │       └── db/migration/
-│   │   │           └── V1__create_decks_cards_and_reviews.sql # Schema bảng dữ liệu
-│   │   └── test/
-│   │       └── java/vn/marugoto/trainer/
-│   │           └── DeckAndReviewIntegrationTest.java # Kiểm thử tích hợp trọn vẹn API (4 tests)
-│   ├── mvnw.cmd / mvnw                           # Maven Wrapper
-│   └── pom.xml                                   # Cấu hình dependencies backend (Java 24)
-├── src/
-│   ├── main.jsx                                  # Toàn bộ giao diện React (Tabs, Modals, Audio, Backup...)
-│   ├── dictionary.js                             # Logic từ điển, lọc 50 hàng Gojuon, lọc trùng, isCardLeech
-│   ├── dictionary.test.js                        # Bộ kiểm thử cho dictionary.js
-│   ├── kanji.js                                  # Từ điển Kanji Marugoto, gợi ý và phân tích Hán tự
-│   ├── kanji.test.js                             # Bộ kiểm thử cho kanji.js
-│   ├── quizSession.js                            # Quản lý phiên làm bài test và hàng đợi lặp lại FSRS
-│   ├── quizSession.test.js                       # Bộ kiểm thử cho quizSession.js
-│   ├── api/client.js                             # API client giao tiếp backend (kèm Backup APIs)
-│   ├── utils/japaneseInput.js                    # Bộ gõ Romaji -> Hiragana & kiểm tra câu trả lời
-│   ├── utils/japaneseInput.test.js               # Bộ kiểm thử cho japaneseInput.js
-│   └── styles.css                                # Định kiểu giao diện hiện đại, responsive, hiệu ứng lật thẻ
-├── data/                                         # Thư mục chứa CSDL SQLite cục bộ (loại khỏi Git)
-├── index.html                                    # File HTML chính
-├── package.json                                  # Cấu hình frontend dependencies (React 19, Vite 7)
-├── vite.config.js                                # Cấu hình Vite dev server & proxy /api sang 8080
-├── launch-app.ps1                                # PowerShell script chạy ứng dụng nền & giám sát vòng đời
-├── start-app.vbs                                 # Khởi động ẩn hoàn toàn, không tạo console
-├── start-app.cmd                                 # File kích hoạt 1-click cho người dùng Windows
-├── .gitignore                                    # Loại bỏ triệt để file CSDL *.db, *.bak, data/ khỏi Git
-└── README.md                                     # Tài liệu hướng dẫn sử dụng và giới thiệu dự án
+marugoto-vocab-trainer/                 # Repository
+├── .gitignore                         # Quy tắc dùng chung
+├── README.md
+├── docs/                              # Hướng dẫn tính năng và ghi nhận QA
+├── artifacts/                         # Ảnh và báo cáo kiểm chứng cần giữ
+└── marugoto-vocab-trainer/             # Thư mục ứng dụng; chạy npm tại đây
+    ├── backend/
+    │   ├── src/main/                  # Java API, migration SQL và dữ liệu Bunpro
+    │   ├── src/test/                  # Kiểm thử backend
+    │   ├── data/                      # SQLite/PDF cá nhân, Git bỏ qua
+    │   ├── target/                    # Build, báo cáo và dữ liệu kiểm thử
+    │   └── mvnw / mvnw.cmd / pom.xml
+    ├── src/                           # React, logic học tập và unit test
+    ├── public/                        # Đề thi JSON, schema, template, favicon
+    ├── scripts/                       # Collector, sinh đề, kiểm thử và dọn dẹp
+    ├── docs/                          # Wireframe HTML lưu từ đợt thiết kế
+    ├── data/ / logs/ / tmp/            # Dữ liệu cục bộ, Git bỏ qua
+    ├── package.json / package-lock.json
+    ├── vite.config.js / index.html
+    └── start-app.vbs / start-app.cmd / launch-app.ps1
 ```
 
 ---
@@ -234,12 +205,12 @@ marugoto-vocab-trainer/
 
 ### 5.1. Yêu cầu môi trường
 - **Java**: Phiên bản **Java 24** (đã được cấu hình trong `PATH`).
-- **Node.js**: Phiên bản LTS khuyến nghị (Node.js 18+ hoặc 20+ kèm `npm`).
+- **Node.js**: **Node.js 20 (từ 20.19) hoặc Node.js 22.12 trở lên** (kèm `npm`, theo yêu cầu của Vite 7).
 
 ---
 
 ### 5.2. Cách 1: Khởi động 1-Click (Khuyến nghị trên Windows)
-Chỉ cần nhấp đúp chuột vào file:
+Trong thư mục ứng dụng `marugoto-vocab-trainer/` bên trong repository, nhấp đúp chuột vào file:
 ```text
 start-app.vbs
 ```
@@ -253,15 +224,17 @@ start-app.vbs
 
 #### Bước 1: Khởi động Spring Boot Backend (Terminal 1)
 ```powershell
-cd backend
+# Từ thư mục gốc repository / リポジトリ直下から
+cd marugoto-vocab-trainer/backend
 .\mvnw.cmd spring-boot:run
 ```
 *(Backend sẽ lắng nghe tại `http://127.0.0.1:8080` và khởi tạo CSDL SQLite tại `backend/data/trainer.db`)*
 
 #### Bước 2: Khởi động Frontend Dev Server (Terminal 2)
 ```powershell
-# Tại thư mục gốc của dự án
-npm install
+# Từ thư mục gốc repository, mở terminal mới
+cd marugoto-vocab-trainer
+npm ci
 npm run dev
 ```
 
@@ -275,22 +248,25 @@ Dự án có độ bao phủ kiểm thử cao cho cả frontend và backend:
 
 ### Kiểm thử Frontend:
 ```powershell
+# Từ thư mục gốc repository / リポジトリ直下から
+cd marugoto-vocab-trainer
 npm test
 ```
-*Chạy toàn bộ **26 bài kiểm tra độc lập** bằng Node test runner: kiểm tra chuẩn hóa Gojuon, lọc từ điển, phát hiện từ trùng, bảo toàn từ đồng âm, nhận diện thẻ khó (`isCardLeech`), gợi ý chữ Hán, hàng đợi FSRS lặp lại, bộ gõ Romaji $\to$ Hiragana và thẩm định câu trả lời.*
+*Chạy các bài kiểm tra tự động bằng Node test runner: kiểm tra chuẩn hóa Gojuon, lọc từ điển, phát hiện từ trùng, bảo toàn từ đồng âm, nhận diện thẻ khó (`isCardLeech`), gợi ý chữ Hán, hàng đợi FSRS lặp lại, bộ gõ Romaji $\to$ Hiragana và thẩm định câu trả lời.*
 
 ### Kiểm thử Backend:
 ```powershell
-cd backend
+# Từ thư mục gốc repository, mở terminal mới / 新しいターミナルで
+cd marugoto-vocab-trainer/backend
 .\mvnw.cmd test
 ```
-*Chạy toàn bộ **4 bài kiểm tra tích hợp** (Spring Boot MockMvc): kiểm tra trọn vẹn luồng tải PDF, trích xuất thẻ 2 chiều, cập nhật thẻ, ghi nhận đánh giá FSRS kèm thời gian phản xạ, xuất/nhập file sao lưu Backup/Restore JSON và lọc thẻ khó.*
+*Chạy các bài kiểm tra tích hợp (Spring Boot MockMvc): kiểm tra trọn vẹn luồng tải PDF, trích xuất thẻ 2 chiều, cập nhật thẻ, ghi nhận đánh giá FSRS kèm thời gian phản xạ, xuất/nhập file sao lưu Backup/Restore JSON và lọc thẻ khó.*
 
 ---
 
 ## 7. Bảo mật CSDL cá nhân & Lưu ý
 
-1. **Bảo mật dữ liệu cá nhân trong Git**: Cấu hình `.gitignore` ở cả thư mục gốc và thư mục backend đã được thiết lập để loại trừ triệt để toàn bộ file cơ sở dữ liệu (`*.db`, `*.db.*`, `*.db-shm`, `*.db-wal`, `*.bak`, `data/`, `pdfs/`). Tiến trình học tập của bạn hoàn toàn riêng tư và không bao giờ bị vô tình đẩy lên Git.
+1. **Bảo mật dữ liệu cá nhân trong Git**: Cấu hình `.gitignore` tại thư mục gốc repository được dùng chung cho toàn dự án và đã được thiết lập để loại trừ triệt để toàn bộ file cơ sở dữ liệu (`*.db`, `*.db.*`, `*.db-shm`, `*.db-wal`, `*.bak`, `data/`, `pdfs/`). Quy tắc này áp dụng cho file chưa được Git theo dõi; vẫn kiểm tra `git status` trước khi commit.
 2. **Sao lưu dữ liệu định kỳ**: Sử dụng tính năng **💾 Sao lưu & Khôi phục** trực tiếp trên thanh công cụ của ứng dụng để tải file `.json` lưu vào Google Drive hoặc USB.
 3. **Định dạng file PDF**: Hệ thống trích xuất văn bản dựa trên lớp ký tự (text layer) của PDF dạng vector/digital. Đối với file PDF scan hoàn toàn bằng hình ảnh chụp, cần phải qua công đoạn OCR trước khi nhập.
 4. **Chất lượng giọng đọc (TTS)**: Ứng dụng đã tự động ưu tiên giọng đọc bản xứ `ja-JP`. Bạn có thể cài thêm các gói giọng nói tiếng Nhật chất lượng cao trong phần cài đặt Speech của Windows để có trải nghiệm tốt nhất.
@@ -416,27 +392,22 @@ cd backend
 ## 4. ディレクトリ構成
 
 ```text
-marugoto-vocab-trainer/
-├── backend/
-│   ├── src/
-│   │   ├── main/java/vn/marugoto/trainer/   # Spring Boot 4 API & FSRSサービス
-│   │   └── test/java/vn/marugoto/trainer/   # バックエンド統合テスト（4テスト）
-│   ├── mvnw.cmd / mvnw                      # Maven Wrapper
-│   └── pom.xml                              # バックエンド設定 (Java 24)
-├── src/
-│   ├── main.jsx                             # メインUI（React 19）
-│   ├── dictionary.js                        # 五十音分類・同音異義語保護・苦手判定
-│   ├── kanji.js                             # 漢字辞書・サジェスト・自動マッピング
-│   ├── quizSession.js                       # テスト＆FSRSセッション内再出題キュー
-│   ├── api/client.js                        # バックエンド通信（バックアップAPI含む）
-│   ├── utils/japaneseInput.js               # ローマ字→ひらがな変換＆回答判定
-│   └── styles.css                           # UIスタイルシート
-├── data/                                    # ローカルSQLite DBとPDF（Git管理外）
-├── launch-app.ps1                           # 起動＆監視PowerShellスクリプト
-├── start-app.vbs                            # コンソールを作成しない非表示ランチャー
-├── start-app.cmd                            # ワンクリック起動バッチファイル
-├── .gitignore                               # 個人用DBファイル（*.db, *.bak等）の除外設定
-└── README.md                                # 本ドキュメント
+marugoto-vocab-trainer/                 # リポジトリ
+├── .gitignore                         # 共通の除外設定
+├── README.md
+├── docs/                              # 機能ガイド・QA記録
+├── artifacts/                         # 保存する検証結果・画像
+└── marugoto-vocab-trainer/             # アプリ（npmの実行場所）
+    ├── backend/                       # Java API・SQL・Bunproデータ・テスト
+    │   ├── data/                      # 個人のSQLite・PDF（Git管理外）
+    │   ├── target/                    # ビルド・テスト出力（再生成可能）
+    │   └── mvnw / mvnw.cmd / pom.xml
+    ├── src/                           # React・学習ロジック・テスト
+    ├── public/                        # 試験JSON・テンプレート・スキーマ
+    ├── scripts/                       # Collector・検証・クリーンアップ
+    ├── data/ / logs/ / tmp/            # ローカルデータ（Git管理外）
+    ├── package.json / package-lock.json
+    └── start-app.vbs / start-app.cmd / launch-app.ps1
 ```
 
 ---
@@ -445,12 +416,12 @@ marugoto-vocab-trainer/
 
 ### 5.1. 動作要件
 - **Java**: **Java 24**（環境変数 `PATH` に設定されていること）
-- **Node.js**: 推奨LTS版（Node.js 18以上、npm同梱）
+- **Node.js**: **Node.js 20（20.19以上）、または22.12以上**（npm同梱、Vite 7の要件）
 
 ---
 
 ### 5.2. 方法1: ワンクリック起動（Windows推奨）
-リポジトリ直下の以下のファイルをダブルクリックします:
+リポジトリ内のアプリフォルダ `marugoto-vocab-trainer/` で、以下のファイルをダブルクリックします:
 ```text
 start-app.vbs
 ```
@@ -464,15 +435,17 @@ start-app.vbs
 
 #### ターミナル 1: バックエンドの起動
 ```powershell
-cd backend
+# Từ thư mục gốc repository / リポジトリ直下から
+cd marugoto-vocab-trainer/backend
 .\mvnw.cmd spring-boot:run
 ```
 *(ポート `8080` でAPIサーバーが起動し、`backend/data/trainer.db` にSQLiteデータベースが作成されます)*
 
 #### ターミナル 2: フロントエンドの起動
 ```powershell
-# プロジェクトのルートディレクトリにて
-npm install
+# リポジトリ直下で新しいターミナルを開く
+cd marugoto-vocab-trainer
+npm ci
 npm run dev
 ```
 
@@ -486,22 +459,46 @@ npm run dev
 
 ### フロントエンドテスト:
 ```powershell
+# Từ thư mục gốc repository / リポジトリ直下から
+cd marugoto-vocab-trainer
 npm test
 ```
-*Node test runnerにより、五十音ソート、辞書フィルター、重複検知、同音異義語保護、苦手判定（`isCardLeech`）、漢字サジェスト、FSRS再出題キュー、かなIME変換、回答判定など**全26項目のテスト**が実行されます。*
+*Node test runnerにより、五十音ソート、辞書フィルター、重複検知、同音異義語保護、苦手判定（`isCardLeech`）、漢字サジェスト、FSRS再出題キュー、かなIME変換、回答判定など単体テストが実行されます。*
 
 ### バックエンドテスト:
 ```powershell
-cd backend
+# Từ thư mục gốc repository, mở terminal mới / 新しいターミナルで
+cd marugoto-vocab-trainer/backend
 .\mvnw.cmd test
 ```
-*Spring Boot MockMvcによるAPI統合テストが実行され、PDFアップロード、双方向カード取得、回答時間付きFSRS復習ログ記録、JSONバックアップ・リストア、苦手カード抽出など**全4項目の統合テスト**が検証されます。*
+*Spring Boot MockMvcによるAPI統合テストが実行され、PDFアップロード、双方向カード取得、回答時間付きFSRS復習ログ記録、JSONバックアップ・リストア、苦手カード抽出など統合テストが検証されます。*
 
 ---
 
 ## 7. 個人DBの保護と留意点
 
-1. **Gitにおける個人データの除外**: ルートおよびbackendの `.gitignore` により、すべてのデータベースファイル（`*.db`, `*.db.*`, `*.db-shm`, `*.db-wal`, `*.bak`, `data/`, `pdfs/`）が厳格にGitの追跡から除外されています。個人の学習履歴や独自データが誤って公開リポジトリへ流出することはありません。
+1. **Gitにおける個人データの除外**: リポジトリ直下の共通 `.gitignore` により、すべてのデータベースファイル（`*.db`, `*.db.*`, `*.db-shm`, `*.db-wal`, `*.bak`, `data/`, `pdfs/`）が厳格にGitの追跡から除外されています。未追跡ファイルに適用されるため、コミット前に `git status` を確認してください。
 2. **データの定期バックアップ**: アプリ上部の「💾 **Sao lưu & Khôi phục**」ボタンから、いつでもワンクリックで最新の学習進捗をJSONファイルとして保存可能です。
 3. **PDFファイルの種類**: ベクター／デジタル形式のテキスト層を持つPDFに対応しています。
 4. **音声読み上げ（TTS）**: ブラウザの `window.speechSynthesis` を利用しており、`ja-JP` ネイティブ音声を自動優先します。
+
+
+## Dọn file sinh tự động / 生成ファイルの削除
+
+Đóng ứng dụng và các tiến trình kiểm thử. Từ thư mục gốc repository:
+
+```powershell
+cd marugoto-vocab-trainer
+npm run clean -- -WhatIf  # Xem trước / 削除前に確認
+npm run clean            # Thực hiện / 削除する
+```
+
+Lệnh dành cho Windows PowerShell, xóa `dist/`, `backend/target/`, `logs/`, `debug.log`,
+`tmp/test-runtime/` và các file `tmp/*.log`. Dữ liệu học trong `data/`, `backend/data/`,
+PDF, mã nguồn, `artifacts/`, `node_modules/` và các file QA khác trong `tmp/` được giữ lại.
+Các báo cáo Surefire trong `backend/target/` cũng bị xóa: chạy lại backend test trước
+khi dùng `npm run exams:verify`. Tạo lại frontend build bằng `npm run build`.
+
+Windows PowerShell用です。アプリとテストを終了してから実行してください。
+ビルド・テスト出力とログを削除し、個人データ・ソース・保存済み検証結果を保持します。
+試験のUI検証前にはbackendテストを再実行してください。

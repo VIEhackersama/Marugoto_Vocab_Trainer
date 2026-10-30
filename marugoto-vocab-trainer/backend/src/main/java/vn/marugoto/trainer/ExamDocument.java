@@ -82,15 +82,16 @@ class ExamDocument {
                 require(q.isObject(), p, "Cần một object.");
                 var type = q.path("type").asText();
                 switch (type) {
-                    case "single_choice" -> fields(q, p, "id", "type", "prompt", "explanation", "options", "correctOptionId", "points");
-                    case "fill_blank" -> fields(q, p, "id", "type", "prompt", "explanation", "blanks");
-                    case "essay" -> fields(q, p, "id", "type", "prompt", "explanation", "modelAnswer");
+                    case "single_choice" -> fields(q, p, "id", "type", "prompt", "promptTranslationEn", "explanation", "options", "correctOptionId", "points");
+                    case "fill_blank" -> fields(q, p, "id", "type", "prompt", "promptTranslationEn", "explanation", "blanks");
+                    case "essay" -> fields(q, p, "id", "type", "prompt", "promptTranslationEn", "explanation", "modelAnswer");
                     default -> throw new IllegalArgumentException(p + ".type: Chỉ nhận single_choice, fill_blank, essay.");
                 }
                 id(q.get("id"), p + ".id");
                 require(questionIds.add(q.path("id").asText()), p + ".id", "ID câu hỏi bị trùng trong đề.");
                 require(questionIds.size() <= 1000, "$.sections", "Tối đa 1.000 câu hỏi mỗi đề.");
                 content(q.get("prompt"), p + ".prompt"); content(q.get("explanation"), p + ".explanation");
+                if (q.has("promptTranslationEn")) text(q.get("promptTranslationEn"), p + ".promptTranslationEn");
                 if (q.has("points")) integer(q.get("points"), p + ".points", 1, 100000);
                 if (type.equals("single_choice")) {
                     array(q.get("options"), p + ".options", 2, 20);

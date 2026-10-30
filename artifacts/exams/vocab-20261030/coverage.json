@@ -1,0 +1,747 @@
+{
+  "sourceFile": "bunpro-progress.json",
+  "sourceSha256": "4448ab0eaae85efd5b0e69ec713ff56505e4d86a83501a1abbf9351daca7a7ee",
+  "totalRows": 328,
+  "vocabularyRows": 235,
+  "excludedNonVocabularyRows": 93,
+  "stageCounts": {
+    "0": 4,
+    "1": 27,
+    "2": 3,
+    "3": 13,
+    "4": 30,
+    "5": 43,
+    "6": 81,
+    "7": 34
+  },
+  "questions": 80,
+  "score": 100,
+  "distribution": {
+    "0-3": 51,
+    "4-6": 25,
+    "7+": 4
+  },
+  "uniqueTargets": 76,
+  "coverage": [
+    {
+      "questionId": "q01",
+      "entryId": "bunpro-vocab-56fb98258144b31106ff6997",
+      "target": "旅行",
+      "reading": "りょこう",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%97%85%E8%A1%8C",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q02",
+      "entryId": "bunpro-vocab-396194aaab1fc2f356f543ad",
+      "target": "夏休み",
+      "reading": "なつやすみ",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%A4%8F%E4%BC%91%E3%81%BF",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q03",
+      "entryId": "bunpro-vocab-7548c6ab62bb0ae1533ffb57",
+      "target": "初めて",
+      "reading": "はじめて",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%88%9D%E3%82%81%E3%81%A6",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q04",
+      "entryId": "bunpro-vocab-c3c523b2891f93c25e9605a5",
+      "target": "医者",
+      "reading": "いしゃ",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%8C%BB%E8%80%85",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q05",
+      "entryId": "bunpro-vocab-e1987c1796893edb52c3fa7f",
+      "target": "病院",
+      "reading": "びょういん",
+      "stage": 2,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%97%85%E9%99%A2",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q06",
+      "entryId": "bunpro-vocab-44f46b229093972891928995",
+      "target": "喫茶店",
+      "reading": "きっさてん",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%96%AB%E8%8C%B6%E5%BA%97",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q07",
+      "entryId": "bunpro-vocab-acf3a23fb620c3e13b59d61c",
+      "target": "留学生",
+      "reading": "りゅうがくせい",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%95%99%E5%AD%A6%E7%94%9F",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q08",
+      "entryId": "bunpro-vocab-168967640a372d0ecfee53a1",
+      "target": "外国人",
+      "reading": "がいこくじん",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%A4%96%E5%9B%BD%E4%BA%BA",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q09",
+      "entryId": "bunpro-vocab-2f7b9a22cc1ede03b5d2a693",
+      "target": "誕生日",
+      "reading": "たんじょうび",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%AA%95%E7%94%9F%E6%97%A5",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q10",
+      "entryId": "bunpro-vocab-4d91e08b16921fbc1665182a",
+      "target": "図書館",
+      "reading": "としょかん",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%9B%B3%E6%9B%B8%E9%A4%A8",
+      "skill": "reading_recognition"
+    },
+    {
+      "questionId": "q11",
+      "entryId": "bunpro-vocab-cc9378f0d3be64f7cc4a0e0f",
+      "target": "教室",
+      "reading": "きょうしつ",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%95%99%E5%AE%A4",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q12",
+      "entryId": "bunpro-vocab-56d7885d3fc496dc74be01d4",
+      "target": "新聞",
+      "reading": "しんぶん",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%96%B0%E8%81%9E",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q13",
+      "entryId": "bunpro-vocab-af6647f6f36989b2f355efc8",
+      "target": "日本語",
+      "reading": "にほんご",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%97%A5%E6%9C%AC%E8%AA%9E",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q14",
+      "entryId": "bunpro-vocab-e53d1dc1cfd52f908ef15020",
+      "target": "学校",
+      "reading": "がっこう",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%AD%A6%E6%A0%A1",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q15",
+      "entryId": "bunpro-vocab-9c6cb3ab006a4379a3fd4f21",
+      "target": "番号",
+      "reading": "ばんごう",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%95%AA%E5%8F%B7",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q16",
+      "entryId": "bunpro-vocab-3b438e0714500b129649d794",
+      "target": "写真",
+      "reading": "しゃしん",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%86%99%E7%9C%9F",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q17",
+      "entryId": "bunpro-vocab-4779097dd2136659acabd2ac",
+      "target": "動物",
+      "reading": "どうぶつ",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%8B%95%E7%89%A9",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q18",
+      "entryId": "bunpro-vocab-04a7f093f5a6ba06a1332945",
+      "target": "飲み物",
+      "reading": "のみもの",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%A3%B2%E3%81%BF%E7%89%A9",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q19",
+      "entryId": "bunpro-vocab-f8f91288309da478c21f50f5",
+      "target": "妹",
+      "reading": "いもうと",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%A6%B9",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q20",
+      "entryId": "bunpro-vocab-43ca4600940873030ef7f5eb",
+      "target": "砂糖",
+      "reading": "さとう",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%A0%82%E7%B3%96",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q21",
+      "entryId": "bunpro-vocab-71704eb7a03c6e13c7011a42",
+      "target": "明るい",
+      "reading": "あかるい",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%98%8E%E3%82%8B%E3%81%84",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q22",
+      "entryId": "bunpro-vocab-0e26ae3bf43eed3f98aa950d",
+      "target": "習う",
+      "reading": "ならう",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%BF%92%E3%81%86",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q23",
+      "entryId": "bunpro-vocab-70b0acab3e325bfe5575cc69",
+      "target": "返す",
+      "reading": "かえす",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%BF%94%E3%81%99",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q24",
+      "entryId": "bunpro-vocab-06007ffe2e06379cfa852b84",
+      "target": "遊ぶ",
+      "reading": "あそぶ",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%81%8A%E3%81%B6",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q25",
+      "entryId": "bunpro-vocab-75116c2c3eea03a70310be25",
+      "target": "曲がる",
+      "reading": "まがる",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%9B%B2%E3%81%8C%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q26",
+      "entryId": "bunpro-vocab-906335958572db41b3e39711",
+      "target": "置く",
+      "reading": "おく",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%BD%AE%E3%81%8F",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q27",
+      "entryId": "bunpro-vocab-a40bbcaa84db7eee78b418ff",
+      "target": "走る",
+      "reading": "はしる",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%B5%B0%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q28",
+      "entryId": "bunpro-vocab-d33873810ee58f4418173ac7",
+      "target": "すみません",
+      "reading": "すみません",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E3%81%99%E3%81%BF%E3%81%BE%E3%81%9B%E3%82%93-dup",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q29",
+      "entryId": "bunpro-vocab-4c77cab7779270a7c64e8926",
+      "target": "僕",
+      "reading": "ぼく",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%83%95",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q30",
+      "entryId": "bunpro-vocab-6dbee9bb4f5bceed8c2da17d",
+      "target": "ジュース",
+      "reading": "ジュース",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E3%82%B8%E3%83%A5%E3%83%BC%E3%82%B9",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q31",
+      "entryId": "bunpro-vocab-631864c887cb4a4618a2e638",
+      "target": "お弁当",
+      "reading": "おべんとう",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E3%81%8A%E5%BC%81%E5%BD%93-dup",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q32",
+      "entryId": "bunpro-vocab-a6840b2c1cf5605110176478",
+      "target": "右",
+      "reading": "みぎ",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%8F%B3",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q33",
+      "entryId": "bunpro-vocab-0ae64925a582e7fcdb1e8d61",
+      "target": "半分",
+      "reading": "はんぶん",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%8D%8A%E5%88%86",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q34",
+      "entryId": "bunpro-vocab-3d5242c8e08081ded1608f6e",
+      "target": "有る",
+      "reading": "ある",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%9C%89%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q35",
+      "entryId": "bunpro-vocab-d1e9099d140d0d3282b64e2e",
+      "target": "時間",
+      "reading": "じかん",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%99%82%E9%96%93",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q36",
+      "entryId": "bunpro-vocab-b5e6b7f7a5838b73969a6259",
+      "target": "紙",
+      "reading": "かみ",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%B4%99",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q37",
+      "entryId": "bunpro-vocab-fa927c502bb0ff81784cf2ad",
+      "target": "橋",
+      "reading": "はし",
+      "stage": 1,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%A9%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q38",
+      "entryId": "bunpro-vocab-ad7ede5f7566e26c6f2dce79",
+      "target": "青",
+      "reading": "あお",
+      "stage": 2,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%9D%92",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q39",
+      "entryId": "bunpro-vocab-280571d4e300b6050a587aec",
+      "target": "ご飯",
+      "reading": "ごはん",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E3%81%94%E9%A3%AF",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q40",
+      "entryId": "bunpro-vocab-655fbf814e10df68b07a3afd",
+      "target": "外",
+      "reading": "そと",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%A4%96",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q41",
+      "entryId": "bunpro-vocab-7fa0ca92963c02fd05facef2",
+      "target": "閉める",
+      "reading": "しめる",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%96%89%E3%82%81%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q42",
+      "entryId": "bunpro-vocab-7190b15d6ce3468757ac7bdd",
+      "target": "教える",
+      "reading": "おしえる",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%95%99%E3%81%88%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q43",
+      "entryId": "bunpro-vocab-3bb9c1953face6c181832ab4",
+      "target": "会う",
+      "reading": "あう",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E4%BC%9A%E3%81%86",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q44",
+      "entryId": "bunpro-vocab-1982aa6b26d7a93118226da7",
+      "target": "浴びる",
+      "reading": "あびる",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%B5%B4%E3%81%B3%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q45",
+      "entryId": "bunpro-vocab-fdc237cc17a7d23626ed07dc",
+      "target": "泳ぐ",
+      "reading": "およぐ",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%B3%B3%E3%81%90",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q46",
+      "entryId": "bunpro-vocab-566278347140d83135b0f4e2",
+      "target": "忘れる",
+      "reading": "わすれる",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%BF%98%E3%82%8C%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q47",
+      "entryId": "bunpro-vocab-ddcfef86f56f6a8edf32d8b1",
+      "target": "出る",
+      "reading": "でる",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%87%BA%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q48",
+      "entryId": "bunpro-vocab-1a9e0065e53782ef05ce4cfa",
+      "target": "台所",
+      "reading": "だいどころ",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%8F%B0%E6%89%80",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q49",
+      "entryId": "bunpro-vocab-991ad95215ceaf090fa47b8b",
+      "target": "映画館",
+      "reading": "えいがかん",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%98%A0%E7%94%BB%E9%A4%A8",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q50",
+      "entryId": "bunpro-vocab-2b98ede317460522c7298e1b",
+      "target": "怖い",
+      "reading": "こわい",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%80%96%E3%81%84",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q51",
+      "entryId": "bunpro-vocab-26ad4def028349db03fe2a8b",
+      "target": "遠い",
+      "reading": "とおい",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%81%A0%E3%81%84",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q52",
+      "entryId": "bunpro-vocab-a99e8be9c5ae40e08f31326a",
+      "target": "借りる",
+      "reading": "かりる",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%80%9F%E3%82%8A%E3%82%8B",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q53",
+      "entryId": "bunpro-vocab-76c9828f76fdce357946e91b",
+      "target": "便利",
+      "reading": "べんり",
+      "stage": 6,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E4%BE%BF%E5%88%A9",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q54",
+      "entryId": "bunpro-vocab-ee98b95f46bf17a840850d4a",
+      "target": "玄関",
+      "reading": "げんかん",
+      "stage": 6,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%8E%84%E9%96%A2",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q55",
+      "entryId": "bunpro-vocab-5cc6b2e12179fcb2d9f708f9",
+      "target": "高い",
+      "reading": "たかい",
+      "stage": 6,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%AB%98%E3%81%84",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q56",
+      "entryId": "bunpro-vocab-e4c161ead819d8c409a8e871",
+      "target": "冷たい",
+      "reading": "つめたい",
+      "stage": 6,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%86%B7%E3%81%9F%E3%81%84",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q57",
+      "entryId": "bunpro-vocab-cafc58c447ead3ac9472297c",
+      "target": "大変",
+      "reading": "たいへん",
+      "stage": 7,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%A4%A7%E5%A4%89",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q58",
+      "entryId": "bunpro-vocab-d36e987cab98402816628f61",
+      "target": "同じ",
+      "reading": "おなじ",
+      "stage": 7,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%90%8C%E3%81%98",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q59",
+      "entryId": "bunpro-vocab-1bf7117a6b2f93f42aab423e",
+      "target": "大丈夫",
+      "reading": "だいじょうぶ",
+      "stage": 7,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%A4%A7%E4%B8%88%E5%A4%AB",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q60",
+      "entryId": "bunpro-vocab-127a8ca1ebe59f66ac651667",
+      "target": "風邪",
+      "reading": "かぜ",
+      "stage": 7,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%A2%A8%E9%82%AA",
+      "skill": "meaning_and_usage"
+    },
+    {
+      "questionId": "q61",
+      "entryId": "bunpro-vocab-71704eb7a03c6e13c7011a42",
+      "target": "明るい",
+      "reading": "あかるい",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%98%8E%E3%82%8B%E3%81%84",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q62",
+      "entryId": "bunpro-vocab-0e26ae3bf43eed3f98aa950d",
+      "target": "習う",
+      "reading": "ならう",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%BF%92%E3%81%86",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q63",
+      "entryId": "bunpro-vocab-70b0acab3e325bfe5575cc69",
+      "target": "返す",
+      "reading": "かえす",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%BF%94%E3%81%99",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q64",
+      "entryId": "bunpro-vocab-06007ffe2e06379cfa852b84",
+      "target": "遊ぶ",
+      "reading": "あそぶ",
+      "stage": 0,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%81%8A%E3%81%B6",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q65",
+      "entryId": "bunpro-vocab-5ef0c7d9e1a93066ba2dd258",
+      "target": "書く",
+      "reading": "かく",
+      "stage": 2,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%9B%B8%E3%81%8F",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q66",
+      "entryId": "bunpro-vocab-c2b428f6f05a08ae0ec34ff1",
+      "target": "歩く",
+      "reading": "あるく",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%AD%A9%E3%81%8F",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q67",
+      "entryId": "bunpro-vocab-4329a9d1c8e90a2f1be1536f",
+      "target": "持つ",
+      "reading": "もつ",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%8C%81%E3%81%A4",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q68",
+      "entryId": "bunpro-vocab-2f32b7d37e79a5f5cb3b1a21",
+      "target": "知る",
+      "reading": "しる",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%9F%A5%E3%82%8B",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q69",
+      "entryId": "bunpro-vocab-abbfeaabcd8b60ebd7157f04",
+      "target": "強い",
+      "reading": "つよい",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%BC%B7%E3%81%84",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q70",
+      "entryId": "bunpro-vocab-2e8d5b75a54c2d236d630768",
+      "target": "読む",
+      "reading": "よむ",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%AA%AD%E3%82%80",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q71",
+      "entryId": "bunpro-vocab-f12f5968cd64de8a53bebfa5",
+      "target": "机",
+      "reading": "つくえ",
+      "stage": 3,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%9C%BA",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q72",
+      "entryId": "bunpro-vocab-b43b0070775a04a7fd071f2e",
+      "target": "鶏肉",
+      "reading": "とりにく",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%B6%8F%E8%82%89",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q73",
+      "entryId": "bunpro-vocab-4f3bd33f75f871eb3d9488ac",
+      "target": "休む",
+      "reading": "やすむ",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E4%BC%91%E3%82%80",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q74",
+      "entryId": "bunpro-vocab-62fb635eeb9914f5b139689f",
+      "target": "食べ物",
+      "reading": "たべもの",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E9%A3%9F%E3%81%B9%E7%89%A9",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q75",
+      "entryId": "bunpro-vocab-4e13020d9c73dc52f03da83e",
+      "target": "文法",
+      "reading": "ぶんぽう",
+      "stage": 4,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E6%96%87%E6%B3%95",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q76",
+      "entryId": "bunpro-vocab-51b8985d1eeed2004b563d61",
+      "target": "自転車",
+      "reading": "じてんしゃ",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%87%AA%E8%BB%A2%E8%BB%8A",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q77",
+      "entryId": "bunpro-vocab-0892bc345fd4a827cba833a5",
+      "target": "練習",
+      "reading": "れんしゅう",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E7%B7%B4%E7%BF%92",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q78",
+      "entryId": "bunpro-vocab-9ca9419873b2c7490b6a6a72",
+      "target": "覚える",
+      "reading": "おぼえる",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E8%A6%9A%E3%81%88%E3%82%8B",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q79",
+      "entryId": "bunpro-vocab-f29fb16d2065485c540977bf",
+      "target": "座る",
+      "reading": "すわる",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%BA%A7%E3%82%8B",
+      "skill": "reading_production"
+    },
+    {
+      "questionId": "q80",
+      "entryId": "bunpro-vocab-a98467c7f5d3ef368b4a373d",
+      "target": "出かける",
+      "reading": "でかける",
+      "stage": 5,
+      "sourceUrl": "https://bunpro.jp/vocabs/%E5%87%BA%E3%81%8B%E3%81%91%E3%82%8B",
+      "skill": "reading_production"
+    }
+  ]
+}

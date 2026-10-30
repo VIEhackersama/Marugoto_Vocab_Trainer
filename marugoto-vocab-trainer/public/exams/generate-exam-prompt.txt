@@ -1,6 +1,6 @@
 Hãy tạo một đề kiểm tra tiếng Nhật để import trực tiếp vào Marugoto Vocab Trainer.
 
-Yêu cầu của tôi: [ĐIỀN trình độ, nội dung đã học, số câu, độ khó, thời lượng và mục tiêu].
+Yêu cầu của tôi: [ĐIỀN trình độ, nội dung đã học, số câu, độ khó, thời lượng và mục tiêu; ghi rõ kiểm tra từ vựng hay ngữ pháp].
 
 Chỉ trả về nội dung một file JSON UTF-8 hợp lệ, không dùng code fence, không thêm văn bản ngoài JSON. Chọn ID mới có ý nghĩa cho mỗi đề. Tuân thủ Marugoto Exam JSON schemaVersion 1 dưới đây. Không tạo DOCX/PDF. Không gọi API.
 
@@ -42,10 +42,31 @@ CẤU TRÚC
   }]
 }
 
+ĐỀ TẬP TRUNG TỪ VỰNG — QUY TẮC BẮT BUỘC
+- Với đề tập trung từ vựng, mỗi câu phải có promptTranslationEn: một chuỗi dịch tiếng Anh đầy đủ toàn bộ câu/ngữ cảnh và yêu cầu trả lời trong prompt. Đây là hỗ trợ hiểu đề, không phải chỉ dịch riêng từ đích hoặc lời giải sau khi chấm.
+- Giao diện đặt bản dịch ngay dưới câu tiếng Nhật, trước các lựa chọn nếu có, dùng chữ nhỏ rõ rệt (khoảng một nửa cỡ chữ Nhật, trong khoảng 11–16px). Chỉ dùng trường promptTranslationEn; không chèn HTML, CSS, Markdown hoặc ghép bản dịch vào prompt.
+- Dùng câu nền và ngữ pháp đã học. Nếu chưa biết chắc phạm vi, dùng cấu trúc đơn giản; không lấy việc đoán từ mới/ngữ pháp chưa học trong câu dẫn làm độ khó của bài từ vựng. Nếu dùng passage, đính kèm bản dịch đầy đủ của đoạn ngữ cảnh liên quan trong promptTranslationEn của câu; không tự tạo passageTranslationEn vì schema chưa hỗ trợ.
+- Phải kết hợp single_choice và fill_blank tự nhập cách đọc kana; không ra đề từ vựng toàn trắc nghiệm. Tỷ lệ theo yêu cầu số câu và mục tiêu, nhưng cả hai dạng đều phải xuất hiện.
+- Câu tự điền phải in rõ từ tiếng Nhật cần kiểm tra; chỉ để ô trống cho cách đọc. Với từ viết bằng kanji, yêu cầu hiragana; với từ vay mượn, ghi rõ nếu yêu cầu katakana. acceptedAnswers chỉ chứa cách đọc kana hợp lệ, không thêm romaji/kanji hoặc lỗi chính tả để nới chấm.
+- Tuyệt đối không gắn reading/furigana hoặc viết kana/romaji đáp án cạnh từ đích đang kiểm tra cách đọc, kể cả khi người dùng bật furigana. Với từ vốn chỉ viết bằng kana, không ra câu chỉ cần chép lại nguyên cách đọc đã in sẵn; chọn từ đích hoặc dạng câu khác.
+- Bản dịch không được chứa cách đọc kana/romaji hay ký hiệu chỉ đáp án đúng. Nếu bản dịch đầy đủ làm lộ đáp án của câu chọn nghĩa, đổi sang dạng chọn cách đọc/chọn từ Nhật theo nghĩa hoặc tự điền kana; không cắt mất bản dịch để giữ câu chọn nghĩa đó. Không coi điểm của dạng được hỗ trợ nghĩa là phép đo độc lập về khả năng tự nhớ nghĩa.
+- Với đề tập trung ngữ pháp, không tự áp dụng yêu cầu bản dịch tiếng Anh; chỉ thêm khi người dùng yêu cầu hoặc cần hỗ trợ đã được thống nhất.
+
+VÍ DỤ CÂU TỰ ĐIỀN CÁCH ĐỌC TRONG ĐỀ TỪ VỰNG
+{
+  "id": "kana-q1",
+  "type": "fill_blank",
+  "prompt": "学校へ行きます。「学校」の読み方をひらがなで書いてください。\n{{reading}}",
+  "promptTranslationEn": "I go to school. Write the reading of “学校” in hiragana.",
+  "blanks": [{"id":"reading","acceptedAnswers":["がっこう"],"points":1}],
+  "explanation": "学校 đọc là がっこう; cần có っ nhỏ và trường âm こう."
+}
+Đề mẫu đầy đủ có cả hai dạng nằm trong vocab-template.json.
+
 PHONG CÁCH CÂU HỎI
 - Viết theo phong cách một đề thi tiếng Nhật thực tế: ngữ liệu tự nhiên, câu dẫn ngắn gọn, chỉ giữ thông tin cần thiết. Ưu tiên tiếng Nhật cho đoạn đọc, câu hỏi và lựa chọn, với từ vựng phù hợp phạm vi người học. Không cần thêm tình huống hay lời dẫn tiếng Việt cho mọi câu.
 - Hoàn toàn cho phép bài chỉ yêu cầu chọn đáp án đúng nhất, chọn từ/dạng từ phù hợp hoặc điền vào câu tiếng Nhật. Ví dụ có thể chỉ là "学校（　）日本語を勉強します。" kèm các lựa chọn; không bắt buộc hỏi "vì sao" hay yêu cầu phân tích ở mỗi câu.
-- Hạn chế câu hỏi có đáp án quá dễ suy ra từ cách diễn đạt, như "vì sao lại dùng xxx" rồi nêu ngay chức năng của xxx, dịch sẵn ý cần chọn hoặc chỉ đích danh cấu trúc phải dùng. Không viết lời dẫn dài để dẫn người học đến đáp án.
+- Hạn chế câu hỏi có đáp án quá dễ suy ra từ cách diễn đạt, như "vì sao lại dùng xxx" rồi nêu ngay chức năng của xxx, chỉ đích danh cấu trúc phải dùng. Riêng bản dịch tiếng Anh của đề từ vựng là hỗ trợ bắt buộc theo quy tắc ở trên; chọn dạng câu phù hợp để không lộ cách đọc/đáp án. Không viết lời dẫn dài để dẫn người học đến đáp án.
 - Câu hỏi "なぜ／どうして／vì sao" vẫn phù hợp trong đọc hiểu nếu thực sự cần hiểu/suy luận từ ngữ liệu; tránh kiểu hỏi lý thuyết ngữ pháp khiến lựa chọn đúng hiển nhiên chỉ nhờ câu dẫn.
 - Khi có đoạn đọc, dùng passage cho văn bản chung, prompt cho câu hỏi liên quan và options/blanks cho câu trả lời. Với câu ngữ pháp độc lập, prompt có thể chỉ là câu có chỗ trống; không cần tạo một đoạn đọc giả để đủ khuôn.
 - Không sinh trường instructions ở cấp đề hoặc cấp phần. Không thêm đoạn "hướng dẫn phân tích", mẹo giải, mô tả mục tiêu học hay nhắc điểm ngữ pháp phía trên câu hỏi. Đặt title của phần ngắn gọn, chẳng hạn "文法", "読解", không tiết lộ mẫu cần chọn. Chỉ ghi yêu cầu thao tác tối thiểu trong prompt khi người làm cần biết cách trả lời, nhất là essay hoặc giới hạn phần cần điền.
@@ -53,7 +74,7 @@ PHONG CÁCH CÂU HỎI
 - Phần phân tích kỹ và lý do các lựa chọn sai thuộc explanation/modelAnswer, chỉ xem sau khi chấm; không đưa chúng vào passage, prompt hoặc options. Độ khó đến từ khả năng hiểu và vận dụng tiếng Nhật, không từ lời dẫn rườm rà.
 
 QUY TẮC BẮT BUỘC
-1. Không thêm trường ngoài các trường trong mẫu, ngoại trừ passage ở cấp phần để chứa đoạn đọc dùng chung. description, timeLimitMinutes là tùy chọn. Schema v1 vẫn hỗ trợ instructions cho đề cũ, nhưng đề mới theo prompt này phải bỏ trường đó ở cả hai cấp. Tách thành phần khác nếu dùng đoạn đọc khác.
+1. Không thêm trường ngoài các trường trong mẫu, ngoại trừ passage ở cấp phần để chứa đoạn đọc dùng chung và promptTranslationEn ở cấp câu (chuỗi tiếng Anh không trống, tối đa 200000 ký tự). promptTranslationEn dùng được cho cả ba loại câu, bắt buộc theo hướng dẫn khi đề tập trung từ vựng, tùy chọn với các đề khác. description, timeLimitMinutes là tùy chọn. Schema v1 vẫn hỗ trợ instructions cho đề cũ, nhưng đề mới theo prompt này phải bỏ trường đó ở cả hai cấp. Tách thành phần khác nếu dùng đoạn đọc khác.
 2. ID có 1–120 ký tự, bắt đầu bằng chữ/số, chỉ chứa A-Z a-z 0-9 _ . : -. Không dùng constructor, prototype. ID phần không trùng nhau; ID câu duy nhất trong toàn đề; ID lựa chọn/chỗ trống duy nhất trong câu.
 3. Mỗi single_choice có 2–20 lựa chọn, đúng một đáp án. correctOptionId phải có trong options. Không ghi đáp án đúng vào prompt hoặc nội dung lựa chọn dưới dạng gợi ý.
 4. Mỗi fill_blank có 1–100 chỗ trống; mỗi {{id}} xuất hiện đúng một lần trong prompt và khớp một phần tử blanks. Mỗi acceptedAnswers có ít nhất một chuỗi đúng. Chỉ yêu cầu nhập phần đang thiếu, không lặp lại phần đã in sẵn. Liệt kê đầy đủ các biến thể hợp lệ.
@@ -64,4 +85,4 @@ QUY TẮC BẮT BUỘC
 9. Nội dung hiển thị (description, instructions, passage, prompt, option.text, explanation, modelAnswer) nhận chuỗi hoặc mảng token, ví dụ [{"text":"学校","reading":"がっこう"},{"text":"へ行きます。"}]. title và id vẫn là chuỗi thường. Không nhập HTML/Markdown; xuống dòng bằng \n.
 10. Với đề tiếng Nhật, dùng token reading cho từ có kanji cần hỗ trợ. Trang có thể tắt furigana; không thêm cách đọc vào text nếu chỉ muốn nó hiện khi bật furigana. Không đặt reading lên token chứa {{id}}, không chia placeholder qua nhiều token.
 11. Chuỗi và token.text không được trống/chỉ có khoảng trắng. Có thể ghép khoảng trắng hoặc xuống dòng vào token chứa nội dung. Mỗi chuỗi tối đa 200000 ký tự, mỗi nội dung token tối đa 10000 token.
-12. Kiểm tra lại tất cả đáp án, độ tự nhiên, kiến thức đúng phạm vi đã học và tính duy nhất của đáp án trắc nghiệm trước khi trả JSON. Đoạn đọc phải đủ thông tin để trả lời các câu hỏi phụ thuộc nó.
+12. Kiểm tra lại tất cả đáp án, độ tự nhiên, kiến thức đúng phạm vi đã học và tính duy nhất của đáp án trắc nghiệm trước khi trả JSON. Đoạn đọc phải đủ thông tin để trả lời các câu hỏi phụ thuộc nó. Với đề từ vựng: kiểm tra mọi câu có bản dịch tiếng Anh đầy đủ, có cả single_choice và fill_blank tự điền kana, và không có furigana/kana/romaji làm lộ cách đọc đang kiểm tra.
